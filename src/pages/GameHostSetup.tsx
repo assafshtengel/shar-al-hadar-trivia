@@ -4,18 +4,14 @@ import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { Music, Users, Copy } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 const GameHostSetup: React.FC = () => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [gameCode] = useState(() => Math.floor(100000 + Math.random() * 900000).toString());
   const [players, setPlayers] = useState<string[]>([]);
-  const [musicSource, setMusicSource] = useState<string>("");
   const [gameStarted, setGameStarted] = useState(false);
 
-  // Mock function to simulate players joining
   useEffect(() => {
     const mockPlayerNames = ["אמא", "אבא", "סבתא", "דניאל", "רותם", "נועה", "עידן", "שירה", "יובל"];
     const interval = setInterval(() => {
@@ -31,6 +27,7 @@ const GameHostSetup: React.FC = () => {
     }, 2000);
     return () => clearInterval(interval);
   }, [players]);
+
   const copyGameCode = () => {
     navigator.clipboard.writeText(gameCode).then(() => {
       toast({
@@ -45,15 +42,8 @@ const GameHostSetup: React.FC = () => {
       });
     });
   };
+
   const startGame = () => {
-    if (!musicSource) {
-      toast({
-        title: "אנא בחר מקור שירים",
-        description: "יש לבחור מקור שירים לפני תחילת המשחק",
-        variant: "destructive"
-      });
-      return;
-    }
     if (players.length === 0) {
       toast({
         title: "אין שחקנים",
@@ -68,9 +58,9 @@ const GameHostSetup: React.FC = () => {
       description: "כעת אתה יכול להשמיע שירים"
     });
 
-    // Navigate to gameplay screen
     navigate('/gameplay');
   };
+
   const playNextSong = () => {
     if (!gameStarted) return;
     toast({
@@ -78,8 +68,8 @@ const GameHostSetup: React.FC = () => {
       description: "השיר הבא יושמע בקרוב"
     });
   };
+
   return <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
-      {/* Background musical notes */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <MusicNote type="note1" className="absolute top-[10%] right-[15%] opacity-20" size={36} animation="float" color="#6446D0" />
         <MusicNote type="note4" className="absolute bottom-[15%] left-[15%] opacity-20" size={32} animation="float-alt" color="#FFC22A" />
@@ -87,7 +77,6 @@ const GameHostSetup: React.FC = () => {
 
       <div className="container mx-auto px-4 py-8 flex-1 flex flex-col relative z-10 max-w-md">
         <div className="w-full flex flex-col items-center">
-          {/* Header */}
           <div className="mb-8 text-center">
             <Link to="/" className="block mb-2">
               <h1 className="text-3xl font-bold text-primary inline-flex items-center gap-2">
@@ -98,7 +87,6 @@ const GameHostSetup: React.FC = () => {
             <h2 className="text-lg text-gray-600">הגדרות משחק חדש</h2>
           </div>
 
-          {/* Game Code */}
           <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-md">
             <h3 className="text-lg font-semibold mb-2 text-center">קוד המשחק שלך:</h3>
             <div className="flex items-center justify-center gap-2">
@@ -114,7 +102,6 @@ const GameHostSetup: React.FC = () => {
             </p>
           </div>
 
-          {/* Players List */}
           <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-md">
             <div className="flex items-center gap-2 mb-3">
               <Users className="h-5 w-5 text-primary" />
@@ -133,10 +120,6 @@ const GameHostSetup: React.FC = () => {
             </div>
           </div>
 
-          {/* Music Source Selection */}
-          
-
-          {/* Action Buttons */}
           <div className="w-full space-y-4 mt-2">
             <AppButton variant="primary" size="lg" onClick={startGame} disabled={gameStarted}>
               {gameStarted ? "המשחק כבר התחיל" : "התחל משחק"}
@@ -150,4 +133,5 @@ const GameHostSetup: React.FC = () => {
       </div>
     </div>;
 };
+
 export default GameHostSetup;
