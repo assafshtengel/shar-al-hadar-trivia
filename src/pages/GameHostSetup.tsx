@@ -1,32 +1,71 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { Music, Users, Copy } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Player {
+  id: string;
+  name: string;
+  game_code: string;
+  joined_at: string | null;
+  score: number | null;
+}
 
 const GameHostSetup: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [gameCode] = useState(() => Math.floor(100000 + Math.random() * 900000).toString());
-  const [players, setPlayers] = useState<string[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [gameStarted, setGameStarted] = useState(false);
 
+  // Fetch initial players and subscribe to real-time updates
   useEffect(() => {
-    const mockPlayerNames = ["אמא", "אבא", "סבתא", "דניאל", "רותם", "נועה", "עידן", "שירה", "יובל"];
-    const interval = setInterval(() => {
-      if (players.length < 5) {
-        const randomIndex = Math.floor(Math.random() * mockPlayerNames.length);
-        const newPlayer = mockPlayerNames[randomIndex];
-        if (!players.includes(newPlayer)) {
-          setPlayers(prev => [...prev, newPlayer]);
-        }
-      } else {
-        clearInterval(interval);
+    // Initial fetch of players
+    const fetchPlayers = async () => {
+      const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .eq('game_code', gameCode);
+
+      if (error) {
+        console.error('Error fetching players:', error);
+        return;
       }
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [players]);
+
+      if (data) {
+        setPlayers(data);
+      }
+    };
+
+    fetchPlayers();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'players',
+          filter: `game_code=eq.${gameCode}`
+        },
+        (payload) => {
+          console.log('New player joined:', payload);
+          setPlayers((prevPlayers) => [...prevPlayers, payload.new as Player]);
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gameCode]);
 
   const copyGameCode = () => {
     navigator.clipboard.writeText(gameCode).then(() => {
@@ -109,14 +148,20 @@ const GameHostSetup: React.FC = () => {
             </div>
             
             <div className="min-h-[120px] border border-gray-200 rounded-md p-2 bg-white">
-              {players.length > 0 ? <ul className="space-y-1">
-                  {players.map((player, index) => <li key={index} className="py-2 px-3 bg-gray-50 rounded-md animate-fade-in flex items-center gap-2">
+              {players.length > 0 ? (
+                <ul className="space-y-1">
+                  {players.map((player) => (
+                    <li key={player.id} className="py-2 px-3 bg-gray-50 rounded-md animate-fade-in flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>{player}</span>
-                    </li>)}
-                </ul> : <div className="h-full flex items-center justify-center text-gray-400">
+                      <span>{player.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
                   ממתין לשחקנים...
-                </div>}
+                </div>
+              )}
             </div>
           </div>
 

@@ -8,6 +8,7 @@ import MusicNote from '@/components/MusicNote';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 
 const JoinGame = () => {
   const { toast } = useToast();
@@ -17,7 +18,7 @@ const JoinGame = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleJoinGame = (e: React.FormEvent) => {
+  const handleJoinGame = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
@@ -29,22 +30,37 @@ const JoinGame = () => {
       return;
     }
 
-    // Simple validation - in a real app, you would check against a backend
-    if (gameCode === '123456') {
+    try {
+      // Insert player data into Supabase
+      const { error: insertError } = await supabase
+        .from('players')
+        .insert([
+          { 
+            name: playerName,
+            game_code: gameCode,
+          }
+        ]);
+
+      if (insertError) {
+        console.error('Error inserting player:', insertError);
+        setError('שגיאה בהצטרפות למשחק, נסו שוב');
+        setIsSubmitting(false);
+        return;
+      }
+
       toast({
         title: "הצטרפת בהצלחה!",
         description: `ברוכים הבאים, ${playerName}!`,
       });
       
-      // In a real app, navigate to waiting room or game
+      // Navigate to home for now (in a real app, would navigate to waiting room or game)
       setTimeout(() => {
-        // Navigate to waiting room or game (placeholder for now)
         navigate('/');
         setIsSubmitting(false);
       }, 1500);
-    } else {
-      // Show error for invalid game code
-      setError('קוד שגוי או שהמשחק כבר התחיל');
+    } catch (err) {
+      console.error('Error joining game:', err);
+      setError('שגיאה בהצטרפות למשחק, נסו שוב');
       setIsSubmitting(false);
     }
   };
