@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -101,7 +100,7 @@ const GamePlay: React.FC = () => {
         setIsPlaying(false);
         setPhase('answerOptions');
         startTimer();
-      }, 4000); // Hide after 4 seconds
+      }, 6000); // Changed from 4000 to 6000 milliseconds
       
       return () => clearTimeout(timer);
     }
