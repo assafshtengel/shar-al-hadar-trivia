@@ -26,5 +26,9 @@ export const createRealtimeChannel = (channelName: string) => {
 export type PlayerUpdate = {
   score?: number;
   hasAnswered?: boolean;
+  game_code?: string;
+  name?: string;
+  joined_at?: string;
+  id?: string;
   [key: string]: any;
 };
