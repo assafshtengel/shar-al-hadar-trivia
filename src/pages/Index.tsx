@@ -14,10 +14,7 @@ const Index = () => {
   };
 
   const handleJoinGame = () => {
-    toast({
-      title: "בקרוב!",
-      description: "הצטרפות למשחק תהיה זמינה בקרוב",
-    });
+    navigate('/join-game');
   };
 
   return (
