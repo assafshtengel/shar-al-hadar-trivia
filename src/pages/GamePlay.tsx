@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -91,9 +92,7 @@ const GamePlay: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
-  const [currentRound, setCurrentRound] = useState<GameRound>(() => {
-    return createGameRound();
-  });
+  const [currentRound, setCurrentRound] = useState<GameRound | null>(null);
   
   const [players, setPlayers] = useState<SupabasePlayer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -187,6 +186,79 @@ const GamePlay: React.FC = () => {
     };
   }, [gameCode, toast]);
 
+  // Add a new effect to fetch the current round data when game phase changes
+  useEffect(() => {
+    if (!gameCode || !serverGamePhase) return;
+    
+    const fetchGameRoundData = async () => {
+      const { data, error } = await supabase
+        .from('game_state')
+        .select('current_song_name, current_song_url')
+        .eq('game_code', gameCode)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching game round data:', error);
+        return;
+      }
+      
+      if (data && data.current_song_name) {
+        // Parse the stored game round data
+        try {
+          const roundData = JSON.parse(data.current_song_name);
+          if (roundData && roundData.correctSong && roundData.options) {
+            console.log('Fetched game round data:', roundData);
+            setCurrentRound(roundData);
+            
+            if (roundData.correctSong) {
+              setCurrentSong(roundData.correctSong);
+            }
+          }
+        } catch (parseError) {
+          console.error('Error parsing game round data:', parseError);
+        }
+      }
+    };
+    
+    fetchGameRoundData();
+    
+    // Set up real-time subscription for game_state changes
+    const gameStateChannel = supabase
+      .channel('game-state-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'game_state',
+          filter: `game_code=eq.${gameCode}`
+        },
+        (payload) => {
+          console.log('Game state changed:', payload);
+          if (payload.new && payload.new.current_song_name) {
+            try {
+              const roundData = JSON.parse(payload.new.current_song_name);
+              if (roundData && roundData.correctSong && roundData.options) {
+                console.log('New game round data from real-time update:', roundData);
+                setCurrentRound(roundData);
+                
+                if (roundData.correctSong) {
+                  setCurrentSong(roundData.correctSong);
+                }
+              }
+            } catch (parseError) {
+              console.error('Error parsing real-time game round data:', parseError);
+            }
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(gameStateChannel);
+    };
+  }, [gameCode, serverGamePhase]);
+
   const updateGameState = async (phase: string) => {
     if (!isHost || !gameCode) return;
 
@@ -244,7 +316,7 @@ const GamePlay: React.FC = () => {
     }
   }, [showYouTubeEmbed]);
 
-  const playSong = () => {
+  const playSong = async () => {
     if (!isHost) return;
     
     const gameRound = createGameRound();
@@ -255,7 +327,26 @@ const GamePlay: React.FC = () => {
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     
-    updateGameState('playing');
+    // Store the game round data in Supabase so non-host players can access it
+    const roundDataString = JSON.stringify(gameRound);
+    const { error } = await supabase
+      .from('game_state')
+      .update({ 
+        current_song_name: roundDataString,
+        current_song_url: gameRound.correctSong.embedUrl,
+        game_phase: 'playing'
+      })
+      .eq('game_code', gameCode);
+    
+    if (error) {
+      console.error('Error storing game round data:', error);
+      toast({
+        title: "שגיאה בשמירת נתוני הסיבוב",
+        description: "אירעה שגיאה בשמירת נתוני הסיבוב",
+        variant: "destructive"
+      });
+      return;
+    }
     
     toast({
       title: "משמיע שיר...",
@@ -282,7 +373,7 @@ const GamePlay: React.FC = () => {
   };
 
   const handleAnswer = (index: number) => {
-    if (currentPlayer.hasAnswered) return;
+    if (currentPlayer.hasAnswered || !currentRound) return;
     
     setSelectedAnswer(index);
     const isCorrect = index === currentRound.correctAnswerIndex;
@@ -336,7 +427,10 @@ const GamePlay: React.FC = () => {
 
     const { error: updateError } = await supabase
       .from('players')
-      .update({ score: newScore })
+      .update({ 
+        score: newScore,
+        hasAnswered: true
+      })
       .eq('game_code', gameCode)
       .eq('name', playerName);
 
@@ -351,7 +445,7 @@ const GamePlay: React.FC = () => {
   };
 
   const handleSkip = () => {
-    if (currentPlayer.hasAnswered || currentPlayer.skipsLeft <= 0) return;
+    if (currentPlayer.hasAnswered || currentPlayer.skipsLeft <= 0 || !currentRound) return;
     
     setCurrentPlayer(prev => ({
       ...prev,
@@ -402,11 +496,30 @@ const GamePlay: React.FC = () => {
     }, 1000);
   };
 
-  const nextRound = () => {
+  const resetPlayersAnsweredStatus = async () => {
+    if (!isHost || !gameCode) return;
+    
+    // Reset hasAnswered status for all players in this game
+    const { error } = await supabase
+      .from('players')
+      .update({ hasAnswered: false })
+      .eq('game_code', gameCode);
+    
+    if (error) {
+      console.error('Error resetting players answered status:', error);
+      toast({
+        title: "שגיאה באיפוס סטטוס השחקנים",
+        description: "אירעה שגיאה באיפוס סטטוס השחקנים",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const nextRound = async () => {
     if (!isHost) return;
     
-    const gameRound = createGameRound();
-    setCurrentRound(gameRound);
+    // Reset players' answered status before starting new round
+    await resetPlayersAnsweredStatus();
     
     setSelectedAnswer(null);
     setCurrentPlayer(prev => ({
@@ -428,7 +541,7 @@ const GamePlay: React.FC = () => {
   };
   
   const playFullSong = () => {
-    if (!isHost) return;
+    if (!isHost || !currentRound) return;
     
     toast({
       title: "משמיע את השיר המלא",
@@ -531,19 +644,25 @@ const GamePlay: React.FC = () => {
             
             <h2 className="text-2xl font-bold text-primary">מה השיר?</h2>
             
-            <div className="grid grid-cols-1 gap-4 w-full max-w-md">
-              {currentRound.options.map((song, index) => (
-                <AppButton
-                  key={index}
-                  variant={selectedAnswer === index ? "primary" : "secondary"}
-                  className={selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""}
-                  disabled={currentPlayer.hasAnswered}
-                  onClick={() => handleAnswer(index)}
-                >
-                  {song.name}
-                </AppButton>
-              ))}
-            </div>
+            {currentRound ? (
+              <div className="grid grid-cols-1 gap-4 w-full max-w-md">
+                {currentRound.options.map((song, index) => (
+                  <AppButton
+                    key={index}
+                    variant={selectedAnswer === index ? "primary" : "secondary"}
+                    className={selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""}
+                    disabled={currentPlayer.hasAnswered}
+                    onClick={() => handleAnswer(index)}
+                  >
+                    {song.name}
+                  </AppButton>
+                ))}
+              </div>
+            ) : (
+              <div className="text-lg text-gray-600 animate-pulse">
+                טוען אפשרויות...
+              </div>
+            )}
             
             <AppButton
               variant="secondary"
@@ -584,7 +703,7 @@ const GamePlay: React.FC = () => {
                   </div>
                 )}
                 
-                {!currentPlayer.lastAnswerCorrect && (
+                {!currentPlayer.lastAnswerCorrect && currentRound && (
                   <div className="text-lg">
                     תשובה נכונה: {currentRound.correctSong.name}
                   </div>
