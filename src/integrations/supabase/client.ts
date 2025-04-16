@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -24,4 +25,12 @@ export interface UpdatePlayerReadyStatusParams {
 // Add the check all players answered interface
 export interface CheckAllPlayersAnsweredParams {
   game_code: string;
+}
+
+// Add new interface for host answer selection
+export interface HostAnswerSelectionParams {
+  game_code: string;
+  player_name: string;
+  is_correct: boolean;
+  points: number;
 }

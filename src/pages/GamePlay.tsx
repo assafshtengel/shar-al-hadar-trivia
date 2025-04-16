@@ -456,44 +456,55 @@ const GamePlay: React.FC = () => {
     }));
     
     if (gameCode && playerName) {
+      console.log(`Player ${playerName} selected answer: ${index}, isCorrect: ${isCorrect}, points: ${points}`);
       await updatePlayerScore(points);
     }
   };
 
   const updatePlayerScore = async (points: number) => {
-    if (!gameCode || !playerName) return;
-
-    const { data: playerData, error: fetchError } = await supabase
-      .from('players')
-      .select('score')
-      .eq('game_code', gameCode)
-      .eq('name', playerName)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error('Error fetching player:', fetchError);
+    if (!gameCode || !playerName) {
+      console.error('Missing gameCode or playerName for score update');
       return;
     }
 
-    const currentScore = playerData?.score || 0;
-    const newScore = currentScore + points;
+    try {
+      const { data: playerData, error: fetchError } = await supabase
+        .from('players')
+        .select('score, hasAnswered')
+        .eq('game_code', gameCode)
+        .eq('name', playerName)
+        .maybeSingle();
 
-    const { error: updateError } = await supabase
-      .from('players')
-      .update({ 
-        score: newScore,
-        hasAnswered: true
-      })
-      .eq('game_code', gameCode)
-      .eq('name', playerName);
+      if (fetchError) {
+        console.error('Error fetching player:', fetchError);
+        return;
+      }
 
-    if (updateError) {
-      console.error('Error updating player score:', updateError);
-      toast({
-        title: "שגיאה בעדכון הניקוד",
-        description: "אירעה שגיאה בעדכון הניקוד שלך",
-        variant: "destructive"
-      });
+      console.log('Current player data:', playerData);
+      const currentScore = playerData?.score || 0;
+      const newScore = currentScore + points;
+
+      const { error: updateError } = await supabase
+        .from('players')
+        .update({ 
+          score: newScore,
+          hasAnswered: true
+        })
+        .eq('game_code', gameCode)
+        .eq('name', playerName);
+
+      if (updateError) {
+        console.error('Error updating player score:', updateError);
+        toast({
+          title: "שגיאה בעדכון הניקוד",
+          description: "אירעה שגיאה בעדכון הניקוד שלך",
+          variant: "destructive"
+        });
+      } else {
+        console.log(`Player ${playerName} score updated to ${newScore}, hasAnswered set to true`);
+      }
+    } catch (error) {
+      console.error('Unexpected error in updatePlayerScore:', error);
     }
   };
 
@@ -748,9 +759,12 @@ const GamePlay: React.FC = () => {
                   <AppButton
                     key={index}
                     variant={selectedAnswer === index ? "primary" : "secondary"}
-                    className={selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""}
+                    className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} ${currentPlayer.hasAnswered ? "cursor-not-allowed" : ""}`}
                     disabled={currentPlayer.hasAnswered}
-                    onClick={() => handleAnswer(index)}
+                    onClick={() => {
+                      console.log('Attempting to answer:', index);
+                      handleAnswer(index);
+                    }}
                   >
                     {song.name}
                   </AppButton>
