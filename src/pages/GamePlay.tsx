@@ -13,7 +13,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Song, createGameRound, defaultSongBank, findSongById } from '@/data/songBank';
+
+interface Song {
+  name: string;
+  embedUrl: string;
+  fullUrl: string;
+}
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 
@@ -33,43 +38,36 @@ interface GameRound {
   correctAnswerIndex: number;
 }
 
-interface SongData {
-  name: string;
-  url: string;
-  songId: number;
-  youtubeUrl: string;
-}
-
-const songs: SongData[] = [
+const songs: Song[] = [
+  {
+    name: "עתיד מתוק - משינה",
+    embedUrl: "https://www.youtube.com/embed/_3OOrrGxJ1M?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=_3OOrrGxJ1M"
+  },
+  {
+    name: "ריקוד המכונה - משינה",
+    embedUrl: "https://www.youtube.com/embed/U0THoV7yTeA?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=U0THoV7yTeA"
+  },
   {
     name: "אהובתי - משינה",
-    url: "https://www.youtube.com/embed/Hd9ubTcJc7E?autoplay=1&controls=0&modestbranding=1&rel=0",
-    songId: 29,
-    youtubeUrl: "https://www.youtube.com/watch?v=Hd9ubTcJc7E"
+    embedUrl: "https://www.youtube.com/embed/GgNFq1sSz5s?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=GgNFq1sSz5s"
   },
   {
-    name: "אנחנו שניים - משינה",
-    url: "https://www.youtube.com/embed/TspJGWttC9Q?autoplay=1&controls=0&modestbranding=1&rel=0",
-    songId: 29,
-    youtubeUrl: "https://www.youtube.com/watch?v=TspJGWttC9Q"
+    name: "אחכה לך בשדות - משינה",
+    embedUrl: "https://www.youtube.com/embed/aEWr8V-w9yc?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=aEWr8V-w9yc"
   },
   {
-    name: "את לא כמו כולם - משינה",
-    url: "https://www.youtube.com/embed/IPJn1nwqcCY?autoplay=1&controls=0&modestbranding=1&rel=0",
-    songId: 29,
-    youtubeUrl: "https://www.youtube.com/watch?v=IPJn1nwqcCY"
+    name: "אין מקום אחר - משינה",
+    embedUrl: "https://www.youtube.com/embed/PVAD3KWgQrQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=PVAD3KWgQrQ"
   },
   {
-    name: "בלדה לסוכן כפול - משינה",
-    url: "https://www.youtube.com/embed/RbF1hwyIFYA?autoplay=1&controls=0&modestbranding=1&rel=0",
-    songId: 29,
-    youtubeUrl: "https://www.youtube.com/watch?v=RbF1hwyIFYA"
-  },
-  {
-    name: "היא התווכחה איתו שעות - משינה",
-    url: "https://www.youtube.com/embed/LWD30iw7Diw?autoplay=1&controls=0&modestbranding=1&rel=0",
-    songId: 29,
-    youtubeUrl: "https://www.youtube.com/watch?v=LWD30iw7Diw"
+    name: "אנה - משינה",
+    embedUrl: "https://www.youtube.com/embed/35J7emcpOio?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=35J7emcpOio"
   }
 ];
 
@@ -80,14 +78,9 @@ const GamePlay: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState(15);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
-  const [currentSong, setCurrentSong] = useState<SongData | null>(null);
+  const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [currentRound, setCurrentRound] = useState<GameRound>(() => {
-    const { correctSong, options } = createGameRound();
-    return {
-      correctSong,
-      options,
-      correctAnswerIndex: options.findIndex(song => song.id === correctSong.id)
-    };
+    return createGameRound();
   });
   
   const [players, setPlayers] = useState<Player[]>([
@@ -105,41 +98,26 @@ const GamePlay: React.FC = () => {
     hasAnswered: false 
   });
 
-  const createRoundWithSong = (songId: number): GameRound => {
-    const selectedSong = findSongById(songId);
+  function createGameRound(): GameRound {
+    const randomIndex = Math.floor(Math.random() * songs.length);
+    const correctSong = songs[randomIndex];
     
-    if (!selectedSong) {
-      console.error("Could not find song with ID:", songId);
-      return {
-        correctSong: defaultSongBank[0],
-        options: [defaultSongBank[0], defaultSongBank[1], defaultSongBank[2], defaultSongBank[3]],
-        correctAnswerIndex: 0
-      };
-    }
+    const otherSongs = songs.filter(song => song.name !== correctSong.name);
     
-    // Get other songs that have different titles (to avoid duplicates)
-    const otherSongs = defaultSongBank.filter(song => 
-      song.id !== songId && song.title !== selectedSong.title
-    );
-    
-    // Shuffle and take 3 wrong answers
     const shuffledWrongSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
     
-    // Combine correct and wrong answers
-    const allOptions = [selectedSong, ...shuffledWrongSongs];
+    const allOptions = [correctSong, ...shuffledWrongSongs];
     
-    // Shuffle the combined array to randomize positions
     const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
     
-    // Find the index of the correct answer in the shuffled array
-    const correctIndex = shuffledOptions.findIndex(song => song.id === selectedSong.id);
+    const correctIndex = shuffledOptions.findIndex(song => song.name === correctSong.name);
     
     return {
-      correctSong: selectedSong,
+      correctSong,
       options: shuffledOptions,
       correctAnswerIndex: correctIndex
     };
-  };
+  }
 
   useEffect(() => {
     if (showYouTubeEmbed) {
@@ -148,7 +126,7 @@ const GamePlay: React.FC = () => {
         setIsPlaying(false);
         setPhase('answerOptions');
         startTimer();
-      }, 6000);
+      }, 4000);
       
       return () => clearTimeout(timer);
     }
@@ -157,18 +135,11 @@ const GamePlay: React.FC = () => {
   const playSong = () => {
     if (!isHost) return;
     
-    // Select a random song from the available list
-    const randomIndex = Math.floor(Math.random() * songs.length);
-    const selectedSong = songs[randomIndex];
-    
-    // Store the current song
-    setCurrentSong(selectedSong);
-    
-    // Create a game round specifically for this song
-    const gameRound = createRoundWithSong(selectedSong.songId);
+    const gameRound = createGameRound();
     setCurrentRound(gameRound);
     
-    // Start playback
+    setCurrentSong(gameRound.correctSong);
+    
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     
@@ -206,7 +177,7 @@ const GamePlay: React.FC = () => {
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
-      lastAnswer: currentRound.options[index].title,
+      lastAnswer: currentRound.options[index].name,
       lastAnswerCorrect: isCorrect,
       lastScore: points,
       score: prev.score + points
@@ -300,17 +271,9 @@ const GamePlay: React.FC = () => {
       description: "השיר המלא מתנגן כעת",
     });
 
-    // First try to play from YouTube if available
-    if (currentSong?.youtubeUrl) {
-      console.log(`Playing full song from YouTube: ${currentSong.youtubeUrl}`);
-      window.open(currentSong.youtubeUrl, '_blank');
-    } else if (currentRound.correctSong.youtubeUrl) {
-      console.log(`Playing full song from YouTube: ${currentRound.correctSong.youtubeUrl}`);
-      window.open(currentRound.correctSong.youtubeUrl, '_blank');
-    } else {
-      // Fallback to Spotify
-      console.log(`Playing full song from Spotify: ${currentRound.correctSong.spotifyUrl}`);
-      window.open(currentRound.correctSong.spotifyUrl, '_blank');
+    if (currentRound.correctSong.fullUrl) {
+      console.log(`Playing full song from YouTube: ${currentRound.correctSong.fullUrl}`);
+      window.open(currentRound.correctSong.fullUrl, '_blank');
     }
   };
 
@@ -326,7 +289,7 @@ const GamePlay: React.FC = () => {
                 <iframe 
                   width="100%" 
                   height="100%"
-                  src={currentSong.url}
+                  src={currentSong.embedUrl}
                   frameBorder="0" 
                   allow="autoplay; encrypted-media" 
                   allowFullScreen
@@ -407,13 +370,13 @@ const GamePlay: React.FC = () => {
             <div className="grid grid-cols-1 gap-4 w-full max-w-md">
               {currentRound.options.map((song, index) => (
                 <AppButton
-                  key={song.id}
+                  key={index}
                   variant={selectedAnswer === index ? "primary" : "secondary"}
                   className={selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""}
                   disabled={currentPlayer.hasAnswered}
                   onClick={() => handleAnswer(index)}
                 >
-                  {song.title} {song.artist ? `- ${song.artist}` : ''}
+                  {song.name}
                 </AppButton>
               ))}
             </div>
@@ -459,7 +422,7 @@ const GamePlay: React.FC = () => {
                 
                 {!currentPlayer.lastAnswerCorrect && (
                   <div className="text-lg">
-                    תשובה נכונה: {currentRound.correctSong.title} {currentRound.correctSong.artist ? `- ${currentRound.correctSong.artist}` : ''}
+                    תשובה נכונה: {currentRound.correctSong.name} {currentRound.correctSong.artist ? `- ${currentRound.correctSong.artist}` : ''}
                   </div>
                 )}
               </>
