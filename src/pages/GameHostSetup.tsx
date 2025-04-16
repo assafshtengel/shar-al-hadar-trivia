@@ -7,6 +7,7 @@ import { Music, Users, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { useGameState } from '@/contexts/GameStateContext';
+import EndGameButton from '@/components/EndGameButton';
 
 interface Player {
   id: string;
@@ -162,22 +163,27 @@ const GameHostSetup: React.FC = () => {
     });
   };
 
-  return <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <MusicNote type="note1" className="absolute top-[10%] right-[15%] opacity-20" size={36} animation="float" color="#6446D0" />
         <MusicNote type="note4" className="absolute bottom-[15%] left-[15%] opacity-20" size={32} animation="float-alt" color="#FFC22A" />
       </div>
 
-      <div className="container mx-auto px-4 py-8 flex-1 flex flex-col relative z-10 max-w-md">
+      <div className="container mx-auto px-4 py-6 flex-1 flex flex-col relative z-10 max-w-md">
         <div className="w-full flex flex-col items-center">
-          <div className="mb-8 text-center">
+          <div className="mb-8 text-center relative w-full">
             <Link to="/" className="block mb-2">
               <h1 className="text-3xl font-bold text-primary inline-flex items-center gap-2">
                 <Music className="h-6 w-6" />
                 שיר על הדרך
               </h1>
             </Link>
-            <h2 className="text-lg text-gray-600">הגדרות משחק חדש</h2>
+            <h2 className="text-lg text-gray-600">מסך מנהל המשחק</h2>
+            
+            <div className="absolute top-0 right-0">
+              <EndGameButton />
+            </div>
           </div>
 
           <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-md">
@@ -246,7 +252,8 @@ const GameHostSetup: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
 
 export default GameHostSetup;

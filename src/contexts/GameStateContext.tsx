@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,11 +50,9 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.removeItem('isHost');
   };
 
-  // Subscribe to game state changes
   useEffect(() => {
     if (!gameCode) return;
 
-    // Check if game_state exists for this game code
     const checkGameState = async () => {
       const { data, error } = await supabase
         .from('game_state')
@@ -68,7 +65,6 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return;
       }
 
-      // If we're the host and there's no game state yet, create it
       if (!data && isHost) {
         const { error: insertError } = await supabase
           .from('game_state')
@@ -91,7 +87,6 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     checkGameState();
 
-    // Subscribe to changes in the game_state table
     const channel = supabase
       .channel('schema-db-changes')
       .on(
@@ -109,14 +104,20 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             const newPhase = payload.new.game_phase as GamePhase;
             setGamePhase(newPhase);
             
-            // Navigate based on the game phase
             handleGamePhaseNavigation(newPhase);
+          } else if (payload.eventType === 'DELETE') {
+            if (!isHost) {
+              toast('המשחק הסתיים', {
+                description: 'המשחק הסתיים על ידי המארח',
+              });
+              clearGameData();
+              navigate('/');
+            }
           }
         }
       )
       .subscribe();
 
-    // Initial fetch of game state
     const fetchGameState = async () => {
       const { data, error } = await supabase
         .from('game_state')
@@ -144,8 +145,6 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [gameCode, isHost]);
 
   const handleGamePhaseNavigation = (phase: GamePhase, isInitial = false) => {
-    // Only navigate if the current location doesn't match the expected one
-    // This prevents unnecessary navigation loops
     const currentPath = window.location.pathname;
 
     switch (phase) {
@@ -153,16 +152,23 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (currentPath !== '/waiting-room' && !isHost) {
           navigate('/waiting-room');
         } else if (isHost && currentPath !== '/host-setup' && isInitial) {
-          // Only redirect the host to host-setup during initial load
           navigate('/host-setup');
         }
         break;
       case 'playing':
       case 'answering':
       case 'results':
-      case 'end':
         if (currentPath !== '/gameplay') {
           navigate('/gameplay');
+        }
+        break;
+      case 'end':
+        if (!isHost) {
+          toast('המשחק הסתיים', {
+            description: 'המשחק הסתיים על ידי המארח',
+          });
+          clearGameData();
+          navigate('/');
         }
         break;
     }

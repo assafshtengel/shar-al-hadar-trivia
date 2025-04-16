@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -16,6 +15,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
 import { supabase } from '@/integrations/supabase/client';
+import EndGameButton from '@/components/EndGameButton';
 
 interface Song {
   name: string;
@@ -104,14 +104,12 @@ const GamePlay: React.FC = () => {
     hasAnswered: false 
   });
 
-  // Redirect if no game code
   useEffect(() => {
     if (!gameCode) {
       navigate('/');
     }
   }, [gameCode, navigate]);
 
-  // Handle server game phase changes
   useEffect(() => {
     if (!serverGamePhase) return;
 
@@ -136,11 +134,9 @@ const GamePlay: React.FC = () => {
     }
   }, [serverGamePhase]);
 
-  // Fetch players from Supabase
   useEffect(() => {
     if (!gameCode) return;
 
-    // Initial fetch of players
     const fetchPlayers = async () => {
       const { data, error } = await supabase
         .from('players')
@@ -166,7 +162,6 @@ const GamePlay: React.FC = () => {
 
     fetchPlayers();
 
-    // Subscribe to changes in the players table
     const channel = supabase
       .channel('players-changes')
       .on(
@@ -180,7 +175,6 @@ const GamePlay: React.FC = () => {
         (payload) => {
           console.log('Players table changed:', payload);
           
-          // Re-fetch the players to get the updated list
           fetchPlayers();
         }
       )
@@ -191,7 +185,6 @@ const GamePlay: React.FC = () => {
     };
   }, [gameCode, toast]);
 
-  // Update server game state (for host only)
   const updateGameState = async (phase: string) => {
     if (!isHost || !gameCode) return;
 
@@ -237,14 +230,13 @@ const GamePlay: React.FC = () => {
         setShowYouTubeEmbed(false);
         setIsPlaying(false);
         
-        // Host updates game state to answering phase
         if (isHost) {
           updateGameState('answering');
         }
         
         setPhase('answerOptions');
         startTimer();
-      }, 8000); // Changed from 4000 to 8000 (8 seconds)
+      }, 8000);
       
       return () => clearTimeout(timer);
     }
@@ -261,7 +253,6 @@ const GamePlay: React.FC = () => {
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     
-    // Update game state to playing phase
     updateGameState('playing');
     
     toast({
@@ -295,7 +286,6 @@ const GamePlay: React.FC = () => {
     const isCorrect = index === currentRound.correctAnswerIndex;
     const points = isCorrect ? 10 : 0;
     
-    // Update current player state locally
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
@@ -305,7 +295,6 @@ const GamePlay: React.FC = () => {
       score: prev.score + points
     }));
     
-    // Update player score in Supabase if not in demo mode
     if (gameCode && playerName) {
       updatePlayerScore(points);
     }
@@ -325,11 +314,9 @@ const GamePlay: React.FC = () => {
     }, 1000);
   };
 
-  // Update player score in Supabase
   const updatePlayerScore = async (points: number) => {
     if (!gameCode || !playerName) return;
 
-    // First get the current player's record
     const { data: playerData, error: fetchError } = await supabase
       .from('players')
       .select('score')
@@ -345,7 +332,6 @@ const GamePlay: React.FC = () => {
     const currentScore = playerData?.score || 0;
     const newScore = currentScore + points;
 
-    // Then update the score
     const { error: updateError } = await supabase
       .from('players')
       .update({ score: newScore })
@@ -373,7 +359,6 @@ const GamePlay: React.FC = () => {
       score: prev.score + 2
     }));
     
-    // Update player score in Supabase
     if (gameCode && playerName) {
       updatePlayerScore(2);
     }
@@ -430,7 +415,6 @@ const GamePlay: React.FC = () => {
       lastScore: undefined
     }));
     
-    // Update game state back to waiting phase for next round
     updateGameState('waiting');
     
     setPhase('songPlayback');
@@ -717,7 +701,7 @@ const GamePlay: React.FC = () => {
 
       <div className="container mx-auto px-4 py-6 flex-1 flex flex-col relative z-10 max-w-md">
         <div className="w-full flex flex-col items-center">
-          <div className="mb-8 text-center">
+          <div className="mb-8 text-center relative w-full">
             <Link to="/" className="block mb-2">
               <h1 className="text-3xl font-bold text-primary inline-flex items-center gap-2">
                 <Music className="h-6 w-6" />
@@ -727,6 +711,10 @@ const GamePlay: React.FC = () => {
             <h2 className="text-lg text-gray-600">
               {isHost ? 'מסך מנהל המשחק' : 'מסך משחק'}
             </h2>
+            
+            <div className="absolute top-0 right-0">
+              <EndGameButton />
+            </div>
           </div>
 
           <div className="w-full bg-white/90 backdrop-blur-sm rounded-lg p-6 shadow-md mb-4">
