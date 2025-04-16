@@ -1,9 +1,9 @@
-
 export interface Song {
   id: number;
   title: string;
   artist?: string;
   spotifyUrl: string;
+  youtubeUrl?: string;
 }
 
 export const defaultSongBank: Song[] = [
@@ -226,6 +226,17 @@ export function createGameRound(songBank: Song[] = defaultSongBank) {
   
   return {
     correctSong,
-    options
+    options,
+    correctAnswerIndex: options.findIndex(song => song.id === correctSong.id)
   };
+}
+
+/**
+ * Find a song by its ID
+ * @param songId The ID of the song to find
+ * @param songBank Array of songs to search in
+ * @returns The song with the given ID or undefined if not found
+ */
+export function findSongById(songId: number, songBank: Song[] = defaultSongBank): Song | undefined {
+  return songBank.find(song => song.id === songId);
 }

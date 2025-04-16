@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -14,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Song, createGameRound, defaultSongBank } from '@/data/songBank';
+import { Song, createGameRound, defaultSongBank, findSongById } from '@/data/songBank';
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 
@@ -38,33 +37,39 @@ interface SongData {
   name: string;
   url: string;
   songId: number;
+  youtubeUrl: string;
 }
 
 const songs: SongData[] = [
   {
     name: "אהובתי - משינה",
     url: "https://www.youtube.com/embed/Hd9ubTcJc7E?autoplay=1&controls=0&modestbranding=1&rel=0",
-    songId: 29
+    songId: 29,
+    youtubeUrl: "https://www.youtube.com/watch?v=Hd9ubTcJc7E"
   },
   {
     name: "אנחנו שניים - משינה",
     url: "https://www.youtube.com/embed/TspJGWttC9Q?autoplay=1&controls=0&modestbranding=1&rel=0",
-    songId: 29
+    songId: 29,
+    youtubeUrl: "https://www.youtube.com/watch?v=TspJGWttC9Q"
   },
   {
     name: "את לא כמו כולם - משינה",
     url: "https://www.youtube.com/embed/IPJn1nwqcCY?autoplay=1&controls=0&modestbranding=1&rel=0",
-    songId: 29
+    songId: 29,
+    youtubeUrl: "https://www.youtube.com/watch?v=IPJn1nwqcCY"
   },
   {
     name: "בלדה לסוכן כפול - משינה",
     url: "https://www.youtube.com/embed/RbF1hwyIFYA?autoplay=1&controls=0&modestbranding=1&rel=0",
-    songId: 29
+    songId: 29,
+    youtubeUrl: "https://www.youtube.com/watch?v=RbF1hwyIFYA"
   },
   {
     name: "היא התווכחה איתו שעות - משינה",
     url: "https://www.youtube.com/embed/LWD30iw7Diw?autoplay=1&controls=0&modestbranding=1&rel=0",
-    songId: 29
+    songId: 29,
+    youtubeUrl: "https://www.youtube.com/watch?v=LWD30iw7Diw"
   }
 ];
 
@@ -101,11 +106,15 @@ const GamePlay: React.FC = () => {
   });
 
   const createRoundWithSong = (songId: number) => {
-    const selectedSong = defaultSongBank.find(song => song.id === songId);
+    const selectedSong = findSongById(songId);
     
     if (!selectedSong) {
       console.error("Could not find song with ID:", songId);
-      return createGameRound();
+      return {
+        correctSong: defaultSongBank[0],
+        options: [defaultSongBank[0], defaultSongBank[1], defaultSongBank[2], defaultSongBank[3]],
+        correctAnswerIndex: 0
+      };
     }
     
     const otherSongs = defaultSongBank.filter(song => song.id !== songId);
@@ -140,9 +149,8 @@ const GamePlay: React.FC = () => {
     
     setCurrentSong(selectedSong);
     
-    // Fix the issue by directly using the createRoundWithSong function
-    // which returns the correct object shape with correctAnswerIndex
-    setCurrentRound(createRoundWithSong(selectedSong.songId));
+    const gameRound = createRoundWithSong(selectedSong.songId);
+    setCurrentRound(gameRound);
     
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
@@ -247,13 +255,8 @@ const GamePlay: React.FC = () => {
   const nextRound = () => {
     if (!isHost) return;
     
-    // Fix this part too to ensure we always set the state with the correct shape
-    const { correctSong, options } = createGameRound();
-    setCurrentRound({
-      correctSong,
-      options,
-      correctAnswerIndex: options.findIndex(song => song.id === correctSong.id)
-    });
+    const gameRound = createGameRound();
+    setCurrentRound(gameRound);
     
     setSelectedAnswer(null);
     setCurrentPlayer(prev => ({
@@ -279,10 +282,14 @@ const GamePlay: React.FC = () => {
       title: "משמיע את השיר המלא",
       description: "השיר המלא מתנגן כעת",
     });
-    
-    console.log(`Playing full song: ${currentRound.correctSong.spotifyUrl}`);
-    
-    window.open(currentRound.correctSong.spotifyUrl, '_blank');
+
+    if (currentSong?.youtubeUrl) {
+      console.log(`Playing full song from YouTube: ${currentSong.youtubeUrl}`);
+      window.open(currentSong.youtubeUrl, '_blank');
+    } else {
+      console.log(`Playing full song from Spotify: ${currentRound.correctSong.spotifyUrl}`);
+      window.open(currentRound.correctSong.spotifyUrl, '_blank');
+    }
   };
 
   const renderPhase = () => {
