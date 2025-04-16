@@ -95,6 +95,44 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     checkGameState();
 
+    // הוספת hasAnswered לשחקנים אם לא קיים
+    const updatePlayerSchema = async () => {
+      if (isHost) {
+        try {
+          // בדיקה אם השדה כבר קיים לפני הוספה
+          const { data: existingPlayers } = await supabase
+            .from('players')
+            .select('*')
+            .eq('game_code', gameCode)
+            .limit(1);
+            
+          if (existingPlayers && existingPlayers.length > 0) {
+            // לא צריך לעדכן אם השדה כבר קיים
+            if ('hasAnswered' in existingPlayers[0]) {
+              console.log('hasAnswered field already exists');
+              return;
+            }
+          }
+          
+          // עדכון השחקנים הקיימים להוסיף שדה hasAnswered
+          const { error: updateError } = await supabase
+            .from('players')
+            .update({ hasAnswered: false })
+            .eq('game_code', gameCode);
+            
+          if (updateError) {
+            console.error('Error updating players schema:', updateError);
+          } else {
+            console.log('Updated players schema with hasAnswered field');
+          }
+        } catch (err) {
+          console.error('Error checking or updating players schema:', err);
+        }
+      }
+    };
+
+    updatePlayerSchema();
+
     const channel = supabase
       .channel('schema-db-changes')
       .on(

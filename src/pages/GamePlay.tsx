@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
-import { Music, Play, SkipForward, Clock, Award, Crown, Trophy } from 'lucide-react';
+import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, Users } from 'lucide-react';
 import { 
   Table,
   TableBody,
@@ -87,7 +88,7 @@ const GamePlay: React.FC = () => {
   const navigate = useNavigate();
   const { gameCode, playerName, isHost, gamePhase: serverGamePhase } = useGameState();
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
-  const [timeLeft, setTimeLeft] = useState(15);
+  const [timeLeft, setTimeLeft] = useState(30); // שינינו את הזמן ל-30 שניות
   const [isPlaying, setIsPlaying] = useState(false);
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
@@ -96,6 +97,7 @@ const GamePlay: React.FC = () => {
   });
   
   const [players, setPlayers] = useState<SupabasePlayer[]>([]);
+  const [playersAnswered, setPlayersAnswered] = useState(0); // מונה לשחקנים שענו
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<Player>({ 
     name: playerName || "שחקן נוכחי", 
@@ -103,6 +105,9 @@ const GamePlay: React.FC = () => {
     skipsLeft: 3, 
     hasAnswered: false 
   });
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
+  const [roundEnded, setRoundEnded] = useState(false);
 
   useEffect(() => {
     if (!gameCode) {
@@ -126,6 +131,10 @@ const GamePlay: React.FC = () => {
         }
         break;
       case 'results':
+        setTimerRunning(false);
+        if (timerInterval) {
+          clearInterval(timerInterval);
+        }
         setPhase('scoringFeedback');
         break;
       case 'end':
@@ -186,6 +195,25 @@ const GamePlay: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, [gameCode, toast]);
+
+  // מאזין לשינויים במספר שחקנים שענו
+  useEffect(() => {
+    if (!isHost || !gameCode || !timerRunning || roundEnded) return;
+
+    // בדוק אם כל השחקנים ענו
+    if (playersAnswered === players.length && players.length > 0) {
+      console.log('All players have answered, ending round early');
+      setRoundEnded(true);
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+      
+      // אם כולם ענו, עבור לשלב התוצאות
+      setTimeout(() => {
+        updateGameState('results');
+      }, 1000);
+    }
+  }, [playersAnswered, players.length, isHost, gameCode, timerRunning, roundEnded]);
 
   const updateGameState = async (phase: string) => {
     if (!isHost || !gameCode) return;
@@ -257,6 +285,10 @@ const GamePlay: React.FC = () => {
     
     updateGameState('playing');
     
+    // איפוס מספר השחקנים שענו
+    setPlayersAnswered(0);
+    setRoundEnded(false);
+    
     toast({
       title: "משמיע שיר...",
       description: "מנגן כעת, האזן בקשב",
@@ -264,19 +296,36 @@ const GamePlay: React.FC = () => {
   };
 
   const startTimer = () => {
-    setTimeLeft(15);
+    setTimeLeft(30); // שינינו את הזמן ל-30 שניות
+    setTimerRunning(true);
+    
+    // מאפס את הטיימר אם הוא כבר רץ
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+    
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
+          setTimerRunning(false);
+          
           if (!currentPlayer.hasAnswered) {
             handleTimeout();
           }
+          
+          if (isHost && !roundEnded) {
+            setRoundEnded(true);
+            updateGameState('results');
+          }
+          
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
+    
+    setTimerInterval(timer);
 
     return () => clearInterval(timer);
   };
@@ -299,21 +348,19 @@ const GamePlay: React.FC = () => {
     
     if (gameCode && playerName) {
       updatePlayerScore(points);
+      
+      // עדכון מספר השחקנים שענו (רק לשרת)
+      if (isHost) {
+        setPlayersAnswered(prev => prev + 1);
+      }
     }
     
-    setTimeout(() => {
-      if (isHost) {
-        updateGameState('results');
-      }
-      setPhase('scoringFeedback');
-      
-      setTimeout(() => {
-        if (isHost) {
-          updateGameState('end');
-        }
-        setPhase('leaderboard');
-      }, 3000);
-    }, 1000);
+    // שורה זו יפה למרות שאין עדיין מעבר לשלב התוצאות
+    toast({
+      title: isCorrect ? "תשובה נכונה!" : "תשובה לא נכונה",
+      description: isCorrect ? "כל הכבוד, ענית נכון!" : `התשובה הנכונה היא: ${currentRound.correctSong.name}`,
+      variant: isCorrect ? "default" : "destructive"
+    });
   };
 
   const updatePlayerScore = async (points: number) => {
@@ -321,7 +368,7 @@ const GamePlay: React.FC = () => {
 
     const { data: playerData, error: fetchError } = await supabase
       .from('players')
-      .select('score')
+      .select('score, hasAnswered')
       .eq('game_code', gameCode)
       .eq('name', playerName)
       .maybeSingle();
@@ -336,7 +383,10 @@ const GamePlay: React.FC = () => {
 
     const { error: updateError } = await supabase
       .from('players')
-      .update({ score: newScore })
+      .update({ 
+        score: newScore,
+        hasAnswered: true 
+      })
       .eq('game_code', gameCode)
       .eq('name', playerName);
 
@@ -347,6 +397,23 @@ const GamePlay: React.FC = () => {
         description: "אירעה שגיאה בעדכון הניקוד שלך",
         variant: "destructive"
       });
+    } else {
+      // שחקן אחד ענה - שליחת אירוע למארח
+      if (isHost) {
+        console.log("Player answered, updating counter");
+        setPlayersAnswered(prev => prev + 1);
+      } else {
+        // עדכון מספר השחקנים שענו דרך שאילתה נפרדת
+        const { data: countData } = await supabase
+          .from('players')
+          .select('id', { count: 'exact' })
+          .eq('game_code', gameCode)
+          .eq('hasAnswered', true);
+          
+        if (countData) {
+          console.log(`${countData.length} players have answered out of ${players.length}`);
+        }
+      }
     }
   };
 
@@ -369,14 +436,6 @@ const GamePlay: React.FC = () => {
       title: "דילגת על השאלה",
       description: `נותרו ${currentPlayer.skipsLeft - 1} דילוגים`,
     });
-    
-    setTimeout(() => {
-      setPhase('scoringFeedback');
-      
-      setTimeout(() => {
-        setPhase('leaderboard');
-      }, 3000);
-    }, 1000);
   };
 
   const handleTimeout = () => {
@@ -392,14 +451,6 @@ const GamePlay: React.FC = () => {
       description: "לא הספקת לענות בזמן",
       variant: "destructive",
     });
-    
-    setTimeout(() => {
-      setPhase('scoringFeedback');
-      
-      setTimeout(() => {
-        setPhase('leaderboard');
-      }, 3000);
-    }, 1000);
   };
 
   const nextRound = () => {
@@ -417,6 +468,11 @@ const GamePlay: React.FC = () => {
       lastScore: undefined
     }));
     
+    // איפוס השחקנים שענו
+    resetAllPlayersAnsweredStatus();
+    setPlayersAnswered(0);
+    setRoundEnded(false);
+    
     updateGameState('waiting');
     
     setPhase('songPlayback');
@@ -425,6 +481,52 @@ const GamePlay: React.FC = () => {
       title: "מתכוננים לסיבוב הבא",
       description: "סיבוב חדש עומד להתחיל",
     });
+  };
+  
+  // פונקציה לאיפוס סטטוס מענה של כל השחקנים
+  const resetAllPlayersAnsweredStatus = async () => {
+    if (!isHost || !gameCode) return;
+    
+    try {
+      const { error } = await supabase.rpc('reset_players_answered_status', {
+        game_code_param: gameCode
+      });
+      
+      if (error) {
+        console.error('Error resetting players answered status:', error);
+        // נסה דרך חלופית אם ה-RPC לא קיים
+        const { error: updateError } = await supabase
+          .from('players')
+          .update({ hasAnswered: false })
+          .eq('game_code', gameCode);
+          
+        if (updateError) {
+          console.error('Error resetting players answered status (alternative):', updateError);
+        } else {
+          console.log('All players answered status reset successfully (alternative)');
+        }
+      } else {
+        console.log('All players answered status reset successfully');
+      }
+    } catch (err) {
+      console.error('Exception resetting players status:', err);
+      
+      // נסה דרך חלופית אם ה-RPC לא קיים
+      try {
+        const { error: updateError } = await supabase
+          .from('players')
+          .update({ hasAnswered: false })
+          .eq('game_code', gameCode);
+          
+        if (updateError) {
+          console.error('Error resetting players answered status (fallback):', updateError);
+        } else {
+          console.log('All players answered status reset successfully (fallback)');
+        }
+      } catch (fallbackErr) {
+        console.error('Exception in fallback reset:', fallbackErr);
+      }
+    }
   };
   
   const playFullSong = () => {
@@ -527,7 +629,14 @@ const GamePlay: React.FC = () => {
               </div>
             </div>
             
-            <Progress value={(timeLeft / 15) * 100} className="w-full h-2" />
+            <Progress value={(timeLeft / 30) * 100} className="w-full h-2" />
+            
+            {isHost && (
+              <div className="flex items-center justify-center bg-gray-100 px-3 py-1 rounded-full text-sm">
+                <Users className="mr-1 h-4 w-4 text-primary" />
+                <span>{playersAnswered} מתוך {players.length} שחקנים ענו</span>
+              </div>
+            )}
             
             <h2 className="text-2xl font-bold text-primary">מה השיר?</h2>
             
