@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -484,8 +483,6 @@ const GamePlay: React.FC = () => {
     
     try {
       try {
-        // Fix: The RPC function is looking for an object with a specific property,
-        // not a plain string. Pass an object with the game_code property.
         const { error } = await supabase.rpc('reset_players_answered_status', {
           game_code_param: gameCode
         });
