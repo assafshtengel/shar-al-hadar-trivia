@@ -422,7 +422,7 @@ const GamePlay: React.FC = () => {
                 
                 {!currentPlayer.lastAnswerCorrect && (
                   <div className="text-lg">
-                    תשובה נכונה: {currentRound.correctSong.name} {currentRound.correctSong.artist ? `- ${currentRound.correctSong.artist}` : ''}
+                    תשובה נכונה: {currentRound.correctSong.name}
                   </div>
                 )}
               </>
