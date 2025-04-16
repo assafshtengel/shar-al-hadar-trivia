@@ -1,15 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import MusicNote from '@/components/MusicNote';
 import { Progress } from '@/components/ui/progress';
-import { supabase } from '@/integrations/supabase/client';
+import { useGameState } from '@/contexts/GameStateContext';
 
 const WaitingRoom = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const { gameCode, playerName } = useGameState();
   const [progressValue, setProgressValue] = useState(10);
-  const { gameCode, playerName } = location.state || {};
+
+  // Redirect if no game code
+  useEffect(() => {
+    if (!gameCode) {
+      navigate('/join-game');
+    }
+  }, [gameCode, navigate]);
 
   // Animate progress bar
   useEffect(() => {
@@ -25,38 +31,6 @@ const WaitingRoom = () => {
 
     return () => clearInterval(interval);
   }, []);
-
-  // Listen for game start event
-  useEffect(() => {
-    if (!gameCode) return;
-
-    // TODO: This is a placeholder. In a real implementation, 
-    // we would listen for a specific event from the host to start the game
-    // For now, we'll add a subscription to check for a game_started field update
-    
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'players',
-          filter: `game_code=eq.${gameCode}`
-        },
-        (payload) => {
-          console.log('Player update detected:', payload);
-          // In a real implementation, we would check if the game has started
-          // and navigate to the game screen
-          // For now, this just logs changes
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [gameCode, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">

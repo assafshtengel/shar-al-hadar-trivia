@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
@@ -13,6 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { useGameState } from '@/contexts/GameStateContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Song {
   name: string;
@@ -73,8 +76,9 @@ const songs: Song[] = [
 
 const GamePlay: React.FC = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { gameCode, playerName, isHost, gamePhase: serverGamePhase } = useGameState();
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
-  const [isHost, setIsHost] = useState(true);
   const [timeLeft, setTimeLeft] = useState(15);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
@@ -92,11 +96,62 @@ const GamePlay: React.FC = () => {
   ]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<Player>({ 
-    name: "שחקן נוכחי", 
+    name: playerName || "שחקן נוכחי", 
     score: 0, 
     skipsLeft: 3, 
     hasAnswered: false 
   });
+
+  // Redirect if no game code
+  useEffect(() => {
+    if (!gameCode) {
+      navigate('/');
+    }
+  }, [gameCode, navigate]);
+
+  // Handle server game phase changes
+  useEffect(() => {
+    if (!serverGamePhase) return;
+
+    console.log('Server game phase changed:', serverGamePhase);
+    
+    switch (serverGamePhase) {
+      case 'playing':
+        setPhase('songPlayback');
+        break;
+      case 'answering':
+        setPhase('answerOptions');
+        if (!isHost) {
+          startTimer();
+        }
+        break;
+      case 'results':
+        setPhase('scoringFeedback');
+        break;
+      case 'end':
+        setPhase('leaderboard');
+        break;
+    }
+  }, [serverGamePhase]);
+
+  // Update server game state (for host only)
+  const updateGameState = async (phase: string) => {
+    if (!isHost || !gameCode) return;
+
+    const { error } = await supabase
+      .from('game_state')
+      .update({ game_phase: phase })
+      .eq('game_code', gameCode);
+
+    if (error) {
+      console.error('Error updating game state:', error);
+      toast({
+        title: "שגיאה בעדכון מצב המשחק",
+        description: "אירעה שגיאה בעדכון מצב המשחק",
+        variant: "destructive"
+      });
+    }
+  };
 
   function createGameRound(): GameRound {
     const randomIndex = Math.floor(Math.random() * songs.length);
@@ -124,6 +179,12 @@ const GamePlay: React.FC = () => {
       const timer = setTimeout(() => {
         setShowYouTubeEmbed(false);
         setIsPlaying(false);
+        
+        // Host updates game state to answering phase
+        if (isHost) {
+          updateGameState('answering');
+        }
+        
         setPhase('answerOptions');
         startTimer();
       }, 4000);
@@ -142,6 +203,9 @@ const GamePlay: React.FC = () => {
     
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
+    
+    // Update game state to playing phase
+    updateGameState('playing');
     
     toast({
       title: "משמיע שיר...",
@@ -184,9 +248,15 @@ const GamePlay: React.FC = () => {
     }));
     
     setTimeout(() => {
+      if (isHost) {
+        updateGameState('results');
+      }
       setPhase('scoringFeedback');
       
       setTimeout(() => {
+        if (isHost) {
+          updateGameState('end');
+        }
         setPhase('leaderboard');
       }, 3000);
     }, 1000);
@@ -254,6 +324,9 @@ const GamePlay: React.FC = () => {
       lastAnswerCorrect: undefined,
       lastScore: undefined
     }));
+    
+    // Update game state back to waiting phase for next round
+    updateGameState('waiting');
     
     setPhase('songPlayback');
     

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -8,10 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
+import { useGameState } from '@/contexts/GameStateContext';
 
 const JoinGame = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { setGameData } = useGameState();
   const [gameCode, setGameCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [error, setError] = useState('');
@@ -30,6 +33,20 @@ const JoinGame = () => {
     }
 
     try {
+      // Check if game exists in game_state
+      const { data: gameStateData, error: gameStateError } = await supabase
+        .from('game_state')
+        .select('game_phase')
+        .eq('game_code', gameCode)
+        .maybeSingle();
+
+      if (gameStateError && gameStateError.code !== 'PGRST116') {
+        console.error('Error checking game state:', gameStateError);
+        setError('שגיאה בבדיקת קיום המשחק, נסו שוב');
+        setIsSubmitting(false);
+        return;
+      }
+
       // Insert player data into Supabase
       const { error: insertError } = await supabase
         .from('players')
@@ -52,13 +69,26 @@ const JoinGame = () => {
         description: `ברוכים הבאים, ${playerName}!`,
       });
       
-      // Navigate to waiting room instead of home
-      navigate('/waiting-room', { 
-        state: { 
-          playerName, 
-          gameCode 
-        } 
+      // Set game data in context
+      setGameData({ 
+        gameCode, 
+        playerName,
+        isHost: false
       });
+      
+      // Navigate based on game phase
+      if (gameStateData && gameStateData.game_phase) {
+        if (gameStateData.game_phase === 'waiting') {
+          navigate('/waiting-room');
+        } else {
+          // Game already started, go directly to gameplay
+          navigate('/gameplay');
+        }
+      } else {
+        // No game state yet, go to waiting room
+        navigate('/waiting-room');
+      }
+      
       setIsSubmitting(false);
     } catch (err) {
       console.error('Error joining game:', err);

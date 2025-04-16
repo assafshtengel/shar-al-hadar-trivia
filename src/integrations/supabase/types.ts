@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      game_state: {
+        Row: {
+          current_round: number | null
+          current_song_name: string | null
+          current_song_url: string | null
+          game_code: string
+          game_phase: string
+          round_started_at: string | null
+        }
+        Insert: {
+          current_round?: number | null
+          current_song_name?: string | null
+          current_song_url?: string | null
+          game_code: string
+          game_phase: string
+          round_started_at?: string | null
+        }
+        Update: {
+          current_round?: number | null
+          current_song_name?: string | null
+          current_song_url?: string | null
+          game_code?: string
+          game_phase?: string
+          round_started_at?: string | null
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           game_code: string

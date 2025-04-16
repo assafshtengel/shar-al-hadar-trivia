@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -7,6 +6,7 @@ import MusicNote from '@/components/MusicNote';
 import { Music, Users, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
+import { useGameState } from '@/contexts/GameStateContext';
 
 interface Player {
   id: string;
@@ -19,16 +19,21 @@ interface Player {
 const GameHostSetup: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [gameCode] = useState(() => Math.floor(100000 + Math.random() * 900000).toString());
+  const { gameCode: contextGameCode, setGameData } = useGameState();
+  const [gameCode] = useState(() => contextGameCode || Math.floor(100000 + Math.random() * 900000).toString());
   const [players, setPlayers] = useState<Player[]>([]);
   const [gameStarted, setGameStarted] = useState(false);
   const [hostName, setHostName] = useState('');
   const [hostJoined, setHostJoined] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
 
-  // Fetch initial players and subscribe to real-time updates
   useEffect(() => {
-    // Initial fetch of players
+    if (!contextGameCode) {
+      setGameData({ gameCode, playerName: hostName || 'מנחה', isHost: true });
+    }
+  }, [contextGameCode, gameCode]);
+
+  useEffect(() => {
     const fetchPlayers = async () => {
       const { data, error } = await supabase
         .from('players')
@@ -47,7 +52,6 @@ const GameHostSetup: React.FC = () => {
 
     fetchPlayers();
 
-    // Subscribe to real-time updates
     const channel = supabase
       .channel('schema-db-changes')
       .on(
@@ -65,7 +69,6 @@ const GameHostSetup: React.FC = () => {
       )
       .subscribe();
 
-    // Cleanup subscription
     return () => {
       supabase.removeChannel(channel);
     };
@@ -86,7 +89,7 @@ const GameHostSetup: React.FC = () => {
     });
   };
 
-  const startGame = () => {
+  const startGame = async () => {
     if (players.length === 0) {
       toast({
         title: "אין שחקנים",
@@ -95,6 +98,22 @@ const GameHostSetup: React.FC = () => {
       });
       return;
     }
+
+    const { error } = await supabase
+      .from('game_state')
+      .update({ game_phase: 'playing' })
+      .eq('game_code', gameCode);
+
+    if (error) {
+      console.error('Error updating game state:', error);
+      toast({
+        title: "שגיאה בהתחלת המשחק",
+        description: "אירעה שגיאה בהתחלת המשחק, נסה שוב",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setGameStarted(true);
     toast({
       title: "המשחק התחיל!",
@@ -102,14 +121,6 @@ const GameHostSetup: React.FC = () => {
     });
 
     navigate('/gameplay');
-  };
-
-  const playNextSong = () => {
-    if (!gameStarted) return;
-    toast({
-      title: "משמיע שיר...",
-      description: "השיר הבא יושמע בקרוב"
-    });
   };
 
   const handleHostJoin = async () => {
@@ -142,6 +153,8 @@ const GameHostSetup: React.FC = () => {
       return;
     }
 
+    setGameData({ gameCode, playerName: hostName, isHost: true });
+    
     setHostJoined(true);
     toast({
       title: "הצטרפת למשחק!",
@@ -182,7 +195,6 @@ const GameHostSetup: React.FC = () => {
             </p>
           </div>
 
-          {/* Host join section */}
           <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-md">
             <h3 className="text-lg font-semibold mb-3 text-center">הצטרף למשחק כמנחה</h3>
             <Input
