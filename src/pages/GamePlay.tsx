@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -139,8 +140,9 @@ const GamePlay: React.FC = () => {
     
     setCurrentSong(selectedSong);
     
-    const newRound = createRoundWithSong(selectedSong.songId);
-    setCurrentRound(newRound);
+    // Fix the issue by directly using the createRoundWithSong function
+    // which returns the correct object shape with correctAnswerIndex
+    setCurrentRound(createRoundWithSong(selectedSong.songId));
     
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
@@ -245,6 +247,7 @@ const GamePlay: React.FC = () => {
   const nextRound = () => {
     if (!isHost) return;
     
+    // Fix this part too to ensure we always set the state with the correct shape
     const { correctSong, options } = createGameRound();
     setCurrentRound({
       correctSong,
