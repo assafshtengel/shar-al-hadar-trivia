@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -261,24 +262,23 @@ const GamePlay: React.FC = () => {
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
             {showYouTubeEmbed && currentSong && (
-              <div className="hidden">
+              <div className="relative w-full h-40">
+                {/* YouTube iframe with normal dimensions to ensure audio plays properly */}
                 <iframe 
-                  width="1" 
-                  height="1"
+                  width="100%" 
+                  height="100%"
                   src={currentSong.url}
                   frameBorder="0" 
                   allow="autoplay; encrypted-media" 
                   allowFullScreen
-                  className="opacity-0 absolute"
-                  style={{ 
-                    position: 'absolute', 
-                    width: '1px', 
-                    height: '1px', 
-                    overflow: 'hidden',
-                    clip: 'rect(0, 0, 0, 0)',
-                    whiteSpace: 'nowrap'
-                  }}
+                  className="absolute top-0 left-0 z-10"
                 ></iframe>
+                
+                {/* Black overlay to hide the video content */}
+                <div 
+                  className="absolute top-0 left-0 w-full h-full z-20 bg-black"
+                  style={{ opacity: 0.95 }}
+                ></div>
               </div>
             )}
             
