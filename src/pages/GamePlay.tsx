@@ -36,35 +36,41 @@ interface GameRound {
 interface SongData {
   name: string;
   url: string;
+  songId: number;
 }
 
 const songs: SongData[] = [
   {
     name: "אהובתי - משינה",
-    url: "https://www.youtube.com/embed/Hd9ubTcJc7E?autoplay=1&controls=0&modestbranding=1&rel=0"
+    url: "https://www.youtube.com/embed/Hd9ubTcJc7E?autoplay=1&controls=0&modestbranding=1&rel=0",
+    songId: 29
   },
   {
     name: "אנחנו שניים - משינה",
-    url: "https://www.youtube.com/embed/TspJGWttC9Q?autoplay=1&controls=0&modestbranding=1&rel=0"
+    url: "https://www.youtube.com/embed/TspJGWttC9Q?autoplay=1&controls=0&modestbranding=1&rel=0",
+    songId: 29
   },
   {
     name: "את לא כמו כולם - משינה",
-    url: "https://www.youtube.com/embed/IPJn1nwqcCY?autoplay=1&controls=0&modestbranding=1&rel=0"
+    url: "https://www.youtube.com/embed/IPJn1nwqcCY?autoplay=1&controls=0&modestbranding=1&rel=0",
+    songId: 29
   },
   {
     name: "בלדה לסוכן כפול - משינה",
-    url: "https://www.youtube.com/embed/RbF1hwyIFYA?autoplay=1&controls=0&modestbranding=1&rel=0"
+    url: "https://www.youtube.com/embed/RbF1hwyIFYA?autoplay=1&controls=0&modestbranding=1&rel=0",
+    songId: 29
   },
   {
     name: "היא התווכחה איתו שעות - משינה",
-    url: "https://www.youtube.com/embed/LWD30iw7Diw?autoplay=1&controls=0&modestbranding=1&rel=0"
+    url: "https://www.youtube.com/embed/LWD30iw7Diw?autoplay=1&controls=0&modestbranding=1&rel=0",
+    songId: 29
   }
 ];
 
 const GamePlay: React.FC = () => {
   const { toast } = useToast();
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
-  const [isHost, setIsHost] = useState(true); // For demo purposes, assume we're the host
+  const [isHost, setIsHost] = useState(true);
   const [timeLeft, setTimeLeft] = useState(15);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
@@ -93,6 +99,25 @@ const GamePlay: React.FC = () => {
     hasAnswered: false 
   });
 
+  const createRoundWithSong = (songId: number) => {
+    const selectedSong = defaultSongBank.find(song => song.id === songId);
+    
+    if (!selectedSong) {
+      console.error("Could not find song with ID:", songId);
+      return createGameRound();
+    }
+    
+    const otherSongs = defaultSongBank.filter(song => song.id !== songId);
+    const shuffledSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
+    const options = [...shuffledSongs, selectedSong].sort(() => Math.random() - 0.5);
+    
+    return {
+      correctSong: selectedSong,
+      options,
+      correctAnswerIndex: options.findIndex(song => song.id === selectedSong.id)
+    };
+  };
+
   useEffect(() => {
     if (showYouTubeEmbed) {
       const timer = setTimeout(() => {
@@ -100,7 +125,7 @@ const GamePlay: React.FC = () => {
         setIsPlaying(false);
         setPhase('answerOptions');
         startTimer();
-      }, 6000); // Changed from 4000 to 6000 milliseconds
+      }, 6000);
       
       return () => clearTimeout(timer);
     }
@@ -113,6 +138,10 @@ const GamePlay: React.FC = () => {
     const selectedSong = songs[randomIndex];
     
     setCurrentSong(selectedSong);
+    
+    const newRound = createRoundWithSong(selectedSong.songId);
+    setCurrentRound(newRound);
+    
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     
@@ -262,7 +291,6 @@ const GamePlay: React.FC = () => {
             
             {showYouTubeEmbed && currentSong && (
               <div className="relative w-full h-40">
-                {/* YouTube iframe with normal dimensions to ensure audio plays properly */}
                 <iframe 
                   width="100%" 
                   height="100%"
@@ -273,7 +301,6 @@ const GamePlay: React.FC = () => {
                   className="absolute top-0 left-0 z-10"
                 ></iframe>
                 
-                {/* Black overlay to hide the video content */}
                 <div 
                   className="absolute top-0 left-0 w-full h-full z-20 bg-black"
                   style={{ opacity: 0.95 }}
