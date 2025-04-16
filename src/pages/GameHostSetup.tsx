@@ -243,10 +243,6 @@ const GameHostSetup: React.FC = () => {
             <AppButton variant="primary" size="lg" onClick={startGame} disabled={gameStarted}>
               {gameStarted ? "המשחק כבר התחיל" : "התחל משחק"}
             </AppButton>
-            
-            <AppButton variant="secondary" size="lg" onClick={playNextSong} disabled={!gameStarted}>
-              השמע שיר
-            </AppButton>
           </div>
         </div>
       </div>
