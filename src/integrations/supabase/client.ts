@@ -15,3 +15,15 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 export interface ResetPlayersStatusParams {
   game_code: string;
 }
+
+// Add the player ready status RPC interface
+export interface UpdatePlayerReadyStatusParams {
+  game_code: string;
+  player_name: string;
+  is_ready: boolean;
+}
+
+// Add the check all players answered interface
+export interface CheckAllPlayersAnsweredParams {
+  game_code: string;
+}
