@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -50,7 +49,7 @@ interface SupabasePlayer {
   game_code: string;
   joined_at: string;
   hasAnswered: boolean;
-  isReady?: boolean;
+  isReady: boolean;
 }
 
 const songs: Song[] = [
@@ -121,7 +120,6 @@ const GamePlay: React.FC = () => {
     
     if (!data) return false;
     
-    // Check if all players have answered
     return data.every(player => player.hasAnswered === true);
   }, [gameCode]);
 
@@ -135,7 +133,6 @@ const GamePlay: React.FC = () => {
     
     if (!data) return false;
     
-    // Check if all players are ready for next round
     return data.every(player => player.isReady === true);
   }, [gameCode]);
 
@@ -170,7 +167,6 @@ const GamePlay: React.FC = () => {
     }
   }, [serverGamePhase, timerActive]);
 
-  // Add an effect to periodically check if all players have answered
   useEffect(() => {
     if (!gameCode || phase !== 'answerOptions' || !timerActive) return;
 
@@ -182,7 +178,6 @@ const GamePlay: React.FC = () => {
         clearInterval(interval);
         
         if (isHost) {
-          // Move to results phase if all players have answered
           updateGameState('results');
         }
       }
@@ -191,7 +186,6 @@ const GamePlay: React.FC = () => {
     return () => clearInterval(interval);
   }, [gameCode, phase, timerActive, checkAllPlayersAnswered, isHost]);
 
-  // Add an effect to periodically check if all players are ready for the next round
   useEffect(() => {
     if (!gameCode || phase !== 'leaderboard' || isHost) return;
 
@@ -258,7 +252,6 @@ const GamePlay: React.FC = () => {
     };
   }, [gameCode, toast]);
 
-  // Add a new effect to fetch the current round data when game phase changes
   useEffect(() => {
     if (!gameCode || !serverGamePhase) return;
     
@@ -275,7 +268,6 @@ const GamePlay: React.FC = () => {
       }
       
       if (data && data.current_song_name) {
-        // Parse the stored game round data
         try {
           const roundData = JSON.parse(data.current_song_name);
           if (roundData && roundData.correctSong && roundData.options) {
@@ -294,7 +286,6 @@ const GamePlay: React.FC = () => {
     
     fetchGameRoundData();
     
-    // Set up real-time subscription for game_state changes
     const gameStateChannel = supabase
       .channel('game-state-changes')
       .on(
@@ -392,7 +383,6 @@ const GamePlay: React.FC = () => {
   const playSong = async () => {
     if (!isHost) return;
     
-    // Reset players' readiness status before playing new song
     await resetPlayersReadyStatus();
     
     const gameRound = createGameRound();
@@ -404,7 +394,6 @@ const GamePlay: React.FC = () => {
     setShowYouTubeEmbed(true);
     setAllPlayersAnswered(false);
     
-    // Store the game round data in Supabase so non-host players can access it
     const roundDataString = JSON.stringify(gameRound);
     const { error } = await supabase
       .from('game_state')
@@ -469,8 +458,6 @@ const GamePlay: React.FC = () => {
     if (gameCode && playerName) {
       await updatePlayerScore(points);
     }
-    
-    // No need to automatically move to next phase - we'll now wait for all players or timer
   };
 
   const updatePlayerScore = async (points: number) => {
@@ -529,8 +516,6 @@ const GamePlay: React.FC = () => {
       title: "דילגת על השאלה",
       description: `נותרו ${currentPlayer.skipsLeft - 1} דילוגים`,
     });
-    
-    // No longer automatically moving to scoring feedback - waiting for all players
   };
 
   const handleTimeout = async () => {
@@ -552,14 +537,11 @@ const GamePlay: React.FC = () => {
       description: "לא הספקת לענות בזמן",
       variant: "destructive",
     });
-    
-    // No longer automatically moving to scoring feedback - waiting for all players
   };
 
   const resetPlayersAnsweredStatus = async () => {
     if (!isHost || !gameCode) return;
     
-    // Reset hasAnswered status for all players in this game
     const { error } = await supabase
       .from('players')
       .update({ hasAnswered: false })
@@ -578,7 +560,6 @@ const GamePlay: React.FC = () => {
   const resetPlayersReadyStatus = async () => {
     if (!isHost || !gameCode) return;
     
-    // Reset isReady status for all players in this game
     const { error } = await supabase
       .from('players')
       .update({ isReady: false })
@@ -618,7 +599,6 @@ const GamePlay: React.FC = () => {
 
   useEffect(() => {
     if (phase === 'scoringFeedback') {
-      // Automatically move to leaderboard after 4 seconds
       const timer = setTimeout(() => {
         if (isHost) {
           updateGameState('end');
@@ -633,7 +613,6 @@ const GamePlay: React.FC = () => {
   const nextRound = async () => {
     if (!isHost) return;
     
-    // Reset players' answered status before starting new round
     await resetPlayersAnsweredStatus();
     
     setSelectedAnswer(null);

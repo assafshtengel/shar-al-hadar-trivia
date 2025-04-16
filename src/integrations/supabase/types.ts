@@ -44,6 +44,7 @@ export type Database = {
           game_code: string
           hasAnswered: boolean | null
           id: string
+          isReady: boolean | null
           joined_at: string | null
           name: string
           score: number | null
@@ -52,6 +53,7 @@ export type Database = {
           game_code: string
           hasAnswered?: boolean | null
           id?: string
+          isReady?: boolean | null
           joined_at?: string | null
           name: string
           score?: number | null
@@ -60,6 +62,7 @@ export type Database = {
           game_code?: string
           hasAnswered?: boolean | null
           id?: string
+          isReady?: boolean | null
           joined_at?: string | null
           name?: string
           score?: number | null
