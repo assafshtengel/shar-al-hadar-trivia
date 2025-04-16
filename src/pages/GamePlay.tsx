@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { Song, createGameRound, defaultSongBank } from '@/data/songBank';
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 
@@ -27,15 +28,11 @@ interface Player {
   lastAnswerCorrect?: boolean;
 }
 
-// Mock data for demonstration
-const mockSongs = [
-  "שיר מספר 1",
-  "שיר מספר 2",
-  "שיר מספר 3",
-  "שיר מספר 4",
-];
-
-const correctAnswerIndex = 0; // For demo purposes - first option is always correct
+interface GameRound {
+  correctSong: Song;
+  options: Song[];
+  correctAnswerIndex: number;
+}
 
 const GamePlay: React.FC = () => {
   const { toast } = useToast();
@@ -43,6 +40,15 @@ const GamePlay: React.FC = () => {
   const [isHost, setIsHost] = useState(true); // For demo purposes, assume we're the host
   const [timeLeft, setTimeLeft] = useState(15);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentRound, setCurrentRound] = useState<GameRound>(() => {
+    const { correctSong, options } = createGameRound();
+    return {
+      correctSong,
+      options,
+      correctAnswerIndex: options.findIndex(song => song.id === correctSong.id)
+    };
+  });
+  
   const [players, setPlayers] = useState<Player[]>([
     { name: "אמא", score: 12, skipsLeft: 3, hasAnswered: false },
     { name: "אבא", score: 10, skipsLeft: 2, hasAnswered: false },
@@ -65,7 +71,7 @@ const GamePlay: React.FC = () => {
     setIsPlaying(true);
     toast({
       title: "משמיע שיר...",
-      description: "השיר מנוגן כעת",
+      description: `${currentRound.correctSong.title} ${currentRound.correctSong.artist ? `- ${currentRound.correctSong.artist}` : ''}`,
     });
     
     // Mock song playback - transition to answer phase after "playing"
@@ -100,14 +106,14 @@ const GamePlay: React.FC = () => {
     if (currentPlayer.hasAnswered) return;
     
     setSelectedAnswer(index);
-    const isCorrect = index === correctAnswerIndex;
+    const isCorrect = index === currentRound.correctAnswerIndex;
     const points = isCorrect ? 10 : 0;
     
     // Update current player
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
-      lastAnswer: mockSongs[index],
+      lastAnswer: currentRound.options[index].title,
       lastAnswerCorrect: isCorrect,
       lastScore: points,
       score: prev.score + points
@@ -178,6 +184,14 @@ const GamePlay: React.FC = () => {
   const nextRound = () => {
     if (!isHost) return;
     
+    // Create a new round with fresh song options
+    const { correctSong, options } = createGameRound();
+    setCurrentRound({
+      correctSong,
+      options,
+      correctAnswerIndex: options.findIndex(song => song.id === correctSong.id)
+    });
+    
     // Reset for next round
     setSelectedAnswer(null);
     setCurrentPlayer(prev => ({
@@ -194,6 +208,22 @@ const GamePlay: React.FC = () => {
       title: "מתכוננים לסיבוב הבא",
       description: "סיבוב חדש עומד להתחיל",
     });
+  };
+  
+  // Play full song
+  const playFullSong = () => {
+    if (!isHost) return;
+    
+    toast({
+      title: "משמיע את השיר המלא",
+      description: `${currentRound.correctSong.title} ${currentRound.correctSong.artist ? `- ${currentRound.correctSong.artist}` : ''}`,
+    });
+    
+    // If we had actual player integration, we'd use the Spotify URL here
+    console.log(`Playing full song: ${currentRound.correctSong.spotifyUrl}`);
+    
+    // In a real implementation, we might redirect to Spotify or use an embedded player
+    window.open(currentRound.correctSong.spotifyUrl, '_blank');
   };
 
   // Render the current phase
@@ -269,15 +299,15 @@ const GamePlay: React.FC = () => {
             <h2 className="text-2xl font-bold text-primary">מה השיר?</h2>
             
             <div className="grid grid-cols-1 gap-4 w-full max-w-md">
-              {mockSongs.map((song, index) => (
+              {currentRound.options.map((song, index) => (
                 <AppButton
-                  key={index}
+                  key={song.id}
                   variant={selectedAnswer === index ? "primary" : "secondary"}
                   className={selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""}
                   disabled={currentPlayer.hasAnswered}
                   onClick={() => handleAnswer(index)}
                 >
-                  {song}
+                  {song.title} {song.artist ? `- ${song.artist}` : ''}
                 </AppButton>
               ))}
             </div>
@@ -323,7 +353,7 @@ const GamePlay: React.FC = () => {
                 
                 {!currentPlayer.lastAnswerCorrect && (
                   <div className="text-lg">
-                    תשובה נכונה: {mockSongs[correctAnswerIndex]}
+                    תשובה נכונה: {currentRound.correctSong.title} {currentRound.correctSong.artist ? `- ${currentRound.correctSong.artist}` : ''}
                   </div>
                 )}
               </>
@@ -398,12 +428,7 @@ const GamePlay: React.FC = () => {
                 
                 <AppButton 
                   variant="secondary"
-                  onClick={() => {
-                    toast({
-                      title: "מושמע השיר המלא",
-                      description: "השיר המלא מתנגן כעת"
-                    });
-                  }}
+                  onClick={playFullSong}
                 >
                   השמע את כל השיר
                 </AppButton>
