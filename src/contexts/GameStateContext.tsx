@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, PlayerUpdate } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
@@ -94,44 +94,6 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
 
     checkGameState();
-
-    // הוספת hasAnswered לשחקנים אם לא קיים
-    const updatePlayerSchema = async () => {
-      if (isHost) {
-        try {
-          // בדיקה אם השדה כבר קיים לפני הוספה
-          const { data: existingPlayers } = await supabase
-            .from('players')
-            .select('*')
-            .eq('game_code', gameCode)
-            .limit(1);
-            
-          if (existingPlayers && existingPlayers.length > 0) {
-            // We can't check directly if hasAnswered exists due to type constraints
-            console.log('Players found, assuming hasAnswered field already exists');
-            return;
-          }
-          
-          // עדכון השחקנים הקיימים להוסיף שדה hasAnswered
-          const updateData: PlayerUpdate = { hasAnswered: false };
-          
-          const { error: updateError } = await supabase
-            .from('players')
-            .update(updateData)
-            .eq('game_code', gameCode);
-            
-          if (updateError) {
-            console.error('Error updating players schema:', updateError);
-          } else {
-            console.log('Updated players schema with hasAnswered field');
-          }
-        } catch (err) {
-          console.error('Error checking or updating players schema:', err);
-        }
-      }
-    };
-
-    updatePlayerSchema();
 
     const channel = supabase
       .channel('schema-db-changes')

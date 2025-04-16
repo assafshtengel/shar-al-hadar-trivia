@@ -5,7 +5,7 @@ import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { Music, Users, Copy } from 'lucide-react';
-import { supabase, createRealtimeChannel } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { useGameState } from '@/contexts/GameStateContext';
 import EndGameButton from '@/components/EndGameButton';
@@ -29,7 +29,6 @@ const GameHostSetup: React.FC = () => {
   const [hostJoined, setHostJoined] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
   const [startGameDisabled, setStartGameDisabled] = useState(true);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
 
   useEffect(() => {
     if (!contextGameCode) {
@@ -41,7 +40,6 @@ const GameHostSetup: React.FC = () => {
   useEffect(() => {
     const checkHostJoined = () => {
       if (contextPlayerName && players.some(player => player.name === contextPlayerName)) {
-        console.log(`Host found in players list: ${contextPlayerName}`);
         setHostJoined(true);
         setStartGameDisabled(false);
       }
@@ -51,13 +49,9 @@ const GameHostSetup: React.FC = () => {
   }, [contextPlayerName, players]);
 
   useEffect(() => {
-    console.log(`Setting up realtime subscription for game code: ${gameCode}`);
-    setSubscriptionStatus('connecting');
-    
     // Initial fetch of current players
     const fetchPlayers = async () => {
       try {
-        console.log(`Fetching initial players for game code: ${gameCode}`);
         const { data, error } = await supabase
           .from('players')
           .select('*')
@@ -65,42 +59,33 @@ const GameHostSetup: React.FC = () => {
 
         if (error) {
           console.error('Error fetching players:', error);
-          setSubscriptionStatus('error');
-          toast({
-            title: "שגיאה בטעינת השחקנים",
-            description: "אירעה שגיאה בטעינת רשימת השחקנים, רענן את הדף",
-            variant: "destructive"
-          });
           return;
         }
 
         if (data) {
-          console.log('Fetched initial players:', data);
+          console.log('Fetched players:', data);
           setPlayers(data);
           
           // Check if host is already in the players list
           if (contextPlayerName && data.some(player => player.name === contextPlayerName)) {
-            console.log(`Host found in initial players: ${contextPlayerName}`);
             setHostJoined(true);
             setStartGameDisabled(false);
           }
         }
       } catch (err) {
         console.error('Exception when fetching players:', err);
-        setSubscriptionStatus('error');
       }
     };
 
     fetchPlayers();
 
-    // Set up realtime subscription for players table changes
-    const channel = createRealtimeChannel(`players-${gameCode}`);
-    
-    channel
+    // Set up realtime subscription for ALL database changes to the players table
+    const channel = supabase
+      .channel('schema-db-changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'players',
           filter: `game_code=eq.${gameCode}`
@@ -108,86 +93,40 @@ const GameHostSetup: React.FC = () => {
         (payload) => {
           console.log('Player change detected:', payload);
           
-          // Validate the payload before processing
-          if (!payload || typeof payload !== 'object') {
-            console.error('Invalid payload received:', payload);
-            return;
-          }
-          
-          // Handle different event types with validation
-          if (payload.eventType === 'INSERT' && payload.new && typeof payload.new === 'object') {
-            console.log('New player joined:', payload.new);
+          // Handle different event types
+          if (payload.eventType === 'INSERT') {
+            // Add new player to the list
+            setPlayers((prevPlayers) => [...prevPlayers, payload.new as Player]);
             
-            // Validate required fields before adding to state
-            if (
-              'id' in payload.new && 
-              'name' in payload.new && 
-              'game_code' in payload.new
-            ) {
-              // Add new player to the list with type safety
-              const newPlayer = payload.new as Player;
-              setPlayers((prevPlayers) => {
-                // Check if player already exists to avoid duplicates
-                if (prevPlayers.some(p => p.id === newPlayer.id)) {
-                  return prevPlayers;
-                }
-                return [...prevPlayers, newPlayer];
-              });
-              
-              // If the new player is the host, enable the start game button
-              if (contextPlayerName && payload.new.name === contextPlayerName) {
-                console.log(`Host joined as player: ${contextPlayerName}`);
-                setHostJoined(true);
-                setStartGameDisabled(false);
-              }
-            } else {
-              console.error('New player data missing required fields:', payload.new);
+            // If the new player is the host, enable the start game button
+            if (contextPlayerName && payload.new.name === contextPlayerName) {
+              setHostJoined(true);
+              setStartGameDisabled(false);
             }
-          } else if (payload.eventType === 'UPDATE' && payload.new && typeof payload.new === 'object') {
-            console.log('Player updated:', payload.new);
-            
-            // Update existing player in the list with validation
-            if ('id' in payload.new) {
-              setPlayers((prevPlayers) => 
-                prevPlayers.map(player => 
-                  player.id === payload.new.id ? { ...player, ...payload.new as Player } : player
-                )
-              );
-            } else {
-              console.error('Updated player data missing ID:', payload.new);
-            }
-          } else if (payload.eventType === 'DELETE' && payload.old && typeof payload.old === 'object') {
-            console.log('Player left:', payload.old);
-            
-            // Remove player from the list with validation
-            if ('id' in payload.old) {
-              setPlayers((prevPlayers) => 
-                prevPlayers.filter(player => player.id !== payload.old.id)
-              );
-            } else {
-              console.error('Deleted player data missing ID:', payload.old);
-            }
-          } else {
-            console.error('Unhandled event type or invalid payload structure:', payload);
+          } else if (payload.eventType === 'UPDATE') {
+            // Update existing player in the list
+            setPlayers((prevPlayers) => 
+              prevPlayers.map(player => 
+                player.id === payload.new.id ? { ...player, ...payload.new } : player
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            // Remove player from the list
+            setPlayers((prevPlayers) => 
+              prevPlayers.filter(player => player.id !== payload.old.id)
+            );
           }
         }
       )
       .subscribe((status) => {
         console.log('Subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          setSubscriptionStatus('connected');
-          console.log('Successfully subscribed to players changes');
-        } else if (status === 'CHANNEL_ERROR') {
-          setSubscriptionStatus('error');
-          console.error('Error subscribing to players changes');
-        }
       });
 
     return () => {
       console.log('Cleaning up subscription');
       supabase.removeChannel(channel);
     };
-  }, [gameCode, contextPlayerName, toast]);
+  }, [gameCode, contextPlayerName]);
 
   const copyGameCode = () => {
     navigator.clipboard.writeText(gameCode).then(() => {
@@ -262,50 +201,32 @@ const GameHostSetup: React.FC = () => {
 
     setJoinLoading(true);
 
-    try {
-      console.log(`Attempting to add host as player. Name: ${hostName}, Game code: ${gameCode}`);
-      
-      const { data, error } = await supabase
-        .from('players')
-        .insert([
-          { name: hostName, game_code: gameCode }
-        ])
-        .select();
+    const { data, error } = await supabase
+      .from('players')
+      .insert([
+        { name: hostName, game_code: gameCode }
+      ]);
 
-      if (error) {
-        console.error('Error joining host:', error);
-        toast({
-          title: "שגיאה בהצטרפות",
-          description: "לא ניתן להצטרף למשחק, נסה שוב",
-          variant: "destructive"
-        });
-        setJoinLoading(false);
-        return;
-      }
+    setJoinLoading(false);
 
-      console.log('Host successfully joined:', data);
-      
-      // Update context with the host's name
-      setGameData({ gameCode, playerName: hostName, isHost: true });
-      
-      // Only set hostJoined if the insert was successful
-      setHostJoined(true);
-      setStartGameDisabled(false);
-      
+    if (error) {
+      console.error('Error joining host:', error);
       toast({
-        title: "הצטרפת למשחק!",
-        description: "אתה מופיע ברשימת השחקנים"
-      });
-    } catch (err) {
-      console.error('Exception when joining host:', err);
-      toast({
-        title: "שגיאה לא צפויה",
-        description: "אירעה שגיאה בלתי צפויה, נסה שוב",
+        title: "שגיאה בהצטרפות",
+        description: "לא ניתן להצטרף למשחק, נסה שוב",
         variant: "destructive"
       });
-    } finally {
-      setJoinLoading(false);
+      return;
     }
+
+    setGameData({ gameCode, playerName: hostName, isHost: true });
+    
+    setHostJoined(true);
+    setStartGameDisabled(false);
+    toast({
+      title: "הצטרפת למשחק!",
+      description: "אתה מופיע ברשימת השחקנים"
+    });
   };
 
   return (
@@ -370,15 +291,6 @@ const GameHostSetup: React.FC = () => {
             <div className="flex items-center gap-2 mb-3">
               <Users className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-semibold">שחקנים שהצטרפו:</h3>
-              {subscriptionStatus === 'connecting' && (
-                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">מתחבר...</span>
-              )}
-              {subscriptionStatus === 'connected' && (
-                <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">מחובר</span>
-              )}
-              {subscriptionStatus === 'error' && (
-                <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">שגיאת חיבור</span>
-              )}
             </div>
             
             <div className="min-h-[120px] border border-gray-200 rounded-md p-2 bg-white">
@@ -388,9 +300,6 @@ const GameHostSetup: React.FC = () => {
                     <li key={player.id} className="py-2 px-3 bg-gray-50 rounded-md animate-fade-in flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                       <span>{player.name}</span>
-                      {contextPlayerName && player.name === contextPlayerName && (
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">אתה</span>
-                      )}
                     </li>
                   ))}
                 </ul>

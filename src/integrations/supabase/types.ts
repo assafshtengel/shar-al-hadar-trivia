@@ -42,7 +42,6 @@ export type Database = {
       players: {
         Row: {
           game_code: string
-          hasAnswered: boolean | null
           id: string
           joined_at: string | null
           name: string
@@ -50,7 +49,6 @@ export type Database = {
         }
         Insert: {
           game_code: string
-          hasAnswered?: boolean | null
           id?: string
           joined_at?: string | null
           name: string
@@ -58,7 +56,6 @@ export type Database = {
         }
         Update: {
           game_code?: string
-          hasAnswered?: boolean | null
           id?: string
           joined_at?: string | null
           name?: string
