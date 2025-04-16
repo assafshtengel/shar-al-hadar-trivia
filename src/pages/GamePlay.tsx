@@ -244,7 +244,7 @@ const GamePlay: React.FC = () => {
         
         setPhase('answerOptions');
         startTimer();
-      }, 4000);
+      }, 8000); // Changed from 4000 to 8000 (8 seconds)
       
       return () => clearTimeout(timer);
     }
