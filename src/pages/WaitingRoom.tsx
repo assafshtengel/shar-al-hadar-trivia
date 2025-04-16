@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MusicNote from '@/components/MusicNote';
@@ -5,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { useGameState } from '@/contexts/GameStateContext';
 import EndGameButton from '@/components/EndGameButton';
 import { Link } from 'react-router-dom';
-import Music from '@/components/Music';
+import { Music } from 'lucide-react';
 
 const WaitingRoom = () => {
   const navigate = useNavigate();
