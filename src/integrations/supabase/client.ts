@@ -38,17 +38,15 @@ export interface ResetPlayersStatusParams {
   game_code_param: string;
 }
 
-// We need to declare the reset_players_answered_status function
-// in the Database interface - this extends the existing Database type
-declare module './types' {
-  interface Database {
-    public: {
-      Functions: {
-        reset_players_answered_status: {
-          Args: ResetPlayersStatusParams;
-          Returns: unknown;
-        };
+// Augment the existing Database type from ./types 
+// to add our custom function without duplicating the type
+declare global {
+  namespace Database {
+    interface PublicFunctions {
+      reset_players_answered_status: {
+        Args: ResetPlayersStatusParams;
+        Returns: unknown;
       };
-    };
+    }
   }
 }
