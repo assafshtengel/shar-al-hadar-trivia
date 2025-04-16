@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, PlayerUpdate } from '@/integrations/supabase/client';
 import EndGameButton from '@/components/EndGameButton';
 
 interface Song {
@@ -88,7 +87,7 @@ const GamePlay: React.FC = () => {
   const navigate = useNavigate();
   const { gameCode, playerName, isHost, gamePhase: serverGamePhase } = useGameState();
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
-  const [timeLeft, setTimeLeft] = useState(30); // שינינו את הזמן ל-30 שניות
+  const [timeLeft, setTimeLeft] = useState(30);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
@@ -97,7 +96,7 @@ const GamePlay: React.FC = () => {
   });
   
   const [players, setPlayers] = useState<SupabasePlayer[]>([]);
-  const [playersAnswered, setPlayersAnswered] = useState(0); // מונה לשחקנים שענו
+  const [playersAnswered, setPlayersAnswered] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<Player>({ 
     name: playerName || "שחקן נוכחי", 
@@ -196,11 +195,9 @@ const GamePlay: React.FC = () => {
     };
   }, [gameCode, toast]);
 
-  // מאזין לשינויים במספר שחקנים שענו
   useEffect(() => {
     if (!isHost || !gameCode || !timerRunning || roundEnded) return;
 
-    // בדוק אם כל השחקנים ענו
     if (playersAnswered === players.length && players.length > 0) {
       console.log('All players have answered, ending round early');
       setRoundEnded(true);
@@ -208,7 +205,6 @@ const GamePlay: React.FC = () => {
         clearInterval(timerInterval);
       }
       
-      // אם כולם ענו, עבור לשלב התוצאות
       setTimeout(() => {
         updateGameState('results');
       }, 1000);
@@ -285,7 +281,6 @@ const GamePlay: React.FC = () => {
     
     updateGameState('playing');
     
-    // איפוס מספר השחקנים שענו
     setPlayersAnswered(0);
     setRoundEnded(false);
     
@@ -296,10 +291,9 @@ const GamePlay: React.FC = () => {
   };
 
   const startTimer = () => {
-    setTimeLeft(30); // שינינו את הזמן ל-30 שניות
+    setTimeLeft(30);
     setTimerRunning(true);
     
-    // מאפס את הטיימר אם הוא כבר רץ
     if (timerInterval) {
       clearInterval(timerInterval);
     }
@@ -349,13 +343,11 @@ const GamePlay: React.FC = () => {
     if (gameCode && playerName) {
       updatePlayerScore(points);
       
-      // עדכון מספר השחקנים שענו (רק לשרת)
       if (isHost) {
         setPlayersAnswered(prev => prev + 1);
       }
     }
     
-    // שורה זו יפה למרות שאין עדיין מעבר לשלב התוצאות
     toast({
       title: isCorrect ? "תשובה נכונה!" : "תשובה לא נכונה",
       description: isCorrect ? "כל הכבוד, ענית נכון!" : `התשובה הנכונה היא: ${currentRound.correctSong.name}`,
@@ -366,54 +358,58 @@ const GamePlay: React.FC = () => {
   const updatePlayerScore = async (points: number) => {
     if (!gameCode || !playerName) return;
 
-    const { data: playerData, error: fetchError } = await supabase
-      .from('players')
-      .select('score, hasAnswered')
-      .eq('game_code', gameCode)
-      .eq('name', playerName)
-      .maybeSingle();
+    try {
+      const { data: playerData, error: fetchError } = await supabase
+        .from('players')
+        .select('score')
+        .eq('game_code', gameCode)
+        .eq('name', playerName)
+        .maybeSingle();
 
-    if (fetchError) {
-      console.error('Error fetching player:', fetchError);
-      return;
-    }
+      if (fetchError) {
+        console.error('Error fetching player:', fetchError);
+        return;
+      }
 
-    const currentScore = playerData?.score || 0;
-    const newScore = currentScore + points;
+      const currentScore = playerData?.score || 0;
+      const newScore = currentScore + points;
 
-    const { error: updateError } = await supabase
-      .from('players')
-      .update({ 
+      const updateData: PlayerUpdate = { 
         score: newScore,
         hasAnswered: true 
-      })
-      .eq('game_code', gameCode)
-      .eq('name', playerName);
+      };
 
-    if (updateError) {
-      console.error('Error updating player score:', updateError);
-      toast({
-        title: "שגיאה בעדכון הניקוד",
-        description: "אירעה שגיאה בעדכון הניקוד שלך",
-        variant: "destructive"
-      });
-    } else {
-      // שחקן אחד ענה - שליחת אירוע למארח
-      if (isHost) {
-        console.log("Player answered, updating counter");
-        setPlayersAnswered(prev => prev + 1);
+      const { error: updateError } = await supabase
+        .from('players')
+        .update(updateData)
+        .eq('game_code', gameCode)
+        .eq('name', playerName);
+
+      if (updateError) {
+        console.error('Error updating player score:', updateError);
+        toast({
+          title: "שגיאה בעדכון הניקוד",
+          description: "אירעה שגיאה בעדכון הניקוד שלך",
+          variant: "destructive"
+        });
       } else {
-        // עדכון מספר השחקנים שענו דרך שאילתה נפרדת
-        const { data: countData } = await supabase
-          .from('players')
-          .select('id', { count: 'exact' })
-          .eq('game_code', gameCode)
-          .eq('hasAnswered', true);
-          
-        if (countData) {
-          console.log(`${countData.length} players have answered out of ${players.length}`);
+        if (isHost) {
+          console.log("Player answered, updating counter");
+          setPlayersAnswered(prev => prev + 1);
+        } else {
+          const { data: countData } = await supabase
+            .from('players')
+            .select('id')
+            .eq('game_code', gameCode)
+            .eq('hasAnswered', true);
+            
+          if (countData) {
+            console.log(`${countData.length} players have answered out of ${players.length}`);
+          }
         }
       }
+    } catch (e) {
+      console.error('Exception in updatePlayerScore', e);
     }
   };
 
@@ -468,7 +464,6 @@ const GamePlay: React.FC = () => {
       lastScore: undefined
     }));
     
-    // איפוס השחקנים שענו
     resetAllPlayersAnsweredStatus();
     setPlayersAnswered(0);
     setRoundEnded(false);
@@ -482,40 +477,30 @@ const GamePlay: React.FC = () => {
       description: "סיבוב חדש עומד להתחיל",
     });
   };
-  
-  // פונקציה לאיפוס סטטוס מענה של כל השחקנים
+
   const resetAllPlayersAnsweredStatus = async () => {
     if (!isHost || !gameCode) return;
     
     try {
-      const { error } = await supabase.rpc('reset_players_answered_status', {
-        game_code_param: gameCode
-      });
-      
-      if (error) {
-        console.error('Error resetting players answered status:', error);
-        // נסה דרך חלופית אם ה-RPC לא קיים
-        const { error: updateError } = await supabase
-          .from('players')
-          .update({ hasAnswered: false })
-          .eq('game_code', gameCode);
-          
-        if (updateError) {
-          console.error('Error resetting players answered status (alternative):', updateError);
-        } else {
-          console.log('All players answered status reset successfully (alternative)');
-        }
-      } else {
-        console.log('All players answered status reset successfully');
-      }
-    } catch (err) {
-      console.error('Exception resetting players status:', err);
-      
-      // נסה דרך חלופית אם ה-RPC לא קיים
       try {
+        const { error } = await supabase.rpc('reset_players_answered_status', {
+          game_code_param: gameCode
+        });
+        
+        if (error) {
+          console.error('Error resetting players answered status:', error);
+          throw error;
+        } else {
+          console.log('All players answered status reset successfully');
+        }
+      } catch (err) {
+        console.error('Exception resetting players status:', err);
+        
+        const updateData: PlayerUpdate = { hasAnswered: false };
+        
         const { error: updateError } = await supabase
           .from('players')
-          .update({ hasAnswered: false })
+          .update(updateData)
           .eq('game_code', gameCode);
           
         if (updateError) {
@@ -523,12 +508,12 @@ const GamePlay: React.FC = () => {
         } else {
           console.log('All players answered status reset successfully (fallback)');
         }
-      } catch (fallbackErr) {
-        console.error('Exception in fallback reset:', fallbackErr);
       }
+    } catch (fallbackErr) {
+      console.error('Exception in reset players status:', fallbackErr);
     }
   };
-  
+
   const playFullSong = () => {
     if (!isHost) return;
     

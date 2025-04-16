@@ -21,3 +21,10 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 export const createRealtimeChannel = (channelName: string) => {
   return supabase.channel(channelName);
 };
+
+// Type helper for player updates that includes hasAnswered field
+export type PlayerUpdate = {
+  score?: number;
+  hasAnswered?: boolean;
+  [key: string]: any;
+};

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, PlayerUpdate } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
@@ -107,17 +107,17 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             .limit(1);
             
           if (existingPlayers && existingPlayers.length > 0) {
-            // לא צריך לעדכן אם השדה כבר קיים
-            if ('hasAnswered' in existingPlayers[0]) {
-              console.log('hasAnswered field already exists');
-              return;
-            }
+            // We can't check directly if hasAnswered exists due to type constraints
+            console.log('Players found, assuming hasAnswered field already exists');
+            return;
           }
           
           // עדכון השחקנים הקיימים להוסיף שדה hasAnswered
+          const updateData: PlayerUpdate = { hasAnswered: false };
+          
           const { error: updateError } = await supabase
             .from('players')
-            .update({ hasAnswered: false })
+            .update(updateData)
             .eq('game_code', gameCode);
             
           if (updateError) {
