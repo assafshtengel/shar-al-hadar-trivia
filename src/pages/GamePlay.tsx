@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -33,6 +34,34 @@ interface GameRound {
   correctAnswerIndex: number;
 }
 
+interface SongData {
+  name: string;
+  url: string;
+}
+
+const songs: SongData[] = [
+  {
+    name: "אהובתי - משינה",
+    url: "https://www.youtube.com/embed/Hd9ubTcJc7E?autoplay=1&controls=0&modestbranding=1&rel=0"
+  },
+  {
+    name: "אנחנו שניים - משינה",
+    url: "https://www.youtube.com/embed/TspJGWttC9Q?autoplay=1&controls=0&modestbranding=1&rel=0"
+  },
+  {
+    name: "את לא כמו כולם - משינה",
+    url: "https://www.youtube.com/embed/IPJn1nwqcCY?autoplay=1&controls=0&modestbranding=1&rel=0"
+  },
+  {
+    name: "בלדה לסוכן כפול - משינה",
+    url: "https://www.youtube.com/embed/RbF1hwyIFYA?autoplay=1&controls=0&modestbranding=1&rel=0"
+  },
+  {
+    name: "היא התווכחה איתו שעות - משינה",
+    url: "https://www.youtube.com/embed/LWD30iw7Diw?autoplay=1&controls=0&modestbranding=1&rel=0"
+  }
+];
+
 const GamePlay: React.FC = () => {
   const { toast } = useToast();
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
@@ -40,6 +69,7 @@ const GamePlay: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState(15);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
+  const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const [currentRound, setCurrentRound] = useState<GameRound>(() => {
     const { correctSong, options } = createGameRound();
     return {
@@ -72,7 +102,7 @@ const GamePlay: React.FC = () => {
         setIsPlaying(false);
         setPhase('answerOptions');
         startTimer();
-      }, 4000); // Hide after 4 seconds (same as original timeout)
+      }, 4000); // Hide after 4 seconds
       
       return () => clearTimeout(timer);
     }
@@ -82,6 +112,11 @@ const GamePlay: React.FC = () => {
   const playSong = () => {
     if (!isHost) return;
     
+    // Select a random song from the array
+    const randomIndex = Math.floor(Math.random() * songs.length);
+    const selectedSong = songs[randomIndex];
+    
+    setCurrentSong(selectedSong);
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     
@@ -243,12 +278,12 @@ const GamePlay: React.FC = () => {
           <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
-            {showYouTubeEmbed && (
+            {showYouTubeEmbed && currentSong && (
               <div className="w-full max-w-sm overflow-hidden rounded-lg shadow-md">
                 <iframe 
                   width="100%" 
                   height="150"
-                  src="https://www.youtube.com/embed/hecv4GDaUsA?autoplay=1&controls=0&modestbranding=1&rel=0&start=0"
+                  src={currentSong.url}
                   frameBorder="0" 
                   allow="autoplay; encrypted-media" 
                   allowFullScreen
