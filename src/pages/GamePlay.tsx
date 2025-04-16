@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
-import { supabase, PlayerUpdate } from '@/integrations/supabase/client';
+import { supabase, PlayerUpdate, ResetPlayersStatusParams } from '@/integrations/supabase/client';
 import EndGameButton from '@/components/EndGameButton';
 
 interface Song {
@@ -483,9 +483,8 @@ const GamePlay: React.FC = () => {
     
     try {
       try {
-        const { error } = await supabase.rpc('reset_players_answered_status', {
-          game_code_param: gameCode
-        });
+        const params: ResetPlayersStatusParams = { game_code_param: gameCode };
+        const { error } = await supabase.rpc('reset_players_answered_status', params);
         
         if (error) {
           console.error('Error resetting players answered status:', error);

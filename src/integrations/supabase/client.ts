@@ -32,3 +32,8 @@ export type PlayerUpdate = {
   id?: string;
   [key: string]: any;
 };
+
+// Define the parameter type for reset_players_answered_status RPC
+export interface ResetPlayersStatusParams {
+  game_code_param: string;
+}
