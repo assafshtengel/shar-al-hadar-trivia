@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -53,11 +52,14 @@ const JoinGame = () => {
         description: `ברוכים הבאים, ${playerName}!`,
       });
       
-      // Navigate to home for now (in a real app, would navigate to waiting room or game)
-      setTimeout(() => {
-        navigate('/');
-        setIsSubmitting(false);
-      }, 1500);
+      // Navigate to waiting room instead of home
+      navigate('/waiting-room', { 
+        state: { 
+          playerName, 
+          gameCode 
+        } 
+      });
+      setIsSubmitting(false);
     } catch (err) {
       console.error('Error joining game:', err);
       setError('שגיאה בהצטרפות למשחק, נסו שוב');
