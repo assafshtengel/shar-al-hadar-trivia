@@ -55,6 +55,8 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     if (!gameCode) return;
 
+    console.log("Setting up game state monitoring for code:", gameCode);
+
     const checkGameState = async () => {
       const { data, error } = await supabase
         .from('game_state')
@@ -68,6 +70,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       if (!data && isHost) {
+        console.log("Creating initial game state for host");
         const { error: insertError } = await supabase
           .from('game_state')
           .insert([
@@ -118,7 +121,9 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Game state subscription status:', status);
+      });
 
     const fetchGameState = async () => {
       const { data, error } = await supabase
@@ -133,6 +138,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       if (data && data.game_phase) {
+        console.log('Initial game state:', data);
         const currentPhase = data.game_phase as GamePhase;
         setGamePhase(currentPhase);
         handleGamePhaseNavigation(currentPhase, true);
@@ -142,6 +148,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     fetchGameState();
 
     return () => {
+      console.log('Removing game state channel');
       supabase.removeChannel(channel);
     };
   }, [gameCode, isHost]);

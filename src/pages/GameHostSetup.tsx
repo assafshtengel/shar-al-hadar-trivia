@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -35,42 +36,69 @@ const GameHostSetup: React.FC = () => {
   }, [contextGameCode, gameCode]);
 
   useEffect(() => {
+    // Initial fetch of current players
     const fetchPlayers = async () => {
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .eq('game_code', gameCode);
+      try {
+        const { data, error } = await supabase
+          .from('players')
+          .select('*')
+          .eq('game_code', gameCode);
 
-      if (error) {
-        console.error('Error fetching players:', error);
-        return;
-      }
+        if (error) {
+          console.error('Error fetching players:', error);
+          return;
+        }
 
-      if (data) {
-        setPlayers(data);
+        if (data) {
+          console.log('Fetched players:', data);
+          setPlayers(data);
+        }
+      } catch (err) {
+        console.error('Exception when fetching players:', err);
       }
     };
 
     fetchPlayers();
 
+    // Set up realtime subscription for ALL database changes to the players table
     const channel = supabase
       .channel('schema-db-changes')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'players',
           filter: `game_code=eq.${gameCode}`
         },
         (payload) => {
-          console.log('New player joined:', payload);
-          setPlayers((prevPlayers) => [...prevPlayers, payload.new as Player]);
+          console.log('Player change detected:', payload);
+          
+          // Handle different event types
+          if (payload.eventType === 'INSERT') {
+            // Add new player to the list
+            setPlayers((prevPlayers) => [...prevPlayers, payload.new as Player]);
+          } else if (payload.eventType === 'UPDATE') {
+            // Update existing player in the list
+            setPlayers((prevPlayers) => 
+              prevPlayers.map(player => 
+                player.id === payload.new.id ? { ...player, ...payload.new } : player
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            // Remove player from the list
+            setPlayers((prevPlayers) => 
+              prevPlayers.filter(player => player.id !== payload.old.id)
+            );
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up subscription');
       supabase.removeChannel(channel);
     };
   }, [gameCode]);
