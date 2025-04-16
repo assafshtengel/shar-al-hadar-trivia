@@ -47,6 +47,13 @@ const JoinGame = () => {
         return;
       }
 
+      // New validation check - if game doesn't exist, show error and stop
+      if (!gameStateData) {
+        setError('קוד המשחק שהוזן אינו קיים. נסה שוב.');
+        setIsSubmitting(false);
+        return;
+      }
+
       // Insert player data into Supabase
       const { error: insertError } = await supabase
         .from('players')
