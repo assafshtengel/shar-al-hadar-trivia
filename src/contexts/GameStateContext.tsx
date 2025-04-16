@@ -30,6 +30,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.getItem('isHost') === 'true'
   );
   const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
+  const [hostReady, setHostReady] = useState<boolean>(false);
 
   const setGameData = (data: { gameCode: string; playerName: string; isHost?: boolean }) => {
     setGameCode(data.gameCode);
@@ -46,6 +47,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setPlayerName(null);
     setIsHost(false);
     setGamePhase(null);
+    setHostReady(false);
     
     localStorage.removeItem('gameCode');
     localStorage.removeItem('playerName');
@@ -77,7 +79,8 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             {
               game_code: gameCode,
               game_phase: 'waiting',
-              current_round: 1
+              current_round: 1,
+              host_ready: false
             }
           ]);
 
@@ -109,7 +112,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             const newPhase = payload.new.game_phase as GamePhase;
             setGamePhase(newPhase);
             
-            handleGamePhaseNavigation(newPhase);
+            // Also update host_ready state
+            if ('host_ready' in payload.new) {
+              setHostReady(!!payload.new.host_ready);
+            }
+            
+            handleGamePhaseNavigation(newPhase, !!payload.new.host_ready);
           } else if (payload.eventType === 'DELETE') {
             if (!isHost) {
               toast('המשחק הסתיים', {
@@ -141,7 +149,13 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         console.log('Initial game state:', data);
         const currentPhase = data.game_phase as GamePhase;
         setGamePhase(currentPhase);
-        handleGamePhaseNavigation(currentPhase, true);
+        
+        // Also set host_ready state
+        if ('host_ready' in data) {
+          setHostReady(!!data.host_ready);
+        }
+        
+        handleGamePhaseNavigation(currentPhase, !!data.host_ready, true);
       }
     };
 
@@ -153,7 +167,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, [gameCode, isHost]);
 
-  const handleGamePhaseNavigation = (phase: GamePhase, isInitial = false) => {
+  const handleGamePhaseNavigation = (phase: GamePhase, isHostReady: boolean, isInitial = false) => {
     const currentPath = window.location.pathname;
 
     switch (phase) {
@@ -167,8 +181,11 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       case 'playing':
       case 'answering':
       case 'results':
-        if (currentPath !== '/gameplay') {
-          navigate('/gameplay');
+        // Only navigate to gameplay if host is ready or user is not the host
+        if (!isHost || (isHost && isHostReady)) {
+          if (currentPath !== '/gameplay') {
+            navigate('/gameplay');
+          }
         }
         break;
       case 'end':

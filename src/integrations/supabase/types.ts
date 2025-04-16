@@ -16,6 +16,7 @@ export type Database = {
           current_song_url: string | null
           game_code: string
           game_phase: string
+          host_ready: boolean
           round_started_at: string | null
         }
         Insert: {
@@ -24,6 +25,7 @@ export type Database = {
           current_song_url?: string | null
           game_code: string
           game_phase: string
+          host_ready?: boolean
           round_started_at?: string | null
         }
         Update: {
@@ -32,6 +34,7 @@ export type Database = {
           current_song_url?: string | null
           game_code?: string
           game_phase?: string
+          host_ready?: boolean
           round_started_at?: string | null
         }
         Relationships: []

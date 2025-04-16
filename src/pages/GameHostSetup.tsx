@@ -21,19 +21,32 @@ interface Player {
 const GameHostSetup: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { gameCode: contextGameCode, setGameData } = useGameState();
+  const { gameCode: contextGameCode, setGameData, playerName: contextPlayerName } = useGameState();
   const [gameCode] = useState(() => contextGameCode || Math.floor(100000 + Math.random() * 900000).toString());
   const [players, setPlayers] = useState<Player[]>([]);
   const [gameStarted, setGameStarted] = useState(false);
-  const [hostName, setHostName] = useState('');
+  const [hostName, setHostName] = useState(contextPlayerName || '');
   const [hostJoined, setHostJoined] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
+  const [startGameDisabled, setStartGameDisabled] = useState(true);
 
   useEffect(() => {
     if (!contextGameCode) {
       setGameData({ gameCode, playerName: hostName || 'מנחה', isHost: true });
     }
   }, [contextGameCode, gameCode]);
+
+  // Check if host is already in the players list
+  useEffect(() => {
+    const checkHostJoined = () => {
+      if (contextPlayerName && players.some(player => player.name === contextPlayerName)) {
+        setHostJoined(true);
+        setStartGameDisabled(false);
+      }
+    };
+    
+    checkHostJoined();
+  }, [contextPlayerName, players]);
 
   useEffect(() => {
     // Initial fetch of current players
@@ -52,6 +65,12 @@ const GameHostSetup: React.FC = () => {
         if (data) {
           console.log('Fetched players:', data);
           setPlayers(data);
+          
+          // Check if host is already in the players list
+          if (contextPlayerName && data.some(player => player.name === contextPlayerName)) {
+            setHostJoined(true);
+            setStartGameDisabled(false);
+          }
         }
       } catch (err) {
         console.error('Exception when fetching players:', err);
@@ -78,6 +97,12 @@ const GameHostSetup: React.FC = () => {
           if (payload.eventType === 'INSERT') {
             // Add new player to the list
             setPlayers((prevPlayers) => [...prevPlayers, payload.new as Player]);
+            
+            // If the new player is the host, enable the start game button
+            if (contextPlayerName && payload.new.name === contextPlayerName) {
+              setHostJoined(true);
+              setStartGameDisabled(false);
+            }
           } else if (payload.eventType === 'UPDATE') {
             // Update existing player in the list
             setPlayers((prevPlayers) => 
@@ -101,7 +126,7 @@ const GameHostSetup: React.FC = () => {
       console.log('Cleaning up subscription');
       supabase.removeChannel(channel);
     };
-  }, [gameCode]);
+  }, [gameCode, contextPlayerName]);
 
   const copyGameCode = () => {
     navigator.clipboard.writeText(gameCode).then(() => {
@@ -128,9 +153,21 @@ const GameHostSetup: React.FC = () => {
       return;
     }
 
+    if (!hostJoined) {
+      toast({
+        title: "המנחה לא הצטרף",
+        description: "עליך להצטרף למשחק כמנחה לפני שאפשר להתחיל",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const { error } = await supabase
       .from('game_state')
-      .update({ game_phase: 'playing' })
+      .update({ 
+        game_phase: 'playing',
+        host_ready: true
+      })
       .eq('game_code', gameCode);
 
     if (error) {
@@ -185,6 +222,7 @@ const GameHostSetup: React.FC = () => {
     setGameData({ gameCode, playerName: hostName, isHost: true });
     
     setHostJoined(true);
+    setStartGameDisabled(false);
     toast({
       title: "הצטרפת למשחק!",
       description: "אתה מופיע ברשימת השחקנים"
@@ -274,9 +312,20 @@ const GameHostSetup: React.FC = () => {
           </div>
 
           <div className="w-full space-y-4 mt-2">
-            <AppButton variant="primary" size="lg" onClick={startGame} disabled={gameStarted}>
-              {gameStarted ? "המשחק כבר התחיל" : "התחל משחק"}
+            <AppButton 
+              variant="primary" 
+              size="lg" 
+              onClick={startGame} 
+              disabled={gameStarted || startGameDisabled}
+            >
+              {gameStarted ? "המשחק כבר התחיל" : 
+               startGameDisabled ? "יש להצטרף כמנחה תחילה" : "התחל משחק"}
             </AppButton>
+            {startGameDisabled && !hostJoined && (
+              <p className="text-sm text-center text-amber-600 mt-1">
+                יש להצטרף כמנחה לפני התחלת המשחק
+              </p>
+            )}
           </div>
         </div>
       </div>
