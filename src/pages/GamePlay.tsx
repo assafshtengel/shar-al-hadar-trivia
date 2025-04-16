@@ -224,6 +224,22 @@ const GamePlay: React.FC = () => {
       if (data) {
         console.log('Fetched players:', data);
         setPlayers(data);
+        
+        if (playerName) {
+          const currentPlayerData = data.find(p => p.name === playerName);
+          if (currentPlayerData) {
+            console.log('Found current player in database:', currentPlayerData);
+            setCurrentPlayer(prev => ({
+              ...prev,
+              name: currentPlayerData.name,
+              score: currentPlayerData.score || 0,
+              hasAnswered: currentPlayerData.hasAnswered || false,
+              isReady: currentPlayerData.isReady || false
+            }));
+          } else {
+            console.log('Current player not found in database. Player name:', playerName);
+          }
+        }
       }
     };
 
@@ -250,7 +266,7 @@ const GamePlay: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gameCode, toast]);
+  }, [gameCode, toast, playerName]);
 
   useEffect(() => {
     if (!gameCode || !serverGamePhase) return;
@@ -440,7 +456,41 @@ const GamePlay: React.FC = () => {
   };
 
   const handleAnswer = async (index: number) => {
-    if (currentPlayer.hasAnswered || !currentRound) return;
+    if (!currentRound) {
+      console.error('No current round data available');
+      return;
+    }
+    
+    if (!playerName || !gameCode) {
+      console.error('Missing playerName or gameCode, cannot answer');
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן לענות על השאלה, חסרים פרטי שחקן",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log(`Player ${playerName} attempting to answer: ${index}`);
+    
+    const { data: playerData, error: fetchError } = await supabase
+      .from('players')
+      .select('hasAnswered')
+      .eq('game_code', gameCode)
+      .eq('name', playerName)
+      .maybeSingle();
+    
+    if (fetchError) {
+      console.error('Error checking if player has answered:', fetchError);
+      return;
+    }
+    
+    const hasAnsweredInDB = playerData?.hasAnswered || false;
+    
+    if (hasAnsweredInDB) {
+      console.log('Player has already answered according to DB. Preventing answer submission.');
+      return;
+    }
     
     setSelectedAnswer(index);
     const isCorrect = index === currentRound.correctAnswerIndex;
