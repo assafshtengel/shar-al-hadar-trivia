@@ -6,6 +6,7 @@ import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { Music, Users, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
 
 interface Player {
   id: string;
@@ -21,6 +22,9 @@ const GameHostSetup: React.FC = () => {
   const [gameCode] = useState(() => Math.floor(100000 + Math.random() * 900000).toString());
   const [players, setPlayers] = useState<Player[]>([]);
   const [gameStarted, setGameStarted] = useState(false);
+  const [hostName, setHostName] = useState('');
+  const [hostJoined, setHostJoined] = useState(false);
+  const [joinLoading, setJoinLoading] = useState(false);
 
   // Fetch initial players and subscribe to real-time updates
   useEffect(() => {
@@ -108,6 +112,43 @@ const GameHostSetup: React.FC = () => {
     });
   };
 
+  const handleHostJoin = async () => {
+    if (!hostName.trim()) {
+      toast({
+        title: "שם לא תקין",
+        description: "אנא הכנס את שמך",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setJoinLoading(true);
+
+    const { data, error } = await supabase
+      .from('players')
+      .insert([
+        { name: hostName, game_code: gameCode }
+      ]);
+
+    setJoinLoading(false);
+
+    if (error) {
+      console.error('Error joining host:', error);
+      toast({
+        title: "שגיאה בהצטרפות",
+        description: "לא ניתן להצטרף למשחק, נסה שוב",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setHostJoined(true);
+    toast({
+      title: "הצטרפת למשחק!",
+      description: "אתה מופיע ברשימת השחקנים"
+    });
+  };
+
   return <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <MusicNote type="note1" className="absolute top-[10%] right-[15%] opacity-20" size={36} animation="float" color="#6446D0" />
@@ -139,6 +180,27 @@ const GameHostSetup: React.FC = () => {
             <p className="text-sm text-center text-gray-500 mt-2">
               שתף את הקוד עם חברים ומשפחה כדי שיוכלו להצטרף למשחק
             </p>
+          </div>
+
+          {/* Host join section */}
+          <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-md">
+            <h3 className="text-lg font-semibold mb-3 text-center">הצטרף למשחק כמנחה</h3>
+            <Input
+              value={hostName}
+              onChange={(e) => setHostName(e.target.value)}
+              placeholder="הכנס את שמך (כדי להצטרף למשחק)"
+              disabled={hostJoined}
+              className="mb-3 text-right"
+            />
+            <AppButton
+              variant="secondary"
+              size="default"
+              onClick={handleHostJoin}
+              disabled={hostJoined || joinLoading}
+              className="w-full"
+            >
+              {joinLoading ? "מצטרף..." : hostJoined ? "הצטרפת למשחק" : "הצטרף גם אני"}
+            </AppButton>
           </div>
 
           <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-md">
