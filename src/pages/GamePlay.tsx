@@ -71,7 +71,7 @@ const GamePlay: React.FC = () => {
     setIsPlaying(true);
     toast({
       title: "משמיע שיר...",
-      description: `${currentRound.correctSong.title} ${currentRound.correctSong.artist ? `- ${currentRound.correctSong.artist}` : ''}`,
+      description: "מנגן כעת, האזן בקשב",
     });
     
     // Mock song playback - transition to answer phase after "playing"
@@ -216,7 +216,7 @@ const GamePlay: React.FC = () => {
     
     toast({
       title: "משמיע את השיר המלא",
-      description: `${currentRound.correctSong.title} ${currentRound.correctSong.artist ? `- ${currentRound.correctSong.artist}` : ''}`,
+      description: "השיר המלא מתנגן כעת",
     });
     
     // If we had actual player integration, we'd use the Spotify URL here
