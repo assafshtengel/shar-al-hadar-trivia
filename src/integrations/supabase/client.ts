@@ -37,3 +37,13 @@ export type PlayerUpdate = {
 export interface ResetPlayersStatusParams {
   game_code_param: string;
 }
+
+// Extend the Database.Functions interface to include our custom functions
+declare module '@supabase/supabase-js' {
+  interface SupabaseClient<T> {
+    rpc<Fn extends keyof Database['public']['Functions']>(
+      fn: Fn,
+      params?: Database['public']['Functions'][Fn]['Args']
+    ): ReturnType<SupabaseClient<T>['rpc']>;
+  }
+}
