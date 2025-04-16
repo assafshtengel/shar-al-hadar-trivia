@@ -10,7 +10,7 @@ import { Music } from 'lucide-react';
 
 const WaitingRoom = () => {
   const navigate = useNavigate();
-  const { gameCode, playerName, isHost } = useGameState();
+  const { gameCode, playerName, isHost, gamePhase } = useGameState();
   const [progressValue, setProgressValue] = useState(10);
 
   useEffect(() => {
@@ -31,6 +31,8 @@ const WaitingRoom = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // No need to add additional handling here as the GameStateContext already manages "end" state
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">

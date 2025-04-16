@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isHost, setIsHost] = useState<boolean>(
     localStorage.getItem('isHost') === 'true'
   );
+  const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
 
   const setGameData = (data: { gameCode: string; playerName: string; isHost?: boolean }) => {
     setGameCode(data.gameCode);
@@ -163,12 +165,23 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
         break;
       case 'end':
-        if (!isHost) {
+        if (!isHost && !isRedirecting) {
+          setIsRedirecting(true);
           toast('המשחק הסתיים', {
             description: 'המשחק הסתיים על ידי המארח',
           });
-          clearGameData();
-          navigate('/');
+          
+          // Show message and redirect after delay
+          const currentLocation = window.location.pathname;
+          if (currentLocation !== '/') {
+            const redirectTimer = setTimeout(() => {
+              clearGameData();
+              navigate('/');
+              setIsRedirecting(false);
+            }, 3000);
+            
+            return () => clearTimeout(redirectTimer);
+          }
         }
         break;
     }
@@ -185,6 +198,16 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         clearGameData
       }}
     >
+      {gamePhase === 'end' && !isHost && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md mx-auto animate-scale-in">
+            <h2 className="text-2xl font-bold text-primary mb-4">המשחק הסתיים</h2>
+            <p className="text-lg text-gray-700">
+              המשחק הסתיים. תחזרו לדף הבית להתחיל משחק חדש
+            </p>
+          </div>
+        </div>
+      )}
       {children}
     </GameStateContext.Provider>
   );

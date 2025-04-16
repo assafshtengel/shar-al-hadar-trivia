@@ -129,10 +129,12 @@ const GamePlay: React.FC = () => {
         setPhase('scoringFeedback');
         break;
       case 'end':
-        setPhase('leaderboard');
+        if (isHost) {
+          setPhase('leaderboard');
+        }
         break;
     }
-  }, [serverGamePhase]);
+  }, [serverGamePhase, isHost]);
 
   useEffect(() => {
     if (!gameCode) return;
