@@ -41,6 +41,14 @@ interface GameRound {
   correctAnswerIndex: number;
 }
 
+interface SupabasePlayer {
+  id: string;
+  name: string;
+  score: number;
+  game_code: string;
+  joined_at: string;
+}
+
 const songs: Song[] = [
   {
     name: "עתיד מתוק - משינה",
@@ -87,13 +95,7 @@ const GamePlay: React.FC = () => {
     return createGameRound();
   });
   
-  const [players, setPlayers] = useState<Player[]>([
-    { name: "אמא", score: 12, skipsLeft: 3, hasAnswered: false },
-    { name: "אבא", score: 10, skipsLeft: 2, hasAnswered: false },
-    { name: "סבתא", score: 8, skipsLeft: 3, hasAnswered: false },
-    { name: "דניאל", score: 6, skipsLeft: 1, hasAnswered: false },
-    { name: "רותם", score: 4, skipsLeft: 0, hasAnswered: false },
-  ]);
+  const [players, setPlayers] = useState<SupabasePlayer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<Player>({ 
     name: playerName || "שחקן נוכחי", 
@@ -133,6 +135,61 @@ const GamePlay: React.FC = () => {
         break;
     }
   }, [serverGamePhase]);
+
+  // Fetch players from Supabase
+  useEffect(() => {
+    if (!gameCode) return;
+
+    // Initial fetch of players
+    const fetchPlayers = async () => {
+      const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .eq('game_code', gameCode)
+        .order('score', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching players:', error);
+        toast({
+          title: "שגיאה בטעינת השחקנים",
+          description: "אירעה שגיאה בטעינת רשימת השחקנים",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data) {
+        console.log('Fetched players:', data);
+        setPlayers(data);
+      }
+    };
+
+    fetchPlayers();
+
+    // Subscribe to changes in the players table
+    const channel = supabase
+      .channel('players-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'players',
+          filter: `game_code=eq.${gameCode}`
+        },
+        (payload) => {
+          console.log('Players table changed:', payload);
+          
+          // Re-fetch the players to get the updated list
+          fetchPlayers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gameCode, toast]);
 
   // Update server game state (for host only)
   const updateGameState = async (phase: string) => {
@@ -238,6 +295,7 @@ const GamePlay: React.FC = () => {
     const isCorrect = index === currentRound.correctAnswerIndex;
     const points = isCorrect ? 10 : 0;
     
+    // Update current player state locally
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
@@ -246,6 +304,11 @@ const GamePlay: React.FC = () => {
       lastScore: points,
       score: prev.score + points
     }));
+    
+    // Update player score in Supabase if not in demo mode
+    if (gameCode && playerName) {
+      updatePlayerScore(points);
+    }
     
     setTimeout(() => {
       if (isHost) {
@@ -262,6 +325,43 @@ const GamePlay: React.FC = () => {
     }, 1000);
   };
 
+  // Update player score in Supabase
+  const updatePlayerScore = async (points: number) => {
+    if (!gameCode || !playerName) return;
+
+    // First get the current player's record
+    const { data: playerData, error: fetchError } = await supabase
+      .from('players')
+      .select('score')
+      .eq('game_code', gameCode)
+      .eq('name', playerName)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('Error fetching player:', fetchError);
+      return;
+    }
+
+    const currentScore = playerData?.score || 0;
+    const newScore = currentScore + points;
+
+    // Then update the score
+    const { error: updateError } = await supabase
+      .from('players')
+      .update({ score: newScore })
+      .eq('game_code', gameCode)
+      .eq('name', playerName);
+
+    if (updateError) {
+      console.error('Error updating player score:', updateError);
+      toast({
+        title: "שגיאה בעדכון הניקוד",
+        description: "אירעה שגיאה בעדכון הניקוד שלך",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSkip = () => {
     if (currentPlayer.hasAnswered || currentPlayer.skipsLeft <= 0) return;
     
@@ -272,6 +372,11 @@ const GamePlay: React.FC = () => {
       lastScore: 2,
       score: prev.score + 2
     }));
+    
+    // Update player score in Supabase
+    if (gameCode && playerName) {
+      updatePlayerScore(2);
+    }
     
     toast({
       title: "דילגת על השאלה",
@@ -542,11 +647,8 @@ const GamePlay: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {players
-                    .sort((a, b) => b.score - a.score)
-                    .slice(0, 5)
-                    .map((player, index) => (
-                    <TableRow key={index} className={player.name === currentPlayer.name ? 'bg-primary/10' : ''}>
+                  {players.map((player, index) => (
+                    <TableRow key={player.id} className={player.name === playerName ? 'bg-primary/10' : ''}>
                       <TableCell className="text-center font-medium">
                         {index === 0 ? <Crown className="h-5 w-5 text-yellow-500 mx-auto" /> : index + 1}
                       </TableCell>
@@ -554,6 +656,13 @@ const GamePlay: React.FC = () => {
                       <TableCell className="text-right font-bold">{player.score}</TableCell>
                     </TableRow>
                   ))}
+                  {players.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-4">
+                        טוען שחקנים...
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
