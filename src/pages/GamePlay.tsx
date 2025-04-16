@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -94,7 +93,6 @@ const GamePlay: React.FC = () => {
     hasAnswered: false 
   });
 
-  // Hide YouTube embed after song finishes
   useEffect(() => {
     if (showYouTubeEmbed) {
       const timer = setTimeout(() => {
@@ -108,11 +106,9 @@ const GamePlay: React.FC = () => {
     }
   }, [showYouTubeEmbed]);
 
-  // Handle playing song
   const playSong = () => {
     if (!isHost) return;
     
-    // Select a random song from the array
     const randomIndex = Math.floor(Math.random() * songs.length);
     const selectedSong = songs[randomIndex];
     
@@ -126,7 +122,6 @@ const GamePlay: React.FC = () => {
     });
   };
 
-  // Handle timer for answer phase
   const startTimer = () => {
     setTimeLeft(15);
     const timer = setInterval(() => {
@@ -145,7 +140,6 @@ const GamePlay: React.FC = () => {
     return () => clearInterval(timer);
   };
 
-  // Handle answer selection
   const handleAnswer = (index: number) => {
     if (currentPlayer.hasAnswered) return;
     
@@ -153,7 +147,6 @@ const GamePlay: React.FC = () => {
     const isCorrect = index === currentRound.correctAnswerIndex;
     const points = isCorrect ? 10 : 0;
     
-    // Update current player
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
@@ -163,18 +156,15 @@ const GamePlay: React.FC = () => {
       score: prev.score + points
     }));
     
-    // Simulate other players answering
     setTimeout(() => {
       setPhase('scoringFeedback');
       
-      // After showing feedback, move to leaderboard
       setTimeout(() => {
         setPhase('leaderboard');
       }, 3000);
     }, 1000);
   };
 
-  // Handle skip
   const handleSkip = () => {
     if (currentPlayer.hasAnswered || currentPlayer.skipsLeft <= 0) return;
     
@@ -200,7 +190,6 @@ const GamePlay: React.FC = () => {
     }, 1000);
   };
 
-  // Handle timeout
   const handleTimeout = () => {
     setCurrentPlayer(prev => ({
       ...prev,
@@ -224,11 +213,9 @@ const GamePlay: React.FC = () => {
     }, 1000);
   };
 
-  // Handle next round
   const nextRound = () => {
     if (!isHost) return;
     
-    // Create a new round with fresh song options
     const { correctSong, options } = createGameRound();
     setCurrentRound({
       correctSong,
@@ -236,7 +223,6 @@ const GamePlay: React.FC = () => {
       correctAnswerIndex: options.findIndex(song => song.id === correctSong.id)
     });
     
-    // Reset for next round
     setSelectedAnswer(null);
     setCurrentPlayer(prev => ({
       ...prev,
@@ -254,7 +240,6 @@ const GamePlay: React.FC = () => {
     });
   };
   
-  // Play full song
   const playFullSong = () => {
     if (!isHost) return;
     
@@ -263,14 +248,11 @@ const GamePlay: React.FC = () => {
       description: "השיר המלא מתנגן כעת",
     });
     
-    // If we had actual player integration, we'd use the Spotify URL here
     console.log(`Playing full song: ${currentRound.correctSong.spotifyUrl}`);
     
-    // In a real implementation, we might redirect to Spotify or use an embedded player
     window.open(currentRound.correctSong.spotifyUrl, '_blank');
   };
 
-  // Render the current phase
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
@@ -279,15 +261,23 @@ const GamePlay: React.FC = () => {
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
             {showYouTubeEmbed && currentSong && (
-              <div className="w-full max-w-sm overflow-hidden rounded-lg shadow-md">
+              <div className="hidden">
                 <iframe 
-                  width="100%" 
-                  height="150"
+                  width="1" 
+                  height="1"
                   src={currentSong.url}
                   frameBorder="0" 
                   allow="autoplay; encrypted-media" 
                   allowFullScreen
-                  className="w-full"
+                  className="opacity-0 absolute"
+                  style={{ 
+                    position: 'absolute', 
+                    width: '1px', 
+                    height: '1px', 
+                    overflow: 'hidden',
+                    clip: 'rect(0, 0, 0, 0)',
+                    whiteSpace: 'nowrap'
+                  }}
                 ></iframe>
               </div>
             )}
@@ -505,7 +495,6 @@ const GamePlay: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
-      {/* Background musical notes */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <MusicNote 
           type="note1" 
@@ -525,7 +514,6 @@ const GamePlay: React.FC = () => {
 
       <div className="container mx-auto px-4 py-6 flex-1 flex flex-col relative z-10 max-w-md">
         <div className="w-full flex flex-col items-center">
-          {/* Header */}
           <div className="mb-8 text-center">
             <Link to="/" className="block mb-2">
               <h1 className="text-3xl font-bold text-primary inline-flex items-center gap-2">
@@ -538,7 +526,6 @@ const GamePlay: React.FC = () => {
             </h2>
           </div>
 
-          {/* Game content */}
           <div className="w-full bg-white/90 backdrop-blur-sm rounded-lg p-6 shadow-md mb-4">
             {renderPhase()}
           </div>
