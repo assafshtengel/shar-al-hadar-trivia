@@ -1,17 +1,16 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { useToast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleCreateGame = () => {
-    toast({
-      title: "בקרוב!",
-      description: "יצירת משחק חדש תהיה זמינה בקרוב",
-    });
+    navigate('/host-setup');
   };
 
   const handleJoinGame = () => {
