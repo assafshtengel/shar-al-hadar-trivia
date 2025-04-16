@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
@@ -40,6 +39,7 @@ const GamePlay: React.FC = () => {
   const [isHost, setIsHost] = useState(true); // For demo purposes, assume we're the host
   const [timeLeft, setTimeLeft] = useState(15);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [currentRound, setCurrentRound] = useState<GameRound>(() => {
     const { correctSong, options } = createGameRound();
     return {
@@ -64,22 +64,31 @@ const GamePlay: React.FC = () => {
     hasAnswered: false 
   });
 
+  // Hide YouTube embed after song finishes
+  useEffect(() => {
+    if (showYouTubeEmbed) {
+      const timer = setTimeout(() => {
+        setShowYouTubeEmbed(false);
+        setIsPlaying(false);
+        setPhase('answerOptions');
+        startTimer();
+      }, 4000); // Hide after 4 seconds (same as original timeout)
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showYouTubeEmbed]);
+
   // Handle playing song
   const playSong = () => {
     if (!isHost) return;
     
     setIsPlaying(true);
+    setShowYouTubeEmbed(true);
+    
     toast({
       title: "משמיע שיר...",
       description: "מנגן כעת, האזן בקשב",
     });
-    
-    // Mock song playback - transition to answer phase after "playing"
-    setTimeout(() => {
-      setIsPlaying(false);
-      setPhase('answerOptions');
-      startTimer();
-    }, 4000);
   };
 
   // Handle timer for answer phase
@@ -234,6 +243,20 @@ const GamePlay: React.FC = () => {
           <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
+            {showYouTubeEmbed && (
+              <div className="w-full max-w-sm overflow-hidden rounded-lg shadow-md">
+                <iframe 
+                  width="100%" 
+                  height="150"
+                  src="https://www.youtube.com/embed/hecv4GDaUsA?autoplay=1&controls=0&modestbranding=1&rel=0&start=0"
+                  frameBorder="0" 
+                  allow="autoplay; encrypted-media" 
+                  allowFullScreen
+                  className="w-full"
+                ></iframe>
+              </div>
+            )}
+            
             {isHost && (
               <AppButton 
                 variant="primary" 
@@ -247,7 +270,7 @@ const GamePlay: React.FC = () => {
               </AppButton>
             )}
             
-            {isPlaying && (
+            {isPlaying && !showYouTubeEmbed && (
               <div className="relative w-40 h-40 flex items-center justify-center">
                 <div className="absolute w-full h-full">
                   <MusicNote 
