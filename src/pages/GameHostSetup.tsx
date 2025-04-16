@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
@@ -15,6 +15,7 @@ import {
 
 const GameHostSetup: React.FC = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [gameCode] = useState(() => Math.floor(100000 + Math.random() * 900000).toString());
   const [players, setPlayers] = useState<string[]>([]);
   const [musicSource, setMusicSource] = useState<string>("");
@@ -83,6 +84,9 @@ const GameHostSetup: React.FC = () => {
       title: "המשחק התחיל!",
       description: "כעת אתה יכול להשמיע שירים",
     });
+    
+    // Navigate to gameplay screen
+    navigate('/gameplay');
   };
 
   const playNextSong = () => {
