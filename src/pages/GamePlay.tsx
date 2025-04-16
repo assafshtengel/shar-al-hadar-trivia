@@ -105,7 +105,7 @@ const GamePlay: React.FC = () => {
     hasAnswered: false 
   });
 
-  const createRoundWithSong = (songId: number) => {
+  const createRoundWithSong = (songId: number): GameRound => {
     const selectedSong = findSongById(songId);
     
     if (!selectedSong) {
@@ -117,14 +117,27 @@ const GamePlay: React.FC = () => {
       };
     }
     
-    const otherSongs = defaultSongBank.filter(song => song.id !== songId);
-    const shuffledSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
-    const options = [...shuffledSongs, selectedSong].sort(() => Math.random() - 0.5);
+    // Get other songs that have different titles (to avoid duplicates)
+    const otherSongs = defaultSongBank.filter(song => 
+      song.id !== songId && song.title !== selectedSong.title
+    );
+    
+    // Shuffle and take 3 wrong answers
+    const shuffledWrongSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
+    
+    // Combine correct and wrong answers
+    const allOptions = [selectedSong, ...shuffledWrongSongs];
+    
+    // Shuffle the combined array to randomize positions
+    const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
+    
+    // Find the index of the correct answer in the shuffled array
+    const correctIndex = shuffledOptions.findIndex(song => song.id === selectedSong.id);
     
     return {
       correctSong: selectedSong,
-      options,
-      correctAnswerIndex: options.findIndex(song => song.id === selectedSong.id)
+      options: shuffledOptions,
+      correctAnswerIndex: correctIndex
     };
   };
 
@@ -144,14 +157,18 @@ const GamePlay: React.FC = () => {
   const playSong = () => {
     if (!isHost) return;
     
+    // Select a random song from the available list
     const randomIndex = Math.floor(Math.random() * songs.length);
     const selectedSong = songs[randomIndex];
     
+    // Store the current song
     setCurrentSong(selectedSong);
     
+    // Create a game round specifically for this song
     const gameRound = createRoundWithSong(selectedSong.songId);
     setCurrentRound(gameRound);
     
+    // Start playback
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     
@@ -283,10 +300,15 @@ const GamePlay: React.FC = () => {
       description: "השיר המלא מתנגן כעת",
     });
 
+    // First try to play from YouTube if available
     if (currentSong?.youtubeUrl) {
       console.log(`Playing full song from YouTube: ${currentSong.youtubeUrl}`);
       window.open(currentSong.youtubeUrl, '_blank');
+    } else if (currentRound.correctSong.youtubeUrl) {
+      console.log(`Playing full song from YouTube: ${currentRound.correctSong.youtubeUrl}`);
+      window.open(currentRound.correctSong.youtubeUrl, '_blank');
     } else {
+      // Fallback to Spotify
       console.log(`Playing full song from Spotify: ${currentRound.correctSong.spotifyUrl}`);
       window.open(currentRound.correctSong.spotifyUrl, '_blank');
     }
