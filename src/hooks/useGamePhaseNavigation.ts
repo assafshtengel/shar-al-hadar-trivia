@@ -43,6 +43,7 @@ export const useGamePhaseNavigation = ({
           break;
         case 'end':
           if (!isHost && !isRedirecting) {
+            console.log('Processing game end phase for player');
             setIsRedirecting(true);
             toast('המשחק הסתיים', {
               description: 'המשחק הסתיים על ידי המארח',

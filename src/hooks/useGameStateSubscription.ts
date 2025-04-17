@@ -79,14 +79,25 @@ export const useGameStateSubscription = ({
           
           if (payload.new && 'game_phase' in payload.new) {
             const newPhase = payload.new.game_phase as GamePhase;
-            setGamePhase(newPhase);
+            
+            // Only process the 'end' phase if it was explicitly set by the host
+            if (newPhase === 'end') {
+              console.log('Game end phase detected - was explicitly set by host');
+              setGamePhase(newPhase);
+            } else {
+              // For all other phases, process normally
+              setGamePhase(newPhase);
+            }
             
             // Also update host_ready state
             if ('host_ready' in payload.new) {
               setHostReady(!!payload.new.host_ready);
             }
           } else if (payload.eventType === 'DELETE') {
+            // Only handle DELETE events if they were triggered by the host ending the game
+            // This prevents false triggering of game end
             if (!isHost) {
+              console.log('Game state deleted by host - ending game for player');
               toast('המשחק הסתיים', {
                 description: 'המשחק הסתיים על ידי המארח',
               });
@@ -132,4 +143,3 @@ export const useGameStateSubscription = ({
     };
   }, [gameCode, isHost, setGamePhase, setHostReady, clearGameData, navigate]);
 };
-
