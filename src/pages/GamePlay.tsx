@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -439,10 +438,9 @@ const GamePlay: React.FC = () => {
         if (prev <= 1) {
           clearInterval(timer);
           setTimerActive(false);
+          
           if (selectedAnswer === null) {
             handleTimeout();
-          } else {
-            submitAllAnswers();
           }
           return 0;
         }
@@ -488,12 +486,10 @@ const GamePlay: React.FC = () => {
     
     await batchUpdatePlayerScores(pendingUpdates);
     
-    setTimeout(() => {
-      if (isHost) {
-        updateGameState('results');
-      }
-      setPhase('scoringFeedback');
-    }, 1000);
+    if (isHost) {
+      updateGameState('results');
+    }
+    setPhase('scoringFeedback');
   };
 
   const batchUpdatePlayerScores = async (updates: PendingAnswerUpdate[]) => {
@@ -609,6 +605,10 @@ const GamePlay: React.FC = () => {
       title: isCorrect ? "כל הכבוד!" : "אופס!",
       description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה",
     });
+
+    if (timeLeft <= 0) {
+      submitAllAnswers();
+    }
   };
 
   const handleSkip = async () => {
@@ -674,12 +674,10 @@ const GamePlay: React.FC = () => {
       });
     }
     
-    setTimeout(() => {
-      if (isHost) {
-        updateGameState('results');
-      }
-      setPhase('scoringFeedback');
-    }, 1000);
+    if (isHost) {
+      updateGameState('results');
+    }
+    setPhase('scoringFeedback');
   };
 
   const resetPlayersAnsweredStatus = async () => {
@@ -962,7 +960,7 @@ const GamePlay: React.FC = () => {
                 <div className="flex items-center justify-center gap-2 text-xl">
                   <span>קיבלת</span>
                   <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
-                  <span>נקודות</span>
+                  <span>נקו��ות</span>
                 </div>
                 
                 {currentRound && (
