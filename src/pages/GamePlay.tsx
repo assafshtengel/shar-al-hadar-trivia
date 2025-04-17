@@ -549,7 +549,7 @@ const GamePlay: React.FC = () => {
       console.error('Error in batchUpdatePlayerScores:', error);
       toast({
         title: "שגיאה בעדכון הניקוד",
-        description: "אירעה שג��אה בעדכון הניקוד",
+        description: "אירעה שגיאה בעדכון הניקוד",
         variant: "destructive"
       });
     }
@@ -757,7 +757,7 @@ const GamePlay: React.FC = () => {
     setSelectedAnswer(null);
     setTimerActive(false);
     setPlayerReady(false);
-    setAllPlayersReady(false);
+    
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: false,
@@ -984,138 +984,3 @@ const GamePlay: React.FC = () => {
       
       case 'leaderboard':
         return (
-          <div className="flex flex-col items-center py-6 space-y-6">
-            <div className="flex items-center gap-2">
-              <Trophy className="text-secondary" />
-              <h2 className="text-2xl font-bold text-primary">טבלת מובילים</h2>
-              <Trophy className="text-secondary" />
-            </div>
-            
-            <div className="w-full max-w-md bg-white rounded-lg shadow-md overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12 text-center">#</TableHead>
-                    <TableHead>שחקן</TableHead>
-                    <TableHead className="text-right">נקודות</TableHead>
-                    <TableHead className="w-12 text-center">מוכן</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {players.map((player, index) => (
-                    <TableRow key={player.id} className={player.name === playerName ? 'bg-primary/10' : ''}>
-                      <TableCell className="text-center font-medium">
-                        {index === 0 ? <Crown className="h-5 w-5 text-yellow-500 mx-auto" /> : index + 1}
-                      </TableCell>
-                      <TableCell>{player.name}</TableCell>
-                      <TableCell className="text-right font-bold">{player.score}</TableCell>
-                      <TableCell className="text-center">
-                        {player.isReady ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" />
-                        ) : (
-                          <div className="h-5 w-5 bg-gray-200 rounded-full mx-auto"></div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {players.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4">
-                        טוען שחקנים...
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            
-            {isHost ? (
-              <div className="w-full flex flex-col items-center gap-4 max-w-xs">
-                <AppButton 
-                  variant="primary" 
-                  onClick={nextRound}
-                  size="lg"
-                >
-                  המשך לשיר הבא
-                  <div className="text-xs mt-1">
-                    {players.filter(p => p.isReady).length} מתוך {players.length} שחקנים מוכנים
-                  </div>
-                </AppButton>
-                
-                <AppButton 
-                  variant="secondary"
-                  onClick={playFullSong}
-                  className="flex items-center gap-2"
-                >
-                  השמע את כל השיר
-                  <Youtube className="h-5 w-5" />
-                </AppButton>
-              </div>
-            ) : (
-              <div className="w-full flex flex-col items-center gap-4 max-w-xs">
-                <AppButton 
-                  variant="primary" 
-                  onClick={markPlayerReady}
-                  disabled={playerReady}
-                >
-                  {playerReady ? "סימנת שאתה מוכן לשיר הבא" : "מוכן לשיר הבא"}
-                  {playerReady && <CheckCircle2 className="mr-2 h-5 w-5" />}
-                </AppButton>
-                
-                <div className="text-sm text-gray-600 text-center">
-                  המתן למנהל המשחק להמשיך לשיר הבא
-                </div>
-              </div>
-            )}
-          </div>
-        );
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <MusicNote 
-          type="note1" 
-          className="absolute top-[10%] right-[15%] opacity-20" 
-          size={36} 
-          animation="float"
-          color="#6446D0"
-        />
-        <MusicNote 
-          type="note4" 
-          className="absolute bottom-[15%] left-[15%] opacity-20" 
-          size={32} 
-          animation="float-alt"
-          color="#FFC22A"
-        />
-      </div>
-
-      <div className="container mx-auto px-4 py-6 flex-1 flex flex-col relative z-10 max-w-md">
-        <div className="w-full flex flex-col items-center">
-          <div className="mb-8 text-center relative w-full">
-            <Link to="/" className="block mb-2">
-              <h1 className="text-3xl font-bold text-primary inline-flex items-center gap-2">
-                <Music className="h-6 w-6" />
-                שיר על הדרך
-              </h1>
-            </Link>
-            <h2 className="text-lg text-gray-600">
-              {isHost ? 'מסך מנהל המשחק' : 'מסך משחק'}
-            </h2>
-            
-            <div className="absolute top-0 right-0">
-              <EndGameButton />
-            </div>
-          </div>
-
-          <div className="w-full bg-white/90 backdrop-blur-sm rounded-lg p-6 shadow-md mb-4">
-            {renderPhase()}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default GamePlay;
