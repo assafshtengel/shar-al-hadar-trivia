@@ -54,6 +54,13 @@ const JoinGame = () => {
         return;
       }
 
+      // Check if game is in "end" state
+      if (gameStateData.game_phase === 'end') {
+        setError('המשחק הסתיים. אנא הצטרף למשחק אחר או צור משחק חדש.');
+        setIsSubmitting(false);
+        return;
+      }
+
       // Insert player data into Supabase
       const { error: insertError } = await supabase
         .from('players')

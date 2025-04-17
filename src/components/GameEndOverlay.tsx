@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface GameEndOverlayProps {
   isVisible: boolean;
@@ -7,7 +7,22 @@ interface GameEndOverlayProps {
 }
 
 const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) => {
-  if (!isVisible || isHost) return null;
+  const [showOverlay, setShowOverlay] = useState(false);
+  
+  useEffect(() => {
+    // Add a small delay before showing the overlay to prevent flashes when joining
+    if (isVisible && !isHost) {
+      const timer = setTimeout(() => {
+        setShowOverlay(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setShowOverlay(isVisible);
+    }
+  }, [isVisible, isHost]);
+  
+  if (!showOverlay || isHost) return null;
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">

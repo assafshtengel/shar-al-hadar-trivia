@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
 import GameEndOverlay from '@/components/GameEndOverlay';
+import { useGamePhaseNavigation } from '@/hooks/useGamePhaseNavigation';
 
 type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
 
@@ -63,46 +64,12 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     navigate
   });
 
-  // Handle navigation based on game phase
-  useEffect(() => {
-    if (!gamePhase) return;
-    
-    const handleGamePhaseNavigation = (phase: GamePhase, isHostReady: boolean, isInitial = false) => {
-      const currentPath = window.location.pathname;
-
-      switch (phase) {
-        case 'waiting':
-          if (currentPath !== '/waiting-room' && !isHost) {
-            navigate('/waiting-room');
-          } else if (isHost && currentPath !== '/host-setup' && isInitial) {
-            navigate('/host-setup');
-          }
-          break;
-        case 'playing':
-        case 'answering':
-        case 'results':
-          // Only navigate to gameplay if host is ready or user is not the host
-          if (!isHost || (isHost && isHostReady)) {
-            if (currentPath !== '/gameplay') {
-              navigate('/gameplay');
-            }
-          }
-          break;
-      }
-    };
-
-    // Handle initial navigation
-    handleGamePhaseNavigation(gamePhase, hostReady, true);
-
-    // Set up effect for future game phase changes
-    const handlePhaseChange = () => {
-      if (gamePhase) {
-        handleGamePhaseNavigation(gamePhase, hostReady);
-      }
-    };
-
-    handlePhaseChange();
-  }, [gamePhase, hostReady, isHost, navigate]);
+  // Use a separate hook for game phase navigation logic
+  useGamePhaseNavigation({
+    gamePhase,
+    isHost,
+    clearGameData
+  });
 
   return (
     <GameStateContext.Provider

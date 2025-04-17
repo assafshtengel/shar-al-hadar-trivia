@@ -81,8 +81,8 @@ export const useGameStateSubscription = ({
             const newPhase = payload.new.game_phase as GamePhase;
             console.log(`Game phase update: ${newPhase}, isHost: ${isHost}`);
             
-            // Only handle 'end' phase if host explicitly set it (and you're not the host)
-            if (newPhase === 'end' && !isHost) {
+            // Don't trigger 'end' phase for non-hosts if they're just joining
+            if (newPhase === 'end' && !isHost && payload.eventType === 'UPDATE') {
               console.log('Game end phase detected for player - set by host');
               setGamePhase(newPhase);
             } else if (newPhase !== 'end') {
@@ -121,7 +121,14 @@ export const useGameStateSubscription = ({
       if (data && data.game_phase) {
         console.log('Initial game state:', data);
         const currentPhase = data.game_phase as GamePhase;
-        setGamePhase(currentPhase);
+        
+        // Only set initial phase to 'end' if user is a host or if we're sure they didn't just join
+        if (currentPhase === 'end' && !isHost) {
+          console.log('Ignoring initial "end" phase for player that just joined');
+          // Don't set the game phase to 'end' for non-hosts during initial fetch
+        } else {
+          setGamePhase(currentPhase);
+        }
         
         if ('host_ready' in data) {
           setHostReady(!!data.host_ready);
