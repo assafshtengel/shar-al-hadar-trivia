@@ -106,7 +106,6 @@ const GamePlay: React.FC = () => {
   const [timerActive, setTimerActive] = useState(false);
   const [allPlayersAnswered, setAllPlayersAnswered] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
-  const [allPlayersReady, setAllPlayersReady] = useState(false);
   const [showAnswerConfirmation, setShowAnswerConfirmation] = useState(false);
   const [pendingAnswers, setPendingAnswers] = useState<PendingAnswerUpdate[]>([]);
   
@@ -196,21 +195,6 @@ const GamePlay: React.FC = () => {
     
     return () => clearInterval(interval);
   }, [gameCode, phase, timerActive, checkAllPlayersAnswered, isHost]);
-
-  useEffect(() => {
-    if (!gameCode || phase !== 'leaderboard' || isHost) return;
-
-    const interval = setInterval(async () => {
-      const allReady = await checkAllPlayersReady();
-      
-      if (allReady) {
-        setAllPlayersReady(true);
-        clearInterval(interval);
-      }
-    }, 2000); // Check every 2 seconds
-    
-    return () => clearInterval(interval);
-  }, [gameCode, phase, checkAllPlayersReady, isHost]);
 
   useEffect(() => {
     if (!gameCode) return;
@@ -1051,10 +1035,13 @@ const GamePlay: React.FC = () => {
                   variant="primary" 
                   onClick={nextRound}
                   size="lg"
-                  disabled={!allPlayersReady}
                 >
                   המשך לשיר הבא
-                  {!allPlayersReady && " (ממתין לכל השחקנים...)"}
+                  {!allPlayersReady && (
+                    <div className="text-xs mt-1">
+                      {players.filter(p => p.isReady).length} מתוך {players.length} שחקנים מוכנים
+                    </div>
+                  )}
                 </AppButton>
                 
                 <AppButton 
@@ -1078,7 +1065,7 @@ const GamePlay: React.FC = () => {
                 </AppButton>
                 
                 <div className="text-sm text-gray-600 text-center">
-                  המתן למנהל המשחק להמשיך לשיר הבא לאחר שכולם מוכנים
+                  המתן למנהל המשחק להמשיך לשיר הבא
                 </div>
               </div>
             )}
