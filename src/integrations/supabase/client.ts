@@ -34,3 +34,13 @@ export interface HostAnswerSelectionParams {
   is_correct: boolean;
   points: number;
 }
+
+// Add new interface for batch player updates
+export interface BatchPlayerUpdateParams {
+  game_code: string;
+  player_updates: {
+    player_name: string;
+    is_correct: boolean;
+    points: number;
+  }[];
+}

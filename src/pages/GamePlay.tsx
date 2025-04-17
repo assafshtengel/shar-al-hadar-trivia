@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
-import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, CheckCircle2 } from 'lucide-react';
+import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, CheckCircle2, Youtube } from 'lucide-react';
 import { 
   Table,
   TableBody,
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, BatchPlayerUpdateParams } from '@/integrations/supabase/client';
 import EndGameButton from '@/components/EndGameButton';
 
 interface Song {
@@ -34,6 +34,7 @@ interface Player {
   isReady: boolean;
   lastAnswer?: string;
   lastAnswerCorrect?: boolean;
+  pendingAnswer?: number | null;
 }
 
 interface GameRound {
@@ -50,6 +51,13 @@ interface SupabasePlayer {
   joined_at: string;
   hasAnswered: boolean;
   isReady: boolean;
+}
+
+interface PendingAnswerUpdate {
+  playerName: string;
+  selectedAnswer: number | null;
+  isCorrect: boolean;
+  points: number;
 }
 
 const songs: Song[] = [
@@ -99,6 +107,8 @@ const GamePlay: React.FC = () => {
   const [allPlayersAnswered, setAllPlayersAnswered] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
   const [allPlayersReady, setAllPlayersReady] = useState(false);
+  const [showAnswerConfirmation, setShowAnswerConfirmation] = useState(false);
+  const [pendingAnswers, setPendingAnswers] = useState<PendingAnswerUpdate[]>([]);
   
   const [players, setPlayers] = useState<SupabasePlayer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -107,7 +117,8 @@ const GamePlay: React.FC = () => {
     score: 0, 
     skipsLeft: 3, 
     hasAnswered: false,
-    isReady: false
+    isReady: false,
+    pendingAnswer: null
   });
 
   const checkAllPlayersAnswered = useCallback(async () => {
@@ -443,8 +454,10 @@ const GamePlay: React.FC = () => {
         if (prev <= 1) {
           clearInterval(timer);
           setTimerActive(false);
-          if (!currentPlayer.hasAnswered) {
+          if (selectedAnswer === null) {
             handleTimeout();
+          } else {
+            submitAllAnswers();
           }
           return 0;
         }
@@ -455,123 +468,136 @@ const GamePlay: React.FC = () => {
     return () => clearInterval(timer);
   };
 
-  const handleAnswer = async (index: number) => {
-    if (!currentRound) {
-      console.error('No current round data available');
+  const submitAllAnswers = async () => {
+    console.log('Timer ended, submitting all answers');
+    
+    if (!currentRound || !gameCode) {
+      console.error('Missing current round data or game code');
       return;
     }
     
-    if (!playerName || !gameCode) {
-      console.error('Missing playerName or gameCode, cannot answer');
+    const pendingUpdates: PendingAnswerUpdate[] = [];
+    
+    if (playerName && selectedAnswer !== null) {
+      const isCorrect = selectedAnswer === currentRound.correctAnswerIndex;
+      const points = isCorrect ? 10 : 0;
+      
+      pendingUpdates.push({
+        playerName: playerName,
+        selectedAnswer: selectedAnswer,
+        isCorrect,
+        points
+      });
+      
+      setCurrentPlayer(prev => ({
+        ...prev,
+        hasAnswered: true,
+        lastAnswer: currentRound.options[selectedAnswer].name,
+        lastAnswerCorrect: isCorrect,
+        lastScore: points,
+        score: prev.score + points
+      }));
+    }
+    
+    setPendingAnswers(pendingUpdates);
+    
+    await batchUpdatePlayerScores(pendingUpdates);
+    
+    setTimeout(() => {
+      if (isHost) {
+        updateGameState('results');
+      }
+      setPhase('scoringFeedback');
+    }, 1000);
+  };
+
+  const batchUpdatePlayerScores = async (updates: PendingAnswerUpdate[]) => {
+    if (!gameCode || updates.length === 0) {
+      return;
+    }
+    
+    console.log('Batch updating player scores:', updates);
+    
+    try {
+      const playerUpdates = updates.map(update => ({
+        player_name: update.playerName,
+        is_correct: update.isCorrect,
+        points: update.points
+      }));
+      
+      for (const update of playerUpdates) {
+        const { data: playerData, error: fetchError } = await supabase
+          .from('players')
+          .select('score')
+          .eq('game_code', gameCode)
+          .eq('name', update.player_name)
+          .maybeSingle();
+          
+        if (fetchError) {
+          console.error(`Error fetching player ${update.player_name}:`, fetchError);
+          continue;
+        }
+        
+        if (!playerData) {
+          console.error(`Player ${update.player_name} not found`);
+          continue;
+        }
+        
+        const currentScore = playerData.score || 0;
+        const newScore = currentScore + update.points;
+        
+        const { error: updateError } = await supabase
+          .from('players')
+          .update({
+            score: newScore,
+            hasAnswered: true
+          })
+          .eq('game_code', gameCode)
+          .eq('name', update.player_name);
+          
+        if (updateError) {
+          console.error(`Error updating player ${update.player_name}:`, updateError);
+        } else {
+          console.log(`Successfully updated player ${update.player_name} score to ${newScore}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error in batchUpdatePlayerScores:', error);
       toast({
-        title: "שגיאה",
-        description: "לא ניתן לענות על השאלה, חסרים פרטי שחקן",
+        title: "שגיאה בעדכון הניקוד",
+        description: "אירעה שג��אה בעדכון הניקוד",
         variant: "destructive"
       });
-      return;
-    }
-    
-    console.log(`Player ${playerName} attempting to answer: ${index}`);
-    
-    const { data: playerData, error: fetchError } = await supabase
-      .from('players')
-      .select('hasAnswered')
-      .eq('game_code', gameCode)
-      .eq('name', playerName)
-      .maybeSingle();
-    
-    if (fetchError) {
-      console.error('Error checking if player has answered:', fetchError);
-      return;
-    }
-    
-    const hasAnsweredInDB = playerData?.hasAnswered || false;
-    
-    if (hasAnsweredInDB) {
-      console.log('Player has already answered according to DB. Preventing answer submission.');
-      return;
-    }
-    
-    setSelectedAnswer(index);
-    const isCorrect = index === currentRound.correctAnswerIndex;
-    const points = isCorrect ? 10 : 0;
-    
-    setCurrentPlayer(prev => ({
-      ...prev,
-      hasAnswered: true,
-      lastAnswer: currentRound.options[index].name,
-      lastAnswerCorrect: isCorrect,
-      lastScore: points,
-      score: prev.score + points
-    }));
-    
-    if (gameCode && playerName) {
-      console.log(`Player ${playerName} selected answer: ${index}, isCorrect: ${isCorrect}, points: ${points}`);
-      await updatePlayerScore(points);
     }
   };
 
-  const updatePlayerScore = async (points: number) => {
-    if (!gameCode || !playerName) {
-      console.error('Missing gameCode or playerName for score update');
-      return;
-    }
-
-    try {
-      const { data: playerData, error: fetchError } = await supabase
-        .from('players')
-        .select('score, hasAnswered')
-        .eq('game_code', gameCode)
-        .eq('name', playerName)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('Error fetching player:', fetchError);
-        return;
-      }
-
-      console.log('Current player data:', playerData);
-      const currentScore = playerData?.score || 0;
-      const newScore = currentScore + points;
-
-      const { error: updateError } = await supabase
-        .from('players')
-        .update({ 
-          score: newScore,
-          hasAnswered: true
-        })
-        .eq('game_code', gameCode)
-        .eq('name', playerName);
-
-      if (updateError) {
-        console.error('Error updating player score:', updateError);
-        toast({
-          title: "שגיאה בעדכון הניקוד",
-          description: "אירעה שגיאה בעדכון הניקוד שלך",
-          variant: "destructive"
-        });
-      } else {
-        console.log(`Player ${playerName} score updated to ${newScore}, hasAnswered set to true`);
-      }
-    } catch (error) {
-      console.error('Unexpected error in updatePlayerScore:', error);
-    }
+  const handleAnswer = (index: number) => {
+    if (selectedAnswer !== null || !currentRound) return;
+    
+    console.log(`Player ${playerName} selected answer: ${index}`);
+    
+    setSelectedAnswer(index);
+    
+    setShowAnswerConfirmation(true);
+    
+    setTimeout(() => {
+      setShowAnswerConfirmation(false);
+    }, 2000);
+    
+    toast({
+      title: "הבחירה נקלטה!",
+      description: "התשובה שלך נשמרה",
+    });
   };
 
   const handleSkip = async () => {
-    if (currentPlayer.hasAnswered || currentPlayer.skipsLeft <= 0 || !currentRound) return;
+    if (selectedAnswer !== null || currentPlayer.skipsLeft <= 0 || !currentRound) return;
     
+    setSelectedAnswer(null);
     setCurrentPlayer(prev => ({
       ...prev,
-      hasAnswered: true,
       skipsLeft: prev.skipsLeft - 1,
-      lastScore: 2,
-      score: prev.score + 2
     }));
-    
-    if (gameCode && playerName) {
-      await updatePlayerScore(2);
-    }
     
     toast({
       title: "דילגת על השאלה",
@@ -579,18 +605,27 @@ const GamePlay: React.FC = () => {
     });
   };
 
-  const handleTimeout = async () => {
-    if (currentPlayer.hasAnswered) return;
+  const handleTimeout = () => {
+    console.log('Timeout reached without selection');
     
-    setCurrentPlayer(prev => ({
-      ...prev,
-      hasAnswered: true,
-      lastAnswerCorrect: false,
-      lastScore: 0
-    }));
-    
-    if (gameCode && playerName) {
-      await updatePlayerScore(0);
+    if (playerName) {
+      const pendingUpdate: PendingAnswerUpdate = {
+        playerName,
+        selectedAnswer: null,
+        isCorrect: false,
+        points: 0
+      };
+      
+      setPendingAnswers([pendingUpdate]);
+      
+      setCurrentPlayer(prev => ({
+        ...prev,
+        hasAnswered: true,
+        lastAnswerCorrect: false,
+        lastScore: 0
+      }));
+      
+      batchUpdatePlayerScores([pendingUpdate]);
     }
     
     toast({
@@ -598,6 +633,13 @@ const GamePlay: React.FC = () => {
       description: "לא הספקת לענות בזמן",
       variant: "destructive",
     });
+    
+    setTimeout(() => {
+      if (isHost) {
+        updateGameState('results');
+      }
+      setPhase('scoringFeedback');
+    }, 1000);
   };
 
   const resetPlayersAnsweredStatus = async () => {
@@ -806,18 +848,21 @@ const GamePlay: React.FC = () => {
             {currentRound ? (
               <div className="grid grid-cols-1 gap-4 w-full max-w-md">
                 {currentRound.options.map((song, index) => (
-                  <AppButton
-                    key={index}
-                    variant={selectedAnswer === index ? "primary" : "secondary"}
-                    className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} ${currentPlayer.hasAnswered ? "cursor-not-allowed" : ""}`}
-                    disabled={currentPlayer.hasAnswered}
-                    onClick={() => {
-                      console.log('Attempting to answer:', index);
-                      handleAnswer(index);
-                    }}
-                  >
-                    {song.name}
-                  </AppButton>
+                  <div key={index} className="relative">
+                    <AppButton
+                      variant={selectedAnswer === index ? "primary" : "secondary"}
+                      className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full`}
+                      disabled={selectedAnswer !== null}
+                      onClick={() => handleAnswer(index)}
+                    >
+                      {song.name}
+                    </AppButton>
+                    {selectedAnswer === index && showAnswerConfirmation && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 rounded-md animate-fade-in">
+                        ✓ הבחירה שלך נקלטה!
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (
@@ -829,16 +874,16 @@ const GamePlay: React.FC = () => {
             <AppButton
               variant="secondary"
               className="mt-4 max-w-xs"
-              disabled={currentPlayer.hasAnswered || currentPlayer.skipsLeft <= 0}
+              disabled={selectedAnswer !== null || currentPlayer.skipsLeft <= 0}
               onClick={handleSkip}
             >
               דלג ({currentPlayer.skipsLeft})
               <SkipForward className="mr-2" />
             </AppButton>
             
-            {currentPlayer.hasAnswered && (
+            {selectedAnswer !== null && (
               <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
-                יש לך 21 שניות לענות, או עד שכל השחקנים עונים. יש להמתין...
+                הבחירה שלך נקלטה! ממתין לסיום הזמן...
               </div>
             )}
           </div>
@@ -957,8 +1002,10 @@ const GamePlay: React.FC = () => {
                 <AppButton 
                   variant="secondary"
                   onClick={playFullSong}
+                  className="flex items-center gap-2"
                 >
                   השמע את כל השיר
+                  <Youtube className="h-5 w-5" />
                 </AppButton>
               </div>
             ) : (
