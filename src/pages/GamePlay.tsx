@@ -174,9 +174,9 @@ const GamePlay: React.FC = () => {
       case 'answering':
         setPhase('answerOptions');
         setSelectedAnswer(null);
-        if (!timerActive) {
-          startTimer();
-        }
+        setTimeLeft(21);
+        setTimerActive(false);
+        startTimer();
         break;
       case 'results':
         setPhase('scoringFeedback');
@@ -403,51 +403,11 @@ const GamePlay: React.FC = () => {
     }
   }, [showYouTubeEmbed, isHost]);
 
-  const playSong = async () => {
-    if (!isHost) return;
-    
-    await resetPlayersReadyStatus();
-    await resetPlayersAnsweredStatus();
-    
-    const gameRound = createGameRound();
-    setCurrentRound(gameRound);
-    
-    setCurrentSong(gameRound.correctSong);
-    
-    setSelectedAnswer(null);
-    setIsPlaying(true);
-    setShowYouTubeEmbed(true);
-    setAllPlayersAnswered(false);
-    
-    const roundDataString = JSON.stringify(gameRound);
-    const { error } = await supabase
-      .from('game_state')
-      .update({ 
-        current_song_name: roundDataString,
-        current_song_url: gameRound.correctSong.embedUrl,
-        game_phase: 'playing'
-      })
-      .eq('game_code', gameCode);
-    
-    if (error) {
-      console.error('Error storing game round data:', error);
-      toast({
-        title: "שגיאה בשמירת נתוני הסיבוב",
-        description: "אירעה שגיאה בשמירת נתוני הסיבוב",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    toast({
-      title: "משמיע שיר...",
-      description: "מנגן כעת, האזן בקשב",
-    });
-  };
-
   const startTimer = () => {
     if (timerActive) {
       console.log('Clearing existing timer before starting a new one');
+      setTimerActive(false);
+      setTimeLeft(21);
       return;
     }
     
@@ -636,6 +596,14 @@ const GamePlay: React.FC = () => {
     if (timeLeft <= 0) {
       submitAllAnswers();
     }
+    
+    const allAnswered = await checkAllPlayersAnswered();
+    if (allAnswered) {
+      setAllPlayersAnswered(true);
+      if (isHost) {
+        updateGameState('results');
+      }
+    }
   };
 
   const handleSkip = async () => {
@@ -782,6 +750,7 @@ const GamePlay: React.FC = () => {
     
     setSelectedAnswer(null);
     setTimerActive(false);
+    setTimeLeft(21);
     setPlayerReady(false);
     
     setCurrentPlayer(prev => ({
@@ -803,7 +772,51 @@ const GamePlay: React.FC = () => {
       description: "סיבוב חדש עומד להתחיל",
     });
   };
-  
+
+  const playSong = async () => {
+    if (!isHost) return;
+    
+    await resetPlayersReadyStatus();
+    await resetPlayersAnsweredStatus();
+    
+    const gameRound = createGameRound();
+    setCurrentRound(gameRound);
+    
+    setCurrentSong(gameRound.correctSong);
+    
+    setSelectedAnswer(null);
+    setIsPlaying(true);
+    setShowYouTubeEmbed(true);
+    setAllPlayersAnswered(false);
+    setTimerActive(false);
+    setTimeLeft(21);
+    
+    const roundDataString = JSON.stringify(gameRound);
+    const { error } = await supabase
+      .from('game_state')
+      .update({ 
+        current_song_name: roundDataString,
+        current_song_url: gameRound.correctSong.embedUrl,
+        game_phase: 'playing'
+      })
+      .eq('game_code', gameCode);
+    
+    if (error) {
+      console.error('Error storing game round data:', error);
+      toast({
+        title: "שגיאה בשמירת נתוני הסיבוב",
+        description: "אירעה שגיאה בשמירת נתוני הסיבוב",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: "משמיע שיר...",
+      description: "מנגן כעת, האזן בקשב",
+    });
+  };
+
   const playFullSong = () => {
     if (!isHost || !currentRound) return;
     
