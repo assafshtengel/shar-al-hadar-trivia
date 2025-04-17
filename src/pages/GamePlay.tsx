@@ -264,7 +264,7 @@ const GamePlay: React.FC = () => {
   }, [gameCode, toast, playerName]);
 
   useEffect(() => {
-    if (!gameCode || !serverGamePhase) return;
+    if (!gameCode) return;
     
     const fetchGameRoundData = async () => {
       const { data, error } = await supabase
@@ -331,7 +331,7 @@ const GamePlay: React.FC = () => {
     return () => {
       supabase.removeChannel(gameStateChannel);
     };
-  }, [gameCode, serverGamePhase]);
+  }, [gameCode]);
 
   const updateGameState = async (phase: string) => {
     if (!isHost || !gameCode) return;
@@ -1037,11 +1037,9 @@ const GamePlay: React.FC = () => {
                   size="lg"
                 >
                   המשך לשיר הבא
-                  {!allPlayersReady && (
-                    <div className="text-xs mt-1">
-                      {players.filter(p => p.isReady).length} מתוך {players.length} שחקנים מוכנים
-                    </div>
-                  )}
+                  <div className="text-xs mt-1">
+                    {players.filter(p => p.isReady).length} מתוך {players.length} שחקנים מוכנים
+                  </div>
                 </AppButton>
                 
                 <AppButton 
