@@ -571,7 +571,7 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  const handleAnswer = (index: number) => {
+  const handleAnswer = async (index: number) => {
     if (selectedAnswer !== null || !currentRound) return;
     
     console.log(`Player ${playerName} selected answer: ${index}`);
@@ -579,6 +579,29 @@ const GamePlay: React.FC = () => {
     setSelectedAnswer(index);
     
     setShowAnswerConfirmation(true);
+    
+    if (gameCode && playerName) {
+      try {
+        console.log(`Updating hasAnswered status for player ${playerName}`);
+        const { error } = await supabase
+          .from('players')
+          .update({ hasAnswered: true })
+          .eq('game_code', gameCode)
+          .eq('name', playerName);
+          
+        if (error) {
+          console.error('Error updating player answer status:', error);
+        } else {
+          console.log(`Successfully marked ${playerName} as having answered`);
+          setCurrentPlayer(prev => ({
+            ...prev,
+            hasAnswered: true
+          }));
+        }
+      } catch (err) {
+        console.error('Exception when updating player answer status:', err);
+      }
+    }
     
     setTimeout(() => {
       setShowAnswerConfirmation(false);
@@ -605,7 +628,7 @@ const GamePlay: React.FC = () => {
     });
   };
 
-  const handleTimeout = () => {
+  const handleTimeout = async () => {
     console.log('Timeout reached without selection');
     
     if (playerName) {
@@ -625,14 +648,28 @@ const GamePlay: React.FC = () => {
         lastScore: 0
       }));
       
+      if (gameCode) {
+        const { data } = await supabase
+          .from('players')
+          .select('hasAnswered')
+          .eq('game_code', gameCode)
+          .eq('name', playerName)
+          .maybeSingle();
+          
+        if (data && data.hasAnswered) {
+          console.log(`Player ${playerName} already marked as answered, skipping timeout update`);
+          return;
+        }
+      }
+      
       batchUpdatePlayerScores([pendingUpdate]);
+      
+      toast({
+        title: "אוי! נגמר הזמן",
+        description: "לא הספקת לענות בזמן",
+        variant: "destructive",
+      });
     }
-    
-    toast({
-      title: "אוי! נגמר הזמן",
-      description: "לא הספקת לענות בזמן",
-      variant: "destructive",
-    });
     
     setTimeout(() => {
       if (isHost) {
