@@ -42,11 +42,12 @@ const EndGameButton: React.FC = () => {
         toast('שגיאה בסיום המשחק', {
           description: 'אירעה שגיאה בעדכון מצב המשחק',
         });
+        setIsLoading(false);
         return;
       }
       
-      // Wait a moment for all clients to receive the end notification
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait 3 seconds for all clients to receive the end notification
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
       // Delete all players for this game
       const { error: playersError } = await supabase
