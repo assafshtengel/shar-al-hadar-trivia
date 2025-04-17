@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -80,27 +79,19 @@ export const useGameStateSubscription = ({
           if (payload.new && 'game_phase' in payload.new) {
             const newPhase = payload.new.game_phase as GamePhase;
             
-            // Only process the 'end' phase if it was explicitly set by the host
-            if (newPhase === 'end') {
-              console.log('Game end phase detected - was explicitly set by host');
+            if (newPhase === 'end' && !isHost) {
+              console.log('Game end phase detected - confirmed host triggered');
               setGamePhase(newPhase);
-            } else {
-              // For all other phases, process normally
+            } else if (newPhase !== 'end') {
               setGamePhase(newPhase);
             }
             
-            // Also update host_ready state
             if ('host_ready' in payload.new) {
               setHostReady(!!payload.new.host_ready);
             }
           } else if (payload.eventType === 'DELETE') {
-            // Only handle DELETE events if they were triggered by the host ending the game
-            // This prevents false triggering of game end
             if (!isHost) {
               console.log('Game state deleted by host - ending game for player');
-              toast('המשחק הסתיים', {
-                description: 'המשחק הסתיים על ידי המארח',
-              });
               clearGameData();
               navigate('/');
             }
@@ -128,7 +119,6 @@ export const useGameStateSubscription = ({
         const currentPhase = data.game_phase as GamePhase;
         setGamePhase(currentPhase);
         
-        // Also set host_ready state
         if ('host_ready' in data) {
           setHostReady(!!data.host_ready);
         }
