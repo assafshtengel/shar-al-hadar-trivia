@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useGameState } from '@/contexts/GameStateContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,6 +6,9 @@ import { Music } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import EndGameButton from '@/components/EndGameButton';
 import MusicNote from '@/components/MusicNote';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 
 const GamePlay = () => {
   const { gameCode, playerName, isHost, gamePhase } = useGameState();
@@ -27,17 +31,27 @@ const GamePlay = () => {
     const fetchQuestion = async () => {
       setLoading(true);
       try {
-        const { data: question, error } = await supabase
-          .from('questions')
+        // Instead of querying a "questions" table, get the current question data from game_state
+        const { data: gameState, error } = await supabase
+          .from('game_state')
           .select('*')
-          .eq('round', round)
           .eq('game_code', gameCode)
           .single();
 
         if (error) {
-          console.error('Error fetching question:', error);
-        } else {
-          setCurrentQuestion(question);
+          console.error('Error fetching game state:', error);
+        } else if (gameState) {
+          // For demonstration, we'll create a dummy question based on the game state
+          // In a real implementation, you would store questions in game_state or another table
+          const dummyQuestion = {
+            question_text: `שאלה למשחק בסיבוב ${round}`,
+            options: ['תשובה א', 'תשובה ב', 'תשובה ג', 'תשובה ד'],
+            correct_answer: 'תשובה א',
+            song_name: gameState.current_song_name || 'שיר לדוגמה',
+            song_url: gameState.current_song_url || ''
+          };
+          
+          setCurrentQuestion(dummyQuestion);
         }
       } catch (err) {
         console.error('Unexpected error fetching question:', err);
@@ -64,6 +78,13 @@ const GamePlay = () => {
 
     return () => clearTimeout(timerInterval);
   }, [isAnswering, timeRemaining]);
+
+  const handleSelectAnswer = (answer: string) => {
+    if (isAnswering) {
+      setUserAnswer(answer);
+      // In a real implementation, you would send the answer to the server
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
@@ -108,7 +129,7 @@ const GamePlay = () => {
               </h1>
             </Link>
             
-            {/* Add game info and end game button */}
+            {/* Game info and end game button */}
             <div className="flex justify-between items-center w-full">
               <div className="text-lg text-gray-600">
                 קוד משחק: <span className="font-bold">{gameCode}</span>
@@ -117,6 +138,67 @@ const GamePlay = () => {
             </div>
           </div>
           
+          {/* Game content */}
+          <Card className="w-full shadow-md">
+            <CardContent className="p-6">
+              {loading ? (
+                <div className="text-center py-8">טוען שאלה...</div>
+              ) : currentQuestion ? (
+                <div className="space-y-4">
+                  <div className="text-lg font-medium text-center mb-4">
+                    סיבוב {round} - {currentQuestion.song_name}
+                  </div>
+                  
+                  {/* Timer */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>זמן נותר</span>
+                      <span>{timeRemaining} שניות</span>
+                    </div>
+                    <Progress value={(timeRemaining / 30) * 100} className="h-2" />
+                  </div>
+                  
+                  {/* Question */}
+                  <div className="text-xl font-bold text-center my-6">
+                    {currentQuestion.question_text}
+                  </div>
+                  
+                  {/* Answer options */}
+                  <div className="grid grid-cols-1 gap-3 mt-4">
+                    {currentQuestion.options.map((option: string, index: number) => (
+                      <Button
+                        key={index}
+                        variant={userAnswer === option ? "default" : "outline"}
+                        className="py-6 text-md justify-start"
+                        onClick={() => handleSelectAnswer(option)}
+                        disabled={!isAnswering}
+                      >
+                        {option}
+                      </Button>
+                    ))}
+                  </div>
+                  
+                  {/* Results section */}
+                  {showResults && (
+                    <div className="mt-6 p-4 bg-accent/10 rounded-lg">
+                      <div className="text-center font-bold mb-2">
+                        {userAnswer === currentQuestion.correct_answer 
+                          ? "תשובה נכונה! 🎉" 
+                          : "תשובה שגויה! 😕"}
+                      </div>
+                      <div className="text-center">
+                        התשובה הנכונה: {currentQuestion.correct_answer}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  לא נמצאה שאלה לסיבוב הנוכחי
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
