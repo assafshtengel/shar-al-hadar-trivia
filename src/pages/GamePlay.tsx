@@ -758,9 +758,6 @@ const GamePlay: React.FC = () => {
   useEffect(() => {
     if (phase === 'scoringFeedback') {
       const timer = setTimeout(() => {
-        if (isHost) {
-          updateGameState('end');
-        }
         setPhase('leaderboard');
       }, 4000);
       

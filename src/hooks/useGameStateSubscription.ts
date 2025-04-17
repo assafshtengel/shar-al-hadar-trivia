@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -78,11 +79,14 @@ export const useGameStateSubscription = ({
           
           if (payload.new && 'game_phase' in payload.new) {
             const newPhase = payload.new.game_phase as GamePhase;
+            console.log(`Game phase update: ${newPhase}, isHost: ${isHost}`);
             
+            // Only handle 'end' phase if host explicitly set it (and you're not the host)
             if (newPhase === 'end' && !isHost) {
-              console.log('Game end phase detected - confirmed host triggered');
+              console.log('Game end phase detected for player - set by host');
               setGamePhase(newPhase);
             } else if (newPhase !== 'end') {
+              // Process all other phases normally
               setGamePhase(newPhase);
             }
             
