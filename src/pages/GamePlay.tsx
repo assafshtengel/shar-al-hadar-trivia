@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -984,3 +985,119 @@ const GamePlay: React.FC = () => {
       
       case 'leaderboard':
         return (
+          <div className="flex flex-col items-center py-6 space-y-6">
+            <h2 className="text-2xl font-bold text-primary">לוח תוצאות</h2>
+            
+            <div className="w-full max-w-md bg-white/90 rounded-lg shadow-md overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-14 text-center">#</TableHead>
+                    <TableHead>שחקן</TableHead>
+                    <TableHead className="text-right">ניקוד</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {players.map((player, index) => (
+                    <TableRow 
+                      key={player.id}
+                      className={player.name === playerName ? "bg-primary/10" : ""}
+                    >
+                      <TableCell className="font-medium text-center">
+                        {index === 0 ? (
+                          <Crown className="h-5 w-5 text-yellow-500 mx-auto" />
+                        ) : (
+                          <span>{index + 1}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-bold">{player.name}</TableCell>
+                      <TableCell className="text-right">
+                        <span className="font-mono font-bold">{player.score}</span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {currentRound && (
+              <div className="flex flex-col items-center gap-2 mt-2">
+                <div className="text-lg font-semibold">
+                  השיר האחרון היה: {currentRound.correctSong.name}
+                </div>
+                
+                {isHost && (
+                  <div className="flex gap-2 mt-2">
+                    <AppButton
+                      variant="primary" 
+                      onClick={playFullSong}
+                      className="max-w-xs"
+                    >
+                      השמע שיר מלא
+                      <Youtube className="mr-2" />
+                    </AppButton>
+                    
+                    <AppButton
+                      variant="secondary" 
+                      onClick={nextRound}
+                      className="max-w-xs"
+                    >
+                      סיבוב הבא
+                      <SkipForward className="mr-2" />
+                    </AppButton>
+                  </div>
+                )}
+                
+                {!isHost && !playerReady && (
+                  <AppButton
+                    variant="secondary" 
+                    onClick={markPlayerReady}
+                    className="max-w-xs mt-2"
+                  >
+                    מוכן לסיבוב הבא
+                    <CheckCircle2 className="mr-2" />
+                  </AppButton>
+                )}
+                
+                {!isHost && playerReady && (
+                  <div className="bg-green-100 text-green-800 px-4 py-2 rounded-md mt-2">
+                    סימנת שאתה מוכן לסיבוב הבא, ממתין למארח...
+                  </div>
+                )}
+                
+                {isHost && (
+                  <div className="mt-4">
+                    <EndGameButton gameCode={gameCode} />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">
+          <span className="text-primary">מנחש</span> 
+          <span className="text-secondary">השירים</span>
+        </h1>
+        <div className="text-lg font-semibold bg-primary/10 px-3 py-1 rounded-md">
+          קוד משחק: {gameCode}
+        </div>
+      </div>
+      
+      <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg">
+        {renderPhase()}
+      </div>
+      
+      <div className="mt-4 text-sm text-center text-gray-500">
+        <Link to="/" className="hover:text-primary">חזרה לדף הבית</Link>
+      </div>
+    </div>
+  );
+};
+
+export default GamePlay;
