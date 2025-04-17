@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { Music, Users, Copy } from 'lucide-react';
-import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
+import { supabase, checkPlayerExists, verifyHostInPlayersTable } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { useGameState } from '@/contexts/GameStateContext';
 import EndGameButton from '@/components/EndGameButton';
@@ -225,6 +226,9 @@ const GameHostSetup: React.FC = () => {
           description: "אתה כבר מופיע ברשימת השחקנים"
         });
         
+        // Debug verification - silent
+        await verifyHostInPlayersTable({ game_code: gameCode, player_name: hostName });
+        
         setJoinLoading(false);
         return;
       }
@@ -261,6 +265,18 @@ const GameHostSetup: React.FC = () => {
         title: "הצטרפת למשחק!",
         description: "אתה מופיע ברשימת השחקנים"
       });
+      
+      // Add the debug verification after trying to insert the host
+      const isHostAdded = await verifyHostInPlayersTable({ game_code: gameCode, player_name: hostName });
+      
+      // Show an alert if the host verification fails
+      if (!isHostAdded) {
+        toast({
+          title: "שגיאה",
+          description: "שגיאה: המנחה לא נוסף לרשימת השחקנים",
+          variant: "destructive"
+        });
+      }
     } catch (err) {
       console.error('Exception during host join:', err);
       toast({

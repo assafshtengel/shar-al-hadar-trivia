@@ -70,3 +70,16 @@ export const checkPlayerExists = async ({ game_code, player_name }: CheckPlayerE
     player: data 
   };
 };
+
+// Debug utility to verify host was added to players table
+export const verifyHostInPlayersTable = async ({ game_code, player_name }: CheckPlayerExistsParams) => {
+  const { exists, player } = await checkPlayerExists({ game_code, player_name });
+  
+  if (exists) {
+    console.log("✅ Host successfully added to players table", player);
+    return true;
+  } else {
+    console.error("❌ Host was not added to players table", { game_code, player_name });
+    return false;
+  }
+};
