@@ -1,7 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGameState } from '@/contexts/GameStateContext';
+import { MusicNoteIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 interface GameEndOverlayProps {
   isVisible: boolean;
@@ -9,49 +11,44 @@ interface GameEndOverlayProps {
 }
 
 const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) => {
-  const [showOverlay, setShowOverlay] = useState(false);
   const navigate = useNavigate();
-  const { clearGameData } = useGameState();
-  
+
   useEffect(() => {
-    // Add a small delay before showing the overlay to prevent flashes when joining
+    // If the overlay is visible for a non-host and the player hasn't navigated away,
+    // automatically redirect to the home page after 5 seconds
+    let redirectTimer: NodeJS.Timeout;
+    
     if (isVisible && !isHost) {
-      const timer = setTimeout(() => {
-        setShowOverlay(true);
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    } else {
-      setShowOverlay(isVisible);
-    }
-  }, [isVisible, isHost]);
-  
-  useEffect(() => {
-    // Redirect to home and clear game data after showing the overlay
-    if (showOverlay && !isHost) {
-      const redirectTimer = setTimeout(() => {
-        clearGameData();
+      redirectTimer = setTimeout(() => {
         navigate('/');
-      }, 2000); // Redirect after 2 seconds
-      
-      return () => clearTimeout(redirectTimer);
+      }, 5000);
     }
-  }, [showOverlay, isHost, navigate, clearGameData]);
-  
-  if (!showOverlay || isHost) return null;
-  
+    
+    return () => {
+      if (redirectTimer) clearTimeout(redirectTimer);
+    };
+  }, [isVisible, isHost, navigate]);
+
+  if (!isVisible || isHost) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md mx-auto animate-scale-in">
-        <h2 className="text-2xl font-bold text-primary mb-4">המשחק הסתיים</h2>
-        <p className="text-lg text-gray-700 mb-4">
-          המשחק הסתיים. תחזרו לדף הבית להתחיל משחק חדש
-        </p>
-        <div className="text-sm text-gray-500">
-          מועבר לדף הבית באופן אוטומטי...
+    <Sheet open={isVisible} onOpenChange={() => {}}>
+      <SheetContent className="max-w-full w-full h-full flex items-center justify-center bg-primary/95" side="bottom">
+        <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold text-primary mb-4">המשחק הסתיים</h2>
+          <p className="text-gray-700 mb-6">המשחק הסתיים על ידי המארח. תודה על השתתפותך!</p>
+          <div className="flex justify-center mb-3">
+            <MusicNoteIcon className="h-12 w-12 text-primary" />
+          </div>
+          <Button onClick={() => navigate('/')} className="w-full">
+            חזרה לדף הבית
+          </Button>
+          <p className="text-sm text-gray-500 mt-4">
+            תועבר אוטומטית לדף הבית בעוד מספר שניות...
+          </p>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 };
 
