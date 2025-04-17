@@ -70,7 +70,7 @@ const GameHostSetup: React.FC = () => {
             <h2 className="text-lg text-gray-600">מסך מנהל המשחק</h2>
             
             <div className="absolute top-0 right-0">
-              <EndGameButton />
+              <EndGameButton gameCode={gameCode} />
             </div>
           </div>
 

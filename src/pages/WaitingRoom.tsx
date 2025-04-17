@@ -81,7 +81,7 @@ const WaitingRoom = () => {
             </h2>
             
             <div className="absolute top-0 right-0">
-              <EndGameButton />
+              <EndGameButton gameCode={gameCode} />
             </div>
           </div>
 
