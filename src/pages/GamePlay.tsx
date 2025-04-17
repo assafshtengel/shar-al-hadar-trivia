@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
-import { supabase, BatchPlayerUpdateParams } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import EndGameButton from '@/components/EndGameButton';
 
 interface Song {
@@ -578,25 +578,38 @@ const GamePlay: React.FC = () => {
     
     setSelectedAnswer(index);
     
+    const isCorrect = index === currentRound.correctAnswerIndex;
+    const points = isCorrect ? 10 : 0;
+    
+    setCurrentPlayer(prev => ({
+      ...prev,
+      hasAnswered: true,
+      lastAnswer: currentRound.options[index].name,
+      lastAnswerCorrect: isCorrect,
+      lastScore: points,
+      pendingAnswer: index,
+      score: prev.score + points
+    }));
+    
     setShowAnswerConfirmation(true);
     
     if (gameCode && playerName) {
       try {
-        console.log(`Updating hasAnswered status for player ${playerName}`);
+        console.log(`Updating hasAnswered status and storing answer for player ${playerName}`);
+        
         const { error } = await supabase
           .from('players')
-          .update({ hasAnswered: true })
+          .update({ 
+            hasAnswered: true,
+            score: currentPlayer.score + points
+          })
           .eq('game_code', gameCode)
           .eq('name', playerName);
           
         if (error) {
           console.error('Error updating player answer status:', error);
         } else {
-          console.log(`Successfully marked ${playerName} as having answered`);
-          setCurrentPlayer(prev => ({
-            ...prev,
-            hasAnswered: true
-          }));
+          console.log(`Successfully marked ${playerName} as having answered and updated score`);
         }
       } catch (err) {
         console.error('Exception when updating player answer status:', err);
@@ -608,8 +621,8 @@ const GamePlay: React.FC = () => {
     }, 2000);
     
     toast({
-      title: "הבחירה נקלטה!",
-      description: "התשובה שלך נשמרה",
+      title: isCorrect ? "כל הכבוד!" : "אופס!",
+      description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה",
     });
   };
 
@@ -631,7 +644,26 @@ const GamePlay: React.FC = () => {
   const handleTimeout = async () => {
     console.log('Timeout reached without selection');
     
+    if (selectedAnswer !== null) {
+      console.log('Player already answered, skipping timeout handler');
+      return;
+    }
+    
     if (playerName) {
+      if (gameCode) {
+        const { data } = await supabase
+          .from('players')
+          .select('hasAnswered')
+          .eq('game_code', gameCode)
+          .eq('name', playerName)
+          .maybeSingle();
+          
+        if (data && data.hasAnswered) {
+          console.log(`Player ${playerName} already marked as answered, skipping timeout update`);
+          return;
+        }
+      }
+      
       const pendingUpdate: PendingAnswerUpdate = {
         playerName,
         selectedAnswer: null,
@@ -648,21 +680,7 @@ const GamePlay: React.FC = () => {
         lastScore: 0
       }));
       
-      if (gameCode) {
-        const { data } = await supabase
-          .from('players')
-          .select('hasAnswered')
-          .eq('game_code', gameCode)
-          .eq('name', playerName)
-          .maybeSingle();
-          
-        if (data && data.hasAnswered) {
-          console.log(`Player ${playerName} already marked as answered, skipping timeout update`);
-          return;
-        }
-      }
-      
-      batchUpdatePlayerScores([pendingUpdate]);
+      await batchUpdatePlayerScores([pendingUpdate]);
       
       toast({
         title: "אוי! נגמר הזמן",
@@ -937,7 +955,7 @@ const GamePlay: React.FC = () => {
                 
                 <div className="flex items-center justify-center gap-2 text-xl">
                   <span>קיבלת</span>
-                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore}</span>
+                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
                   <span>נקודות</span>
                 </div>
                 
@@ -948,7 +966,7 @@ const GamePlay: React.FC = () => {
                 )}
                 
                 {!currentPlayer.lastAnswerCorrect && currentRound && (
-                  <div className="text-lg">
+                  <div className="text-lg font-semibold text-green-500">
                     תשובה נכונה: {currentRound.correctSong.name}
                   </div>
                 )}
@@ -961,9 +979,15 @@ const GamePlay: React.FC = () => {
                 
                 <div className="flex items-center justify-center gap-2 text-xl">
                   <span>קיבלת</span>
-                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore}</span>
+                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
                   <span>נקודות</span>
                 </div>
+                
+                {currentRound && (
+                  <div className="text-lg font-semibold text-green-500">
+                    התשובה הנכונה הייתה: {currentRound.correctSong.name}
+                  </div>
+                )}
                 
                 <div className="text-lg">
                   נותרו לך {currentPlayer.skipsLeft} דילוגים
@@ -971,8 +995,8 @@ const GamePlay: React.FC = () => {
               </>
             )}
             
-            <div className="text-gray-500 animate-pulse">
-              עובר ללוח התוצאות...
+            <div className="bg-gray-100 p-4 rounded-lg text-center animate-pulse">
+              עובר ללוח התוצאות בקרוב...
             </div>
           </div>
         );
