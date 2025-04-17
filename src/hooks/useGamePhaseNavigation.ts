@@ -22,25 +22,23 @@ export const useGamePhaseNavigation = ({
   useEffect(() => {
     if (!gamePhase) return;
     
-    const handleGamePhaseNavigation = (phase: GamePhase, isHostReady: boolean, isInitial = false) => {
+    const handleGamePhaseNavigation = () => {
       const currentPath = window.location.pathname;
 
-      switch (phase) {
+      switch (gamePhase) {
         case 'waiting':
           if (currentPath !== '/waiting-room' && !isHost) {
             navigate('/waiting-room');
-          } else if (isHost && currentPath !== '/host-setup' && isInitial) {
+          } else if (isHost && currentPath !== '/host-setup') {
             navigate('/host-setup');
           }
           break;
         case 'playing':
         case 'answering':
         case 'results':
-          // Only navigate to gameplay if host is ready or user is not the host
-          if (!isHost || (isHost && isHostReady)) {
-            if (currentPath !== '/gameplay') {
-              navigate('/gameplay');
-            }
+          // Make sure players stay in the gameplay page
+          if (currentPath !== '/gameplay') {
+            navigate('/gameplay');
           }
           break;
         case 'end':
@@ -66,10 +64,8 @@ export const useGamePhaseNavigation = ({
       }
     };
 
-    // Only include this in the dependency array to prevent endless loops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gamePhase, isHost, clearGameData, navigate]);
+    handleGamePhaseNavigation();
+  }, [gamePhase, isHost, clearGameData, navigate, isRedirecting]);
 
   return { isRedirecting };
 };
-
