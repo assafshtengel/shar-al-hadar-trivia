@@ -1,8 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
+import GameEndOverlay from '@/components/GameEndOverlay';
 
 type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
 
@@ -29,7 +29,6 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isHost, setIsHost] = useState<boolean>(
     localStorage.getItem('isHost') === 'true'
   );
-  const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
   const [hostReady, setHostReady] = useState<boolean>(false);
 
   const setGameData = (data: { gameCode: string; playerName: string; isHost?: boolean }) => {
@@ -54,162 +53,56 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.removeItem('isHost');
   };
 
+  // Use the subscription hook to listen for game state changes
+  useGameStateSubscription({
+    gameCode,
+    isHost,
+    setGamePhase,
+    setHostReady,
+    clearGameData,
+    navigate
+  });
+
+  // Handle navigation based on game phase
   useEffect(() => {
-    if (!gameCode) return;
+    if (!gamePhase) return;
+    
+    const handleGamePhaseNavigation = (phase: GamePhase, isHostReady: boolean, isInitial = false) => {
+      const currentPath = window.location.pathname;
 
-    console.log("Setting up game state monitoring for code:", gameCode);
-
-    const checkGameState = async () => {
-      const { data, error } = await supabase
-        .from('game_state')
-        .select('*')
-        .eq('game_code', gameCode)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error checking game state:', error);
-        return;
-      }
-
-      if (!data && isHost) {
-        console.log("Creating initial game state for host");
-        const { error: insertError } = await supabase
-          .from('game_state')
-          .insert([
-            {
-              game_code: gameCode,
-              game_phase: 'waiting',
-              current_round: 1,
-              host_ready: false
+      switch (phase) {
+        case 'waiting':
+          if (currentPath !== '/waiting-room' && !isHost) {
+            navigate('/waiting-room');
+          } else if (isHost && currentPath !== '/host-setup' && isInitial) {
+            navigate('/host-setup');
+          }
+          break;
+        case 'playing':
+        case 'answering':
+        case 'results':
+          // Only navigate to gameplay if host is ready or user is not the host
+          if (!isHost || (isHost && isHostReady)) {
+            if (currentPath !== '/gameplay') {
+              navigate('/gameplay');
             }
-          ]);
-
-        if (insertError) {
-          console.error('Error creating game state:', insertError);
-          toast('שגיאה ביצירת מצב משחק', {
-            description: 'אירעה שגיאה ביצירת מצב המשחק',
-          });
-        }
+          }
+          break;
       }
     };
 
-    checkGameState();
+    // Handle initial navigation
+    handleGamePhaseNavigation(gamePhase, hostReady, true);
 
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'game_state',
-          filter: `game_code=eq.${gameCode}`
-        },
-        (payload) => {
-          console.log('Game state change detected:', payload);
-          
-          if (payload.new && 'game_phase' in payload.new) {
-            const newPhase = payload.new.game_phase as GamePhase;
-            setGamePhase(newPhase);
-            
-            // Also update host_ready state
-            if ('host_ready' in payload.new) {
-              setHostReady(!!payload.new.host_ready);
-            }
-            
-            handleGamePhaseNavigation(newPhase, !!payload.new.host_ready);
-          } else if (payload.eventType === 'DELETE') {
-            if (!isHost) {
-              toast('המשחק הסתיים', {
-                description: 'המשחק הסתיים על ידי המארח',
-              });
-              clearGameData();
-              navigate('/');
-            }
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('Game state subscription status:', status);
-      });
-
-    const fetchGameState = async () => {
-      const { data, error } = await supabase
-        .from('game_state')
-        .select('*')
-        .eq('game_code', gameCode)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching game state:', error);
-        return;
-      }
-
-      if (data && data.game_phase) {
-        console.log('Initial game state:', data);
-        const currentPhase = data.game_phase as GamePhase;
-        setGamePhase(currentPhase);
-        
-        // Also set host_ready state
-        if ('host_ready' in data) {
-          setHostReady(!!data.host_ready);
-        }
-        
-        handleGamePhaseNavigation(currentPhase, !!data.host_ready, true);
+    // Set up effect for future game phase changes
+    const handlePhaseChange = () => {
+      if (gamePhase) {
+        handleGamePhaseNavigation(gamePhase, hostReady);
       }
     };
 
-    fetchGameState();
-
-    return () => {
-      console.log('Removing game state channel');
-      supabase.removeChannel(channel);
-    };
-  }, [gameCode, isHost]);
-
-  const handleGamePhaseNavigation = (phase: GamePhase, isHostReady: boolean, isInitial = false) => {
-    const currentPath = window.location.pathname;
-
-    switch (phase) {
-      case 'waiting':
-        if (currentPath !== '/waiting-room' && !isHost) {
-          navigate('/waiting-room');
-        } else if (isHost && currentPath !== '/host-setup' && isInitial) {
-          navigate('/host-setup');
-        }
-        break;
-      case 'playing':
-      case 'answering':
-      case 'results':
-        // Only navigate to gameplay if host is ready or user is not the host
-        if (!isHost || (isHost && isHostReady)) {
-          if (currentPath !== '/gameplay') {
-            navigate('/gameplay');
-          }
-        }
-        break;
-      case 'end':
-        if (!isHost && !isRedirecting) {
-          setIsRedirecting(true);
-          toast('המשחק הסתיים', {
-            description: 'המשחק הסתיים על ידי המארח',
-          });
-          
-          // Show message and redirect after delay
-          const currentLocation = window.location.pathname;
-          if (currentLocation !== '/') {
-            const redirectTimer = setTimeout(() => {
-              clearGameData();
-              navigate('/');
-              setIsRedirecting(false);
-            }, 3000);
-            
-            return () => clearTimeout(redirectTimer);
-          }
-        }
-        break;
-    }
-  };
+    handlePhaseChange();
+  }, [gamePhase, hostReady, isHost, navigate]);
 
   return (
     <GameStateContext.Provider
@@ -222,16 +115,10 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         clearGameData
       }}
     >
-      {gamePhase === 'end' && !isHost && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md mx-auto animate-scale-in">
-            <h2 className="text-2xl font-bold text-primary mb-4">המשחק הסתיים</h2>
-            <p className="text-lg text-gray-700">
-              המשחק הסתיים. תחזרו לדף הבית להתחיל משחק חדש
-            </p>
-          </div>
-        </div>
-      )}
+      <GameEndOverlay 
+        isVisible={gamePhase === 'end'} 
+        isHost={isHost} 
+      />
       {children}
     </GameStateContext.Provider>
   );
