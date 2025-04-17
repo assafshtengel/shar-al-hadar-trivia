@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import EndGameButton from '@/components/EndGameButton';
+import ExitGameButton from '@/components/ExitGameButton';
 
 interface Song {
   name: string;
@@ -1109,8 +1110,11 @@ const GamePlay: React.FC = () => {
           <span className="text-primary">מנחש</span> 
           <span className="text-secondary">השירים</span>
         </h1>
-        <div className="text-lg font-semibold bg-primary/10 px-3 py-1 rounded-md">
-          קוד משחק: {gameCode}
+        <div className="flex items-center gap-2">
+          <ExitGameButton />
+          <div className="text-lg font-semibold bg-primary/10 px-3 py-1 rounded-md">
+            קוד משחק: {gameCode}
+          </div>
         </div>
       </div>
       
