@@ -161,9 +161,18 @@ const GamePlay: React.FC = () => {
       case 'playing':
         setPhase('songPlayback');
         setTimerActive(false);
+        setSelectedAnswer(null);
+        setCurrentPlayer(prev => ({
+          ...prev,
+          hasAnswered: false,
+          lastAnswer: undefined,
+          lastAnswerCorrect: undefined,
+          pendingAnswer: null
+        }));
         break;
       case 'answering':
         setPhase('answerOptions');
+        setSelectedAnswer(null);
         if (!timerActive) {
           startTimer();
         }
@@ -397,12 +406,14 @@ const GamePlay: React.FC = () => {
     if (!isHost) return;
     
     await resetPlayersReadyStatus();
+    await resetPlayersAnsweredStatus();
     
     const gameRound = createGameRound();
     setCurrentRound(gameRound);
     
     setCurrentSong(gameRound.correctSong);
     
+    setSelectedAnswer(null);
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     setAllPlayersAnswered(false);
@@ -448,7 +459,7 @@ const GamePlay: React.FC = () => {
           clearInterval(timer);
           setTimerActive(false);
           
-          if (selectedAnswer === null) {
+          if (selectedAnswer === null && !currentPlayer.hasAnswered) {
             handleTimeout();
           }
           return 0;
@@ -565,7 +576,10 @@ const GamePlay: React.FC = () => {
   };
 
   const handleAnswer = async (index: number) => {
-    if (selectedAnswer !== null || !currentRound) return;
+    if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound) {
+      console.log("Already answered or missing round data - ignoring selection");
+      return;
+    }
     
     console.log(`Player ${playerName} selected answer: ${index}`);
     
@@ -641,7 +655,7 @@ const GamePlay: React.FC = () => {
   const handleTimeout = async () => {
     console.log('Timeout reached without selection');
     
-    if (selectedAnswer !== null) {
+    if (selectedAnswer !== null || currentPlayer.hasAnswered) {
       console.log('Player already answered, skipping timeout handler');
       return;
     }
@@ -775,7 +789,8 @@ const GamePlay: React.FC = () => {
       isReady: false,
       lastAnswer: undefined,
       lastAnswerCorrect: undefined,
-      lastScore: undefined
+      lastScore: undefined,
+      pendingAnswer: null
     }));
     
     updateGameState('playing');
@@ -1052,7 +1067,7 @@ const GamePlay: React.FC = () => {
                       onClick={nextRound}
                       className="max-w-xs"
                     >
-                      סיבוב הבא
+                      סיבוב הב��
                       <SkipForward className="mr-2" />
                     </AppButton>
                   </div>

@@ -33,7 +33,7 @@ export const useGameStateSubscription = ({
         .from('game_state')
         .select('*')
         .eq('game_code', gameCode)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error checking game state:', error);
