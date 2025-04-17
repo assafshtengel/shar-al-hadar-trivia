@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { Music, Users, Copy } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { useGameState } from '@/contexts/GameStateContext';
 import EndGameButton from '@/components/EndGameButton';
@@ -38,15 +37,22 @@ const GameHostSetup: React.FC = () => {
 
   // Check if host is already in the players list
   useEffect(() => {
-    const checkHostJoined = () => {
-      if (contextPlayerName && players.some(player => player.name === contextPlayerName)) {
-        setHostJoined(true);
-        setStartGameDisabled(false);
+    const checkHostJoined = async () => {
+      if (contextPlayerName) {
+        const { exists } = await checkPlayerExists({ 
+          game_code: gameCode, 
+          player_name: contextPlayerName 
+        });
+        
+        if (exists) {
+          setHostJoined(true);
+          setStartGameDisabled(false);
+        }
       }
     };
     
     checkHostJoined();
-  }, [contextPlayerName, players]);
+  }, [contextPlayerName, gameCode]);
 
   useEffect(() => {
     // Initial fetch of current players
@@ -201,32 +207,70 @@ const GameHostSetup: React.FC = () => {
 
     setJoinLoading(true);
 
-    const { data, error } = await supabase
-      .from('players')
-      .insert([
-        { name: hostName, game_code: gameCode }
-      ]);
+    try {
+      // First check if host already exists as a player
+      const { exists } = await checkPlayerExists({
+        game_code: gameCode,
+        player_name: hostName
+      });
 
-    setJoinLoading(false);
+      if (exists) {
+        // Host already joined, just update the UI state
+        setHostJoined(true);
+        setStartGameDisabled(false);
+        setGameData({ gameCode, playerName: hostName, isHost: true });
+        
+        toast({
+          title: "הצטרפת למשחק!",
+          description: "אתה כבר מופיע ברשימת השחקנים"
+        });
+        
+        setJoinLoading(false);
+        return;
+      }
 
-    if (error) {
-      console.error('Error joining host:', error);
+      // Host doesn't exist yet, add them to players table
+      const { error } = await supabase
+        .from('players')
+        .insert([
+          { 
+            name: hostName, 
+            game_code: gameCode,
+            score: 0,
+            hasAnswered: false,
+            isReady: false
+          }
+        ]);
+
+      if (error) {
+        console.error('Error joining host:', error);
+        toast({
+          title: "שגיאה בהצטרפות",
+          description: "לא ניתן להצטרף למשחק, נסה שוב",
+          variant: "destructive"
+        });
+        setJoinLoading(false);
+        return;
+      }
+
+      setGameData({ gameCode, playerName: hostName, isHost: true });
+      
+      setHostJoined(true);
+      setStartGameDisabled(false);
+      toast({
+        title: "הצטרפת למשחק!",
+        description: "אתה מופיע ברשימת השחקנים"
+      });
+    } catch (err) {
+      console.error('Exception during host join:', err);
       toast({
         title: "שגיאה בהצטרפות",
-        description: "לא ניתן להצטרף למשחק, נסה שוב",
+        description: "אירעה שגיאה בלתי צפויה, נסה שוב",
         variant: "destructive"
       });
-      return;
+    } finally {
+      setJoinLoading(false);
     }
-
-    setGameData({ gameCode, playerName: hostName, isHost: true });
-    
-    setHostJoined(true);
-    setStartGameDisabled(false);
-    toast({
-      title: "הצטרפת למשחק!",
-      description: "אתה מופיע ברשימת השחקנים"
-    });
   };
 
   return (

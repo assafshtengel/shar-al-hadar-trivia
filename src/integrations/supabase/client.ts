@@ -44,3 +44,29 @@ export interface BatchPlayerUpdateParams {
     points: number;
   }[];
 }
+
+// Add function to check if a player exists
+export interface CheckPlayerExistsParams {
+  game_code: string;
+  player_name: string;
+}
+
+// Add function to check if a player exists and get their data
+export const checkPlayerExists = async ({ game_code, player_name }: CheckPlayerExistsParams) => {
+  const { data, error } = await supabase
+    .from('players')
+    .select('*')
+    .eq('game_code', game_code)
+    .eq('name', player_name)
+    .maybeSingle();
+  
+  if (error) {
+    console.error('Error checking if player exists:', error);
+    return { exists: false, player: null };
+  }
+  
+  return { 
+    exists: !!data, 
+    player: data 
+  };
+};
