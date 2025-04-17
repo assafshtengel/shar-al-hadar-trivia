@@ -43,6 +43,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const clearGameData = () => {
+    console.log("Clearing game data");
     setGameCode(null);
     setPlayerName(null);
     setIsHost(false);

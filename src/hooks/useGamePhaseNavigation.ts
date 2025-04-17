@@ -42,6 +42,7 @@ export const useGamePhaseNavigation = ({
           }
           break;
         case 'end':
+          // הניווט לדף הבית עכשיו מתבצע ב-GameEndOverlay
           if (!isHost && !isRedirecting) {
             console.log('Processing game end phase for player');
             setIsRedirecting(true);
@@ -49,17 +50,7 @@ export const useGamePhaseNavigation = ({
               description: 'המשחק הסתיים על ידי המארח',
             });
             
-            // Show message and redirect after delay
-            const currentLocation = window.location.pathname;
-            if (currentLocation !== '/') {
-              const redirectTimer = setTimeout(() => {
-                clearGameData();
-                navigate('/');
-                setIsRedirecting(false);
-              }, 3000);
-              
-              return () => clearTimeout(redirectTimer);
-            }
+            // שינוי: לא צריך לנווט כאן, הניווט יתבצע ב-GameEndOverlay
           }
           break;
       }

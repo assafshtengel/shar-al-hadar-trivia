@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useGameState } from '@/contexts/GameStateContext';
 
 interface GameEndOverlayProps {
   isVisible: boolean;
@@ -8,6 +10,8 @@ interface GameEndOverlayProps {
 
 const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) => {
   const [showOverlay, setShowOverlay] = useState(false);
+  const navigate = useNavigate();
+  const { clearGameData } = useGameState();
   
   useEffect(() => {
     // Add a small delay before showing the overlay to prevent flashes when joining
@@ -21,6 +25,18 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
       setShowOverlay(isVisible);
     }
   }, [isVisible, isHost]);
+  
+  useEffect(() => {
+    // Redirect to home and clear game data after showing the overlay
+    if (showOverlay && !isHost) {
+      const redirectTimer = setTimeout(() => {
+        clearGameData();
+        navigate('/');
+      }, 2000); // Redirect after 2 seconds
+      
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [showOverlay, isHost, navigate, clearGameData]);
   
   if (!showOverlay || isHost) return null;
   
