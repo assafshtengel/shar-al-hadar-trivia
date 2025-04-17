@@ -1,293 +1,55 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useToast } from '@/components/ui/use-toast';
+import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Music } from 'lucide-react';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
-import { Music, Users, Copy } from 'lucide-react';
-import { supabase, checkPlayerExists, verifyHostInPlayersTable } from '@/integrations/supabase/client';
-import { Input } from '@/components/ui/input';
 import { useGameState } from '@/contexts/GameStateContext';
 import EndGameButton from '@/components/EndGameButton';
-
-interface Player {
-  id: string;
-  name: string;
-  game_code: string;
-  joined_at: string | null;
-  score: number | null;
-}
+import PlayersList from '@/components/GameHostSetup/PlayersList';
+import GameCodeDisplay from '@/components/GameHostSetup/GameCodeDisplay';
+import HostJoinForm from '@/components/GameHostSetup/HostJoinForm';
+import { useHostJoin } from '@/hooks/useHostJoin';
+import { useGameStart } from '@/hooks/useGameStart';
+import { usePlayerManagement } from '@/hooks/usePlayerManagement';
 
 const GameHostSetup: React.FC = () => {
-  const { toast } = useToast();
-  const navigate = useNavigate();
   const { gameCode: contextGameCode, setGameData, playerName: contextPlayerName } = useGameState();
-  const [gameCode] = useState(() => contextGameCode || Math.floor(100000 + Math.random() * 900000).toString());
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [hostName, setHostName] = useState(contextPlayerName || '');
-  const [hostJoined, setHostJoined] = useState(false);
-  const [joinLoading, setJoinLoading] = useState(false);
-  const [startGameDisabled, setStartGameDisabled] = useState(true);
+  const [gameCode] = React.useState(() => contextGameCode || Math.floor(100000 + Math.random() * 900000).toString());
+  
+  const {
+    hostName,
+    setHostName,
+    hostJoined,
+    setHostJoined,
+    joinLoading,
+    handleHostJoin,
+    startGameDisabled,
+    setStartGameDisabled
+  } = useHostJoin({
+    gameCode,
+    setGameData,
+    playerName: contextPlayerName
+  });
+
+  const { players } = usePlayerManagement({
+    gameCode,
+    playerName: contextPlayerName,
+    setHostJoined,
+    setStartGameDisabled
+  });
+
+  const { gameStarted, startGame } = useGameStart({
+    gameCode,
+    players,
+    hostJoined
+  });
 
   useEffect(() => {
     if (!contextGameCode) {
       setGameData({ gameCode, playerName: hostName || 'מנחה', isHost: true });
     }
-  }, [contextGameCode, gameCode]);
-
-  // Check if host is already in the players list
-  useEffect(() => {
-    const checkHostJoined = async () => {
-      if (contextPlayerName) {
-        const { exists } = await checkPlayerExists({ 
-          game_code: gameCode, 
-          player_name: contextPlayerName 
-        });
-        
-        if (exists) {
-          setHostJoined(true);
-          setStartGameDisabled(false);
-        }
-      }
-    };
-    
-    checkHostJoined();
-  }, [contextPlayerName, gameCode]);
-
-  useEffect(() => {
-    // Initial fetch of current players
-    const fetchPlayers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('players')
-          .select('*')
-          .eq('game_code', gameCode);
-
-        if (error) {
-          console.error('Error fetching players:', error);
-          return;
-        }
-
-        if (data) {
-          console.log('Fetched players:', data);
-          setPlayers(data);
-          
-          // Check if host is already in the players list
-          if (contextPlayerName && data.some(player => player.name === contextPlayerName)) {
-            setHostJoined(true);
-            setStartGameDisabled(false);
-          }
-        }
-      } catch (err) {
-        console.error('Exception when fetching players:', err);
-      }
-    };
-
-    fetchPlayers();
-
-    // Set up realtime subscription for ALL database changes to the players table
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'players',
-          filter: `game_code=eq.${gameCode}`
-        },
-        (payload) => {
-          console.log('Player change detected:', payload);
-          
-          // Handle different event types
-          if (payload.eventType === 'INSERT') {
-            // Add new player to the list
-            setPlayers((prevPlayers) => [...prevPlayers, payload.new as Player]);
-            
-            // If the new player is the host, enable the start game button
-            if (contextPlayerName && payload.new.name === contextPlayerName) {
-              setHostJoined(true);
-              setStartGameDisabled(false);
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            // Update existing player in the list
-            setPlayers((prevPlayers) => 
-              prevPlayers.map(player => 
-                player.id === payload.new.id ? { ...player, ...payload.new } : player
-              )
-            );
-          } else if (payload.eventType === 'DELETE') {
-            // Remove player from the list
-            setPlayers((prevPlayers) => 
-              prevPlayers.filter(player => player.id !== payload.old.id)
-            );
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('Subscription status:', status);
-      });
-
-    return () => {
-      console.log('Cleaning up subscription');
-      supabase.removeChannel(channel);
-    };
-  }, [gameCode, contextPlayerName]);
-
-  const copyGameCode = () => {
-    navigator.clipboard.writeText(gameCode).then(() => {
-      toast({
-        title: "הקוד הועתק!",
-        description: "שתף את הקוד עם חברים ומשפחה"
-      });
-    }).catch(() => {
-      toast({
-        title: "לא ניתן להעתיק",
-        description: "אנא העתק את הקוד ידנית",
-        variant: "destructive"
-      });
-    });
-  };
-
-  const startGame = async () => {
-    if (players.length === 0) {
-      toast({
-        title: "אין שחקנים",
-        description: "יש להמתין שלפחות שחקן אחד יצטרף למשחק",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!hostJoined) {
-      toast({
-        title: "המנחה לא הצטרף",
-        description: "עליך להצטרף למשחק כמנחה לפני שאפשר להתחיל",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const { error } = await supabase
-      .from('game_state')
-      .update({ 
-        game_phase: 'playing',
-        host_ready: true
-      })
-      .eq('game_code', gameCode);
-
-    if (error) {
-      console.error('Error updating game state:', error);
-      toast({
-        title: "שגיאה בהתחלת המשחק",
-        description: "אירעה שגיאה בהתחלת המשחק, נסה שוב",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setGameStarted(true);
-    toast({
-      title: "המשחק התחיל!",
-      description: "כעת אתה יכול להשמיע שירים"
-    });
-
-    navigate('/gameplay');
-  };
-
-  const handleHostJoin = async () => {
-    if (!hostName.trim()) {
-      toast({
-        title: "שם לא תקין",
-        description: "אנא הכנס את שמך",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setJoinLoading(true);
-
-    try {
-      // First check if host already exists as a player
-      const { exists } = await checkPlayerExists({
-        game_code: gameCode,
-        player_name: hostName
-      });
-
-      if (exists) {
-        // Host already joined, just update the UI state
-        setHostJoined(true);
-        setStartGameDisabled(false);
-        setGameData({ gameCode, playerName: hostName, isHost: true });
-        
-        toast({
-          title: "הצטרפת למשחק!",
-          description: "אתה כבר מופיע ברשימת השחקנים"
-        });
-        
-        // Debug verification - silent
-        await verifyHostInPlayersTable({ game_code: gameCode, player_name: hostName });
-        
-        setJoinLoading(false);
-        return;
-      }
-
-      // Host doesn't exist yet, add them to players table
-      const { error } = await supabase
-        .from('players')
-        .insert([
-          { 
-            name: hostName, 
-            game_code: gameCode,
-            score: 0,
-            hasAnswered: false,
-            isReady: false
-          }
-        ]);
-
-      if (error) {
-        console.error('Error joining host:', error);
-        toast({
-          title: "שגיאה בהצטרפות",
-          description: "לא ניתן להצטרף למשחק, נסה שוב",
-          variant: "destructive"
-        });
-        setJoinLoading(false);
-        return;
-      }
-
-      setGameData({ gameCode, playerName: hostName, isHost: true });
-      
-      setHostJoined(true);
-      setStartGameDisabled(false);
-      toast({
-        title: "הצטרפת למשחק!",
-        description: "אתה מופיע ברשימת השחקנים"
-      });
-      
-      // Add the debug verification after trying to insert the host
-      const isHostAdded = await verifyHostInPlayersTable({ game_code: gameCode, player_name: hostName });
-      
-      // Show an alert if the host verification fails
-      if (!isHostAdded) {
-        toast({
-          title: "שגיאה",
-          description: "שגיאה: המנחה לא נוסף לרשימת השחקנים",
-          variant: "destructive"
-        });
-      }
-    } catch (err) {
-      console.error('Exception during host join:', err);
-      toast({
-        title: "שגיאה בהצטרפות",
-        description: "אירעה שגיאה בלתי צפויה, נסה שוב",
-        variant: "destructive"
-      });
-    } finally {
-      setJoinLoading(false);
-    }
-  };
+  }, [contextGameCode, gameCode, hostName, setGameData]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
@@ -312,64 +74,17 @@ const GameHostSetup: React.FC = () => {
             </div>
           </div>
 
-          <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-md">
-            <h3 className="text-lg font-semibold mb-2 text-center">קוד המשחק שלך:</h3>
-            <div className="flex items-center justify-center gap-2">
-              <div className="text-3xl font-bold text-primary tracking-widest">
-                {gameCode}
-              </div>
-              <button onClick={copyGameCode} className="p-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="העתק קוד משחק">
-                <Copy className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-            <p className="text-sm text-center text-gray-500 mt-2">
-              שתף את הקוד עם חברים ומשפחה כדי שיוכלו להצטרף למשחק
-            </p>
-          </div>
+          <GameCodeDisplay gameCode={gameCode} />
+          
+          <HostJoinForm 
+            hostName={hostName}
+            setHostName={setHostName}
+            handleHostJoin={handleHostJoin}
+            hostJoined={hostJoined}
+            joinLoading={joinLoading}
+          />
 
-          <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-md">
-            <h3 className="text-lg font-semibold mb-3 text-center">הצטרף למשחק כמנחה</h3>
-            <Input
-              value={hostName}
-              onChange={(e) => setHostName(e.target.value)}
-              placeholder="הכנס את שמך (כדי להצטרף למשחק)"
-              disabled={hostJoined}
-              className="mb-3 text-right"
-            />
-            <AppButton
-              variant="secondary"
-              size="default"
-              onClick={handleHostJoin}
-              disabled={hostJoined || joinLoading}
-              className="w-full"
-            >
-              {joinLoading ? "מצטרף..." : hostJoined ? "הצטרפת למשחק" : "הצטרף גם אני"}
-            </AppButton>
-          </div>
-
-          <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-md">
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">שחקנים שהצטרפו:</h3>
-            </div>
-            
-            <div className="min-h-[120px] border border-gray-200 rounded-md p-2 bg-white">
-              {players.length > 0 ? (
-                <ul className="space-y-1">
-                  {players.map((player) => (
-                    <li key={player.id} className="py-2 px-3 bg-gray-50 rounded-md animate-fade-in flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>{player.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-400">
-                  ממתין לשחקנים...
-                </div>
-              )}
-            </div>
-          </div>
+          <PlayersList players={players} />
 
           <div className="w-full space-y-4 mt-2">
             <AppButton 
