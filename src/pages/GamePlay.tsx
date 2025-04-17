@@ -160,19 +160,21 @@ const GamePlay: React.FC = () => {
     switch (serverGamePhase) {
       case 'playing':
         setPhase('songPlayback');
+        setTimerActive(false);
         break;
       case 'answering':
         setPhase('answerOptions');
         if (!timerActive) {
           startTimer();
-          setTimerActive(true);
         }
         break;
       case 'results':
         setPhase('scoringFeedback');
+        setTimerActive(false);
         break;
       case 'end':
         setPhase('leaderboard');
+        setTimerActive(false);
         break;
     }
   }, [serverGamePhase, timerActive]);
@@ -432,7 +434,14 @@ const GamePlay: React.FC = () => {
   };
 
   const startTimer = () => {
+    if (timerActive) {
+      console.log('Clearing existing timer before starting a new one');
+      return;
+    }
+    
     setTimeLeft(21);
+    setTimerActive(true);
+    
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -448,7 +457,10 @@ const GamePlay: React.FC = () => {
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      console.log('Clearing timer in cleanup function');
+      clearInterval(timer);
+    };
   };
 
   const submitAllAnswers = async () => {

@@ -24,26 +24,29 @@ export const useGamePhaseNavigation = ({
     
     const handleGamePhaseNavigation = () => {
       const currentPath = window.location.pathname;
+      console.log(`Navigation check: phase=${gamePhase}, path=${currentPath}, isHost=${isHost}`);
 
       switch (gamePhase) {
         case 'waiting':
-          // Only navigate to host-setup if user is not already in a gameplay session
+          // Only navigate if not already in gameplay or setup screens
           if (isHost && currentPath !== '/host-setup' && currentPath !== '/gameplay') {
+            console.log('Navigating host to setup screen');
             navigate('/host-setup');
           } else if (!isHost && currentPath !== '/waiting-room' && currentPath !== '/gameplay') {
+            console.log('Navigating player to waiting room');
             navigate('/waiting-room');
           }
           break;
         case 'playing':
         case 'answering':
         case 'results':
-          // Make sure players stay in the gameplay page
+          // Make sure players stay in the gameplay page, but don't force navigation if already there
           if (currentPath !== '/gameplay') {
+            console.log('Navigating to gameplay screen for game phase:', gamePhase);
             navigate('/gameplay');
           }
           break;
         case 'end':
-          // הניווט לדף הבית עכשיו מתבצע ב-GameEndOverlay
           if (!isHost && !isRedirecting) {
             console.log('Processing game end phase for player');
             setIsRedirecting(true);
@@ -51,7 +54,7 @@ export const useGamePhaseNavigation = ({
               description: 'המשחק הסתיים על ידי המארח',
             });
             
-            // שינוי: לא צריך לנווט כאן, הניווט יתבצע ב-GameEndOverlay
+            // Game end navigation now handled by GameEndOverlay
           }
           break;
       }
