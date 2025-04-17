@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MusicNoteIcon } from 'lucide-react';
+import { MusicIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 
@@ -38,7 +38,7 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
           <h2 className="text-2xl font-bold text-primary mb-4">המשחק הסתיים</h2>
           <p className="text-gray-700 mb-6">המשחק הסתיים על ידי המארח. תודה על השתתפותך!</p>
           <div className="flex justify-center mb-3">
-            <MusicNoteIcon className="h-12 w-12 text-primary" />
+            <MusicIcon className="h-12 w-12 text-primary" />
           </div>
           <Button onClick={() => navigate('/')} className="w-full">
             חזרה לדף הבית
