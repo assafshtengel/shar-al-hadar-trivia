@@ -27,10 +27,11 @@ export const useGamePhaseNavigation = ({
 
       switch (gamePhase) {
         case 'waiting':
-          if (currentPath !== '/waiting-room' && !isHost) {
-            navigate('/waiting-room');
-          } else if (isHost && currentPath !== '/host-setup') {
+          // Only navigate to host-setup if user is not already in a gameplay session
+          if (isHost && currentPath !== '/host-setup' && currentPath !== '/gameplay') {
             navigate('/host-setup');
+          } else if (!isHost && currentPath !== '/waiting-room' && currentPath !== '/gameplay') {
+            navigate('/waiting-room');
           }
           break;
         case 'playing':

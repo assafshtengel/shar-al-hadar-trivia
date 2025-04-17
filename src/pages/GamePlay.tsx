@@ -766,7 +766,7 @@ const GamePlay: React.FC = () => {
       lastScore: undefined
     }));
     
-    updateGameState('waiting');
+    updateGameState('playing');
     
     setPhase('songPlayback');
     
