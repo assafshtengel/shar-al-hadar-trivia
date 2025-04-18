@@ -520,13 +520,7 @@ const GamePlay: React.FC = () => {
     console.log('Batch updating player scores:', updates);
     
     try {
-      const playerUpdates = updates.map(update => ({
-        player_name: update.player_name,
-        is_correct: update.is_correct,
-        points: update.points
-      }));
-      
-      for (const update of playerUpdates) {
+      for (const update of updates) {
         const { data: playerData, error: fetchError } = await supabase
           .from('players')
           .select('score')
@@ -587,21 +581,18 @@ const GamePlay: React.FC = () => {
     const isCorrect = index === currentRound.correctAnswerIndex;
     const points = isCorrect ? 10 : 0;
     
-    let currentScore = currentPlayer.score;
+    let currentScore = 0;
     
     if (gameCode && playerName) {
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('players')
           .select('score')
           .eq('game_code', gameCode)
           .eq('name', playerName)
           .maybeSingle();
           
-        if (!error && data) {
-          currentScore = data.score || 0;
-          console.log(`Retrieved current score for ${playerName} from database: ${currentScore}`);
-        }
+        currentScore = data?.score || 0;
       } catch (err) {
         console.error('Error getting current player score:', err);
       }
@@ -782,6 +773,34 @@ const GamePlay: React.FC = () => {
         description: "אירעה שגיאה בסימון המוכנות שלך",
         variant: "destructive"
       });
+    }
+  };
+
+  const resetAllPlayerScores = async () => {
+    if (!isHost || !gameCode) return;
+    
+    try {
+      const { error } = await supabase
+        .from('players')
+        .update({ score: 0 })
+        .eq('game_code', gameCode);
+      
+      if (error) {
+        console.error('Error resetting player scores:', error);
+        toast({
+          title: "שגיאה באיפוס הניקוד",
+          description: "אירעה שגיאה באיפוס ניקוד השחקנים",
+          variant: "destructive"
+        });
+      } else {
+        console.log('Successfully reset all player scores to 0');
+        toast({
+          title: "ניקוד אופס",
+          description: "ניקוד כל השחקנים אופס בהצלחה",
+        });
+      }
+    } catch (err) {
+      console.error('Exception when resetting player scores:', err);
     }
   };
 
@@ -1072,6 +1091,14 @@ const GamePlay: React.FC = () => {
                 >
                   התחל סיבוב חדש
                   <Play className="mr-2" />
+                </AppButton>
+                
+                <AppButton 
+                  variant="secondary"
+                  onClick={resetAllPlayerScores}
+                  className="mt-2"
+                >
+                  אפס ניקוד לכל השחקנים
                 </AppButton>
                 
                 <EndGameButton gameCode={gameCode} />
