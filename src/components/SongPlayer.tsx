@@ -3,6 +3,7 @@ import { Song } from '@/data/songBank';
 import { Youtube, AlertTriangle, Music } from 'lucide-react';
 import { toast } from 'sonner';
 import MusicNote from './MusicNote';
+import AdSenseAd from '@/components/AdSenseAd';
 
 interface SongPlayerProps {
   song: Song | null;
@@ -11,6 +12,7 @@ interface SongPlayerProps {
   onPlaybackStarted?: () => void;
   onPlaybackError?: () => void;
   duration?: number;
+  showAd?: boolean;
 }
 
 const SongPlayer: React.FC<SongPlayerProps> = ({
@@ -19,14 +21,14 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   onPlaybackEnded,
   onPlaybackStarted,
   onPlaybackError,
-  duration = 8000 // Default to 8 seconds
+  duration = 8000,
+  showAd = false
 }) => {
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Clean up any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -42,14 +44,12 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           onPlaybackStarted();
         }
         
-        // Set up timer to end playback
         timeoutRef.current = setTimeout(() => {
           console.log('Song playback ended:', song.title);
           setShowYouTubeEmbed(false);
           onPlaybackEnded();
         }, duration);
       } else {
-        // Handle case where song doesn't have an embed URL
         console.error('Song has no embed URL:', song);
         setError('לשיר זה אין קישור השמעה זמין');
         if (onPlaybackError) {
@@ -63,7 +63,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       setShowYouTubeEmbed(false);
     }
 
-    // Cleanup function
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -73,7 +72,13 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   }, [isPlaying, song, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError]);
 
   if (!song || !isPlaying) {
-    return null;
+    return showAd ? (
+      <AdSenseAd 
+        className="w-full h-40"
+        adSlot="1234567890"
+        adFormat="300x250"
+      />
+    ) : null;
   }
 
   if (error) {
@@ -105,7 +110,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             }}
           />
           
-          {/* Visual overlay to hide video but keep audio playing - changed opacity from 0.95 to 1 */}
           <div className="absolute top-0 left-0 w-full h-full z-20 bg-black" style={{ opacity: 1 }}></div>
         </>
       ) : (
