@@ -15,7 +15,6 @@ export type Database = {
           current_song_name: string | null
           current_song_url: string | null
           game_code: string
-          game_mode: string
           game_phase: string
           host_ready: boolean
           round_started_at: string | null
@@ -25,7 +24,6 @@ export type Database = {
           current_song_name?: string | null
           current_song_url?: string | null
           game_code: string
-          game_mode?: string
           game_phase: string
           host_ready?: boolean
           round_started_at?: string | null
@@ -35,7 +33,6 @@ export type Database = {
           current_song_name?: string | null
           current_song_url?: string | null
           game_code?: string
-          game_mode?: string
           game_phase?: string
           host_ready?: boolean
           round_started_at?: string | null
@@ -77,10 +74,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      update_game_mode: {
-        Args: { p_game_code: string; p_game_mode: string }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
