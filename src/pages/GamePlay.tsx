@@ -295,17 +295,17 @@ const GamePlay: React.FC = () => {
     
     const otherSongs = songs.filter(song => 
       song.id !== correctSong.id && 
-      (song.title || song.name)
+      song.title
     );
     
     const shuffledWrongSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
     const allOptions = [correctSong, ...shuffledWrongSongs];
     const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
     
-    const correctSongName = correctSong.title || correctSong.name || '';
+    const correctSongTitle = correctSong.title || '';
     
     const correctIndex = shuffledOptions.findIndex(song => 
-      (song.title || song.name) === correctSongName
+      song.title === correctSongTitle
     );
     
     return {
@@ -397,7 +397,7 @@ const GamePlay: React.FC = () => {
         return {
           ...prev,
           hasAnswered: true,
-          lastAnswer: currentRound.options[selectedAnswer].name,
+          lastAnswer: currentRound.options[selectedAnswer].title,
           lastAnswerCorrect: isCorrect,
           lastScore: points,
           score: updatedScore
@@ -481,7 +481,7 @@ const GamePlay: React.FC = () => {
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
-      lastAnswer: currentRound.options[index].name,
+      lastAnswer: currentRound.options[index].title,
       lastAnswerCorrect: isCorrect,
       lastScore: points,
       pendingAnswer: index,
@@ -788,7 +788,7 @@ const GamePlay: React.FC = () => {
                   </div>}
                 
                 {!currentPlayer.lastAnswerCorrect && currentRound && <div className="text-lg font-semibold text-green-500">
-                    התשובה הנכונה: {currentRound.correctSong.name}
+                    התשובה הנכונה: {currentRound.correctSong.title}
                   </div>}
               </> : <>
                 <div className="text-2xl font-bold text-secondary text-center">
