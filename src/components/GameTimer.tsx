@@ -46,7 +46,6 @@ const GameTimer: React.FC<GameTimerProps> = ({
         const elapsed = now - lastTickTimeRef.current;
         lastTickTimeRef.current = now;
         
-        // Use elapsed time to ensure timer accuracy
         setTimeLeft(prev => {
           const newTime = Math.max(prev - elapsed / 1000, 0);
           
@@ -79,21 +78,14 @@ const GameTimer: React.FC<GameTimerProps> = ({
   const isAlmostTimeUp = timeLeft < initialSeconds * 0.3;
 
   return (
-    <div className="w-full mb-4">
-      <div className="w-full flex items-center justify-between px-2 mb-2 bg-slate-100 rounded-md p-2">
-        <div className="flex items-center gap-2">
-          <Timer className={`${isAlmostTimeUp ? 'text-red-500 animate-pulse' : 'text-primary'}`} />
-          <span className={`font-bold text-lg ${isAlmostTimeUp ? 'text-red-500' : ''}`}>
-            {Math.ceil(timeLeft)} שניות
-          </span>
-        </div>
-        <div className="text-sm font-medium text-gray-600">
-          זמן לבחירת תשובה
-        </div>
-      </div>
+    <div className="flex items-center gap-2 bg-slate-100 rounded-md px-3 py-1">
+      <Timer className={isAlmostTimeUp ? 'text-red-500 animate-pulse' : 'text-primary'} size={20} />
+      <span className={`font-bold ${isAlmostTimeUp ? 'text-red-500' : ''}`}>
+        {Math.ceil(timeLeft)}s
+      </span>
       <Progress 
         value={progressPercentage} 
-        className={`w-full h-3 mb-4 ${isAlmostTimeUp ? 'bg-red-200' : ''}`}
+        className={`w-20 h-2 ${isAlmostTimeUp ? 'bg-red-200' : ''}`}
       />
     </div>
   );
