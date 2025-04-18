@@ -376,69 +376,175 @@ const GamePlay: React.FC = () => {
       submitAllAnswers();
     }
   };
+  const handleAnswer = async (index: number) => {
+    if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound) {
+      console.log("Already answered or missing round data - ignoring selection");
+      return;
+    }
+    
+    console.log(`Player ${playerName} selected answer: ${index}`);
+    setSelectedAnswer(index);
+    
+    const isCorrect = index === currentRound.correctAnswerIndex;
+    const points = isCorrect ? 10 : 0;
+    
+    // Update only the local player state with the answer selection info
+    // But DON'T update the score yet - that will happen in submitAllAnswers
+    setCurrentPlayer(prev => ({
+      ...prev,
+      hasAnswered: true,
+      lastAnswer: currentRound.options[index].name,
+      lastAnswerCorrect: isCorrect,
+      lastScore: points,
+      pendingAnswer: index
+      // Don't update score here, it will be updated when submitAllAnswers is called
+    }));
+    
+    setShowAnswerConfirmation(true);
+    
+    if (gameCode && playerName) {
+      try {
+        console.log(`Marking player ${playerName} as having answered`);
+        
+        // Only mark the player as having answered, don't update score yet
+        const { error } = await supabase
+          .from('players')
+          .update({ 
+            hasAnswered: true
+          })
+          .eq('game_code', gameCode)
+          .eq('name', playerName);
+          
+        if (error) {
+          console.error('Error updating player answer status:', error);
+        } else {
+          console.log(`Successfully marked ${playerName} as having answered`);
+        }
+      } catch (err) {
+        console.error('Exception when updating player answer status:', err);
+      }
+    }
+    
+    setTimeout(() => {
+      setShowAnswerConfirmation(false);
+    }, 2000);
+    
+    toast({
+      title: isCorrect ? "כל הכבוד!" : "אופס!",
+      description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
+    });
+
+    if (timeLeft <= 0) {
+      submitAllAnswers();
+    }
+  };
+
+  // Modify submitAllAnswers to be the only place where scores are updated
   const submitAllAnswers = async () => {
     console.log('Timer ended, submitting all answers');
+    
     if (!currentRound || !gameCode) {
       console.error('Missing current round data or game code');
       return;
     }
+    
     const pendingUpdates: PendingAnswerUpdate[] = [];
+    
     if (playerName && selectedAnswer !== null) {
       const isCorrect = selectedAnswer === currentRound.correctAnswerIndex;
       const points = isCorrect ? 10 : 0;
+      
       pendingUpdates.push({
         player_name: playerName,
         is_correct: isCorrect,
         points
       });
-      setCurrentPlayer(prev => {
-        const updatedScore = prev.score + points;
-        console.log(`Updating player score: ${prev.score} + ${points} = ${updatedScore}`);
-        return {
-          ...prev,
-          hasAnswered: true,
-          lastAnswer: currentRound.options[selectedAnswer].name,
-          lastAnswerCorrect: isCorrect,
-          lastScore: points,
-          score: updatedScore
-        };
-      });
+      
+      // First get the current score from the database to ensure accuracy
+      let currentScore = 0;
+      try {
+        const { data } = await supabase
+          .from('players')
+          .select('score')
+          .eq('game_code', gameCode)
+          .eq('name', playerName)
+          .maybeSingle();
+          
+        if (data) {
+          currentScore = data.score || 0;
+          console.log(`Retrieved current score for ${playerName}: ${currentScore}`);
+        }
+      } catch (err) {
+        console.error('Error getting current player score:', err);
+      }
+      
+      // Now update the local state with accurate score calculation
+      const updatedScore = currentScore + points;
+      console.log(`Calculating final score: ${currentScore} + ${points} = ${updatedScore}`);
+      
+      setCurrentPlayer(prev => ({
+        ...prev,
+        hasAnswered: true,
+        lastAnswer: currentRound.options[selectedAnswer].name,
+        lastAnswerCorrect: isCorrect,
+        lastScore: points,
+        score: updatedScore
+      }));
     }
+    
     setPendingAnswers(pendingUpdates);
+    
     await batchUpdatePlayerScores(pendingUpdates);
+    
     if (isHost) {
       updateGameState('results');
     }
     setPhase('scoringFeedback');
   };
+
+  // Fix batchUpdatePlayerScores to ensure accurate score updates
   const batchUpdatePlayerScores = async (updates: PendingAnswerUpdate[]) => {
     if (!gameCode || updates.length === 0) {
       return;
     }
+    
     console.log('Batch updating player scores:', updates);
+    
     try {
       for (const update of updates) {
-        const {
-          data: playerData,
-          error: fetchError
-        } = await supabase.from('players').select('score').eq('game_code', gameCode).eq('name', update.player_name).maybeSingle();
+        // First get the current score to ensure accuracy
+        const { data: playerData, error: fetchError } = await supabase
+          .from('players')
+          .select('score')
+          .eq('game_code', gameCode)
+          .eq('name', update.player_name)
+          .maybeSingle();
+          
         if (fetchError) {
           console.error(`Error fetching player ${update.player_name}:`, fetchError);
           continue;
         }
+        
         if (!playerData) {
           console.error(`Player ${update.player_name} not found`);
           continue;
         }
+        
         const currentScore = playerData.score || 0;
         const newScore = currentScore + update.points;
+        
         console.log(`Player ${update.player_name}: Current score=${currentScore}, adding ${update.points}, new score=${newScore}`);
-        const {
-          error: updateError
-        } = await supabase.from('players').update({
-          score: newScore,
-          hasAnswered: true
-        }).eq('game_code', gameCode).eq('name', update.player_name);
+        
+        // Update the player's score in the database
+        const { error: updateError } = await supabase
+          .from('players')
+          .update({
+            score: newScore,
+            hasAnswered: true
+          })
+          .eq('game_code', gameCode)
+          .eq('name', update.player_name);
+          
         if (updateError) {
           console.error(`Error updating player ${update.player_name}:`, updateError);
         } else {
@@ -454,67 +560,7 @@ const GamePlay: React.FC = () => {
       });
     }
   };
-  const handleAnswer = async (index: number) => {
-    if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound) {
-      console.log("Already answered or missing round data - ignoring selection");
-      return;
-    }
-    console.log(`Player ${playerName} selected answer: ${index}`);
-    setSelectedAnswer(index);
-    const isCorrect = index === currentRound.correctAnswerIndex;
-    const points = isCorrect ? 10 : 0;
-    let currentScore = 0;
-    if (gameCode && playerName) {
-      try {
-        const {
-          data
-        } = await supabase.from('players').select('score').eq('game_code', gameCode).eq('name', playerName).maybeSingle();
-        currentScore = data?.score || 0;
-      } catch (err) {
-        console.error('Error getting current player score:', err);
-      }
-    }
-    const updatedScore = currentScore + points;
-    console.log(`Calculating new score: ${currentScore} + ${points} = ${updatedScore}`);
-    setCurrentPlayer(prev => ({
-      ...prev,
-      hasAnswered: true,
-      lastAnswer: currentRound.options[index].name,
-      lastAnswerCorrect: isCorrect,
-      lastScore: points,
-      pendingAnswer: index,
-      score: updatedScore
-    }));
-    setShowAnswerConfirmation(true);
-    if (gameCode && playerName) {
-      try {
-        console.log(`Updating hasAnswered status and storing answer for player ${playerName}`);
-        const {
-          error
-        } = await supabase.from('players').update({
-          hasAnswered: true,
-          score: updatedScore
-        }).eq('game_code', gameCode).eq('name', playerName);
-        if (error) {
-          console.error('Error updating player answer status:', error);
-        } else {
-          console.log(`Successfully marked ${playerName} as having answered and updated score to ${updatedScore}`);
-        }
-      } catch (err) {
-        console.error('Exception when updating player answer status:', err);
-      }
-    }
-    setTimeout(() => {
-      setShowAnswerConfirmation(false);
-    }, 2000);
-    toast({
-      title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
-    });
-    if (timeLeft <= 0) {
-      submitAllAnswers();
-    }
-  };
+
   const handleSkip = async () => {
     if (selectedAnswer !== null || currentPlayer.skipsLeft <= 0 || !currentRound) return;
     setSelectedAnswer(null);
@@ -594,7 +640,7 @@ const GamePlay: React.FC = () => {
       console.error('Error resetting players ready status:', error);
       toast({
         title: "שגיאה באיפוס סטטוס מוכנות השחקנים",
-        description: "אירעה שגיאה באיפוס סטטוס מוכנות השחקנים",
+        description: "אירעה שגיאה באיפוס סטטוס השחקנים",
         variant: "destructive"
       });
     }
@@ -757,8 +803,10 @@ const GamePlay: React.FC = () => {
               </div>}
           </div>;
       case 'scoringFeedback':
-        return <div className="flex flex-col items-center justify-center py-8 space-y-6">
-            {currentPlayer.lastAnswerCorrect !== undefined ? <>
+        return (
+          <div className="flex flex-col items-center justify-center py-8 space-y-6">
+            {currentPlayer.lastAnswerCorrect !== undefined ? (
+              <>
                 <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text-center`}>
                   {currentPlayer.lastAnswerCorrect ? 'כל הכבוד! ענית נכון!' : 'אוי לא! טעית.'}
                 </div>
@@ -769,107 +817,14 @@ const GamePlay: React.FC = () => {
                   <span>נקודות</span>
                 </div>
                 
-                {currentPlayer.lastAnswer && <div className="text-lg">
+                {currentPlayer.lastAnswer && (
+                  <div className="text-lg">
                     {currentPlayer.lastAnswerCorrect ? 'תשובה נכונה:' : 'בחרת:'} {currentPlayer.lastAnswer}
-                  </div>}
+                  </div>
+                )}
                 
-                {!currentPlayer.lastAnswerCorrect && currentRound && <div className="text-lg font-semibold text-green-500">
+                {!currentPlayer.lastAnswerCorrect && currentRound && (
+                  <div className="text-lg font-semibold text-green-500">
                     התשובה הנכונה: {currentRound.correctSong.name}
-                  </div>}
-              </> : <>
-                <div className="text-2xl font-bold text-secondary text-center">
-                  דילגת על השאלה
-                </div>
-                
-                <div className="flex items-center justify-center gap-2 text-xl">
-                  <span>קיבלת</span>
-                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
-                  <span>נקודות</span>
-                </div>
-              </>}
-            
-            {isHost && currentRound && <AppButton variant="secondary" size="lg" onClick={playFullSong} className="max-w-xs mt-4">
-                השמע את השיר המלא
-                <Youtube className="mr-2" />
-              </AppButton>}
-          </div>;
-      case 'leaderboard':
-        return <div className="flex flex-col items-center justify-center py-8">
-            <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
-            
-            <div className="w-full max-w-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">מיקום</TableHead>
-                    <TableHead className="text-right">שם</TableHead>
-                    <TableHead className="text-right">ניקוד</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {players.map((player, idx) => <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
-                      <TableCell className="font-medium">{idx + 1}</TableCell>
-                      <TableCell className="font-semibold">{player.name}</TableCell>
-                      <TableCell>{player.score}</TableCell>
-                      <TableCell className="text-right">
-                        {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
-                        {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
-                        {idx === 2 && <Award className="h-5 w-5 text-amber-700" />}
-                        {player.name === playerName && idx > 2 && <CheckCircle2 className="h-5 w-5 text-primary" />}
-                      </TableCell>
-                    </TableRow>)}
-                </TableBody>
-              </Table>
-            </div>
-            
-            {isHost && <div className="flex flex-col items-center gap-4 mt-8">
-                <AppButton variant="primary" size="lg" onClick={nextRound} className="max-w-xs">
-                  התחל סיבוב חדש
-                  <Play className="mr-2" />
-                </AppButton>
-                
-                
-                
-                <EndGameButton gameCode={gameCode} />
-              </div>}
-            
-            {!isHost && !playerReady && <AppButton variant="primary" onClick={markPlayerReady} className="mt-8">
-                מוכן לסיבוב הבא
-                <CheckCircle2 className="mr-2" />
-              </AppButton>}
-            
-            {!isHost && playerReady && <div className="mt-8 p-4 bg-primary/10 rounded-lg text-center">
-                <div className="font-semibold mb-2">אתה מוכן לסיבוב הבא</div>
-                <div className="text-sm">ממתין למנהל המשחק להתחיל...</div>
-              </div>}
-          </div>;
-      default:
-        return <div className="flex flex-col items-center justify-center h-full">
-            <div className="text-lg text-gray-600 animate-pulse">
-              טוען...
-            </div>
-          </div>;
-    }
-  };
-  return <div className="container mx-auto px-4 py-8 min-h-screen">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-primary">משחק שירים</h1>
-          <div className="flex items-center gap-4">
-            {isHost && currentRound && <AppButton variant="secondary" onClick={playFullSong} className="w-auto">
-                השמע את השיר המלא
-                <Youtube className="mr-2" />
-              </AppButton>}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">קוד משחק: </span>
-              <span className="font-mono font-bold text-lg">{gameCode}</span>
-            </div>
-          </div>
-        </div>
-        
-        {renderPhase()}
-      </div>
-    </div>;
-};
-export default GamePlay;
+                  </div>
+                )}
