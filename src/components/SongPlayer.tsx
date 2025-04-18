@@ -27,6 +27,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [manualPlayNeeded, setManualPlayNeeded] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [playButtonClicked, setPlayButtonClicked] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -69,6 +71,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           timeoutRef.current = setTimeout(() => {
             console.log('Song playback ended:', song.title);
             setShowYouTubeEmbed(false);
+            setIframeLoaded(false);
+            setPlayButtonClicked(false);
             onPlaybackEnded();
           }, duration);
         }
@@ -86,6 +90,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     } else {
       setShowYouTubeEmbed(false);
       setManualPlayNeeded(false);
+      setIframeLoaded(false);
+      setPlayButtonClicked(false);
     }
 
     // Cleanup function
@@ -99,6 +105,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
 
   const handleManualPlay = () => {
     setManualPlayNeeded(false);
+    setPlayButtonClicked(true);
+    setIframeLoaded(true);
     
     if (onPlaybackStarted) {
       onPlaybackStarted();
@@ -108,12 +116,29 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     timeoutRef.current = setTimeout(() => {
       console.log('Song playback ended (iOS):', song?.title);
       setShowYouTubeEmbed(false);
+      setIframeLoaded(false);
+      setPlayButtonClicked(false);
       onPlaybackEnded();
     }, duration);
     
     toast.success('השיר מתנגן', {
       description: 'במכשירי אפל, יש צורך בלחיצה ידנית להפעלת השיר'
     });
+  };
+
+  // Create YouTube embed URL with autoplay disabled for iOS (will be enabled on click)
+  const createYouTubeUrl = (embedUrl: string) => {
+    // Check if the URL already has parameters
+    const hasParams = embedUrl.includes('?');
+    const connector = hasParams ? '&' : '?';
+    
+    // For iOS devices that have clicked play, enable sound with mute=0
+    if (isIOS && playButtonClicked) {
+      return `${embedUrl}${connector}autoplay=1&mute=0`;
+    } 
+    
+    // For non-iOS devices, use the original URL
+    return embedUrl;
   };
 
   if (!song || !isPlaying) {
@@ -135,23 +160,26 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     <div className="relative w-full h-40">
       {showYouTubeEmbed && song.embedUrl ? (
         <>
-          <iframe 
-            ref={iframeRef}
-            width="100%" 
-            height="100%" 
-            src={song.embedUrl} 
-            frameBorder="0" 
-            allow="autoplay; encrypted-media" 
-            allowFullScreen 
-            className="absolute top-0 left-0 z-10"
-            onError={() => {
-              setError('שגיאה בטעינת השיר');
-              if (onPlaybackError) onPlaybackError();
-            }}
-          />
+          {/* Show iframe only if non-iOS or if play button has been clicked on iOS */}
+          {(!isIOS || (isIOS && iframeLoaded)) && (
+            <iframe 
+              ref={iframeRef}
+              width="100%" 
+              height="100%" 
+              src={createYouTubeUrl(song.embedUrl)} 
+              frameBorder="0" 
+              allow="autoplay; encrypted-media" 
+              allowFullScreen 
+              className="absolute top-0 left-0 z-10"
+              onError={() => {
+                setError('שגיאה בטעינת השיר');
+                if (onPlaybackError) onPlaybackError();
+              }}
+            />
+          )}
           
           {/* iOS Manual Play Button */}
-          {manualPlayNeeded && (
+          {manualPlayNeeded && !playButtonClicked && (
             <div className="absolute top-0 left-0 w-full h-full z-30 flex items-center justify-center bg-black/70">
               <div className="text-center">
                 <AppButton 
