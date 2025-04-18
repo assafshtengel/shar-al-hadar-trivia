@@ -145,25 +145,18 @@ export const useGameStateSubscription = ({
               const newPhase = payload.new.game_phase as GamePhase;
               const currentTime = Date.now();
               
-              // Always process all phases for all players regardless of rank
-              if (
-                lastGamePhaseRef.current === null || 
-                lastGamePhaseRef.current !== newPhase ||
-                (currentTime - phaseUpdateTimeRef.current) > 500
-              ) {
-                console.log(`Game phase update: ${newPhase}, isHost: ${isHost}, last phase: ${lastGamePhaseRef.current}`);
-                
-                lastGamePhaseRef.current = newPhase;
-                phaseUpdateTimeRef.current = currentTime;
-                
-                // Always set the game phase, regardless of the player rank
-                setGamePhase(newPhase);
-                
-                if ('host_ready' in payload.new) {
-                  setHostReady(!!payload.new.host_ready);
-                }
-              } else {
-                console.log(`Ignoring frequent phase update to ${newPhase} (last update was ${currentTime - phaseUpdateTimeRef.current}ms ago)`);
+              // Always process the update regardless of whether we've seen this phase before
+              // This ensures that all players transition to the correct state
+              console.log(`Game phase update: ${newPhase}, isHost: ${isHost}, last phase: ${lastGamePhaseRef.current}`);
+              
+              lastGamePhaseRef.current = newPhase;
+              phaseUpdateTimeRef.current = currentTime;
+              
+              // Always set the game phase, regardless of the player rank
+              setGamePhase(newPhase);
+              
+              if ('host_ready' in payload.new) {
+                setHostReady(!!payload.new.host_ready);
               }
             } else if (payload.eventType === 'DELETE') {
               if (!isHost) {
