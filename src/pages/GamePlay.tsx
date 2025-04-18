@@ -55,9 +55,9 @@ interface SupabasePlayer {
 }
 
 interface PendingAnswerUpdate {
-  playerName: string;
+  player_name: string;
   selectedAnswer: number | null;
-  isCorrect: boolean;
+  is_correct: boolean;
   points: number;
 }
 
@@ -515,9 +515,9 @@ const GamePlay: React.FC = () => {
       const points = isCorrect ? 10 : 0;
       
       pendingUpdates.push({
-        playerName: playerName,
+        player_name: playerName,
         selectedAnswer: selectedAnswer,
-        isCorrect,
+        is_correct: isCorrect,
         points
       });
       
@@ -550,8 +550,8 @@ const GamePlay: React.FC = () => {
     
     try {
       const playerUpdates = updates.map(update => ({
-        player_name: update.playerName,
-        is_correct: update.isCorrect,
+        player_name: update.player_name,
+        is_correct: update.is_correct,
         points: update.points
       }));
       
@@ -564,12 +564,12 @@ const GamePlay: React.FC = () => {
           .maybeSingle();
           
         if (fetchError) {
-          console.error(`Error fetching player ${update.playerName}:`, fetchError);
+          console.error(`Error fetching player ${update.player_name}:`, fetchError);
           continue;
         }
         
         if (!playerData) {
-          console.error(`Player ${update.playerName} not found`);
+          console.error(`Player ${update.player_name} not found`);
           continue;
         }
         
@@ -586,9 +586,9 @@ const GamePlay: React.FC = () => {
           .eq('name', update.player_name);
           
         if (updateError) {
-          console.error(`Error updating player ${update.playerName}:`, updateError);
+          console.error(`Error updating player ${update.player_name}:`, updateError);
         } else {
-          console.log(`Successfully updated player ${update.playerName} score to ${newScore}`);
+          console.log(`Successfully updated player ${update.player_name} score to ${newScore}`);
         }
       }
     } catch (error) {
@@ -708,9 +708,9 @@ const GamePlay: React.FC = () => {
       }
       
       const pendingUpdate: PendingAnswerUpdate = {
-        playerName,
+        player_name: playerName,
         selectedAnswer: null,
-        isCorrect: false,
+        is_correct: false,
         points: 0
       };
       
