@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Music } from 'lucide-react';
@@ -59,10 +60,9 @@ const GameHostSetup: React.FC = () => {
   const handleGameModeChange = async (mode: 'local' | 'remote') => {
     if (hostJoined) {
       const { error } = await supabase
-        .rpc('update_game_mode', {
-          p_game_code: gameCode,
-          p_game_mode: mode
-        });
+        .from('game_state')
+        .update({ game_mode: mode })
+        .eq('game_code', gameCode);
 
       if (error) {
         console.error('Error updating game mode:', error);
