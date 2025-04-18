@@ -888,13 +888,11 @@ const GamePlay: React.FC = () => {
       case 'answerOptions':
         return (
           <div className="flex flex-col items-center py-6 space-y-6">
-            {timerActive && (
-              <GameTimer 
-                initialSeconds={answerTimeLimit} 
-                isActive={timerActive} 
-                onTimeout={handleTimerTimeout}
-              />
-            )}
+            <GameTimer 
+              initialSeconds={10} 
+              isActive={true}
+              onTimeout={handleTimerTimeout}
+            />
             
             <div className="flex items-center">
               <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
