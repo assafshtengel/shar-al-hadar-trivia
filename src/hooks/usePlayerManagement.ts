@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -33,7 +32,6 @@ export const usePlayerManagement = ({
   const updatingPlayerRef = useRef<boolean>(false);
   const lastUpdateIdRef = useRef<string | null>(null);
   
-  // Initial host check
   const checkHostJoined = useCallback(async () => {
     if (hostCheckCompletedRef.current || !playerName || !gameCode) return;
     
@@ -56,7 +54,6 @@ export const usePlayerManagement = ({
     }
   }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
 
-  // Initial players fetch
   const fetchPlayers = useCallback(async () => {
     if (!gameCode || fetchingPlayersRef.current) return;
     console.log('Initial players fetch starting');
@@ -93,7 +90,6 @@ export const usePlayerManagement = ({
     }
   }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
 
-  // Host check effect - runs once
   useEffect(() => {
     console.log('Starting host check effect');
     if (!hostCheckCompletedRef.current) {
@@ -104,7 +100,6 @@ export const usePlayerManagement = ({
     };
   }, [checkHostJoined]);
 
-  // Main subscription effect
   useEffect(() => {
     if (!gameCode) {
       console.error('No game code provided to usePlayerManagement');
@@ -114,12 +109,10 @@ export const usePlayerManagement = ({
     console.log('Setting up player tracking for game:', gameCode);
     let isMounted = true;
     
-    // Initial fetch only if not already fetching
     if (!fetchingPlayersRef.current) {
       fetchPlayers();
     }
 
-    // Clean up any existing channel
     if (channelRef.current) {
       console.log('Removing existing players channel');
       supabase.removeChannel(channelRef.current);
@@ -129,7 +122,6 @@ export const usePlayerManagement = ({
     const channelId = `players-changes-${gameCode}-${Date.now()}`;
     console.log(`Creating new player channel: ${channelId}`);
     
-    // Set up realtime subscription with optimized handlers
     const channel = supabase
       .channel(channelId)
       .on(
@@ -146,15 +138,13 @@ export const usePlayerManagement = ({
             return;
           }
 
-          // Skip if this update was triggered by our own code
-          if (lastUpdateIdRef.current === payload.new?.id) {
-            console.log('Skipping own update:', payload.new?.id);
+          if (payload.new && 'id' in payload.new && lastUpdateIdRef.current === payload.new.id) {
+            console.log('Skipping own update:', payload.new.id);
             return;
           }
           
           console.log('Player change detected:', payload);
           
-          // Handle different event types with local state updates
           if (payload.eventType === 'INSERT') {
             setPlayers((prevPlayers) => {
               const newPlayer = payload.new as Player;
@@ -176,7 +166,7 @@ export const usePlayerManagement = ({
                 player.id === payload.new.id ? { ...player, ...payload.new } : player
               )
             );
-          } else if (payload.eventType === 'DELETE') {
+          } else if (payload.eventType === 'DELETE' && payload.old && 'id' in payload.old) {
             setPlayers((prevPlayers) => 
               prevPlayers.filter(player => player.id !== payload.old.id)
             );
@@ -221,7 +211,6 @@ export const usePlayerManagement = ({
       }
     } finally {
       updatingPlayerRef.current = false;
-      // Reset lastUpdateId after a delay to ensure we catch the realtime update
       setTimeout(() => {
         lastUpdateIdRef.current = null;
       }, 1000);
@@ -230,4 +219,3 @@ export const usePlayerManagement = ({
 
   return { players, updatePlayer };
 };
-

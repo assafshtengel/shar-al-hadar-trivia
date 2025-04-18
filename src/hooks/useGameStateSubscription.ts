@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -145,7 +144,8 @@ export const useGameStateSubscription = ({
           }
           
           // Skip if this update was triggered by our own code
-          if (lastGameStateUpdateRef.current === payload.new?.game_code) {
+          // Fix the type check here
+          if (payload.new && 'game_code' in payload.new && lastGameStateUpdateRef.current === payload.new.game_code) {
             console.log('Skipping own game state update');
             return;
           }
@@ -219,4 +219,3 @@ export const useGameStateSubscription = ({
 
   return { updateGameState };
 };
-

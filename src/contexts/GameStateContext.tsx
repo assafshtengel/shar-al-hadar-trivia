@@ -14,6 +14,8 @@ interface GameStateContextType {
   isHost: boolean;
   setGameData: (data: { gameCode: string; playerName: string; isHost?: boolean }) => void;
   clearGameData: () => void;
+  setGamePhase: (phase: GamePhase | null) => void;
+  setHostReady: (ready: boolean) => void;
 }
 
 const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
@@ -80,7 +82,9 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         gamePhase,
         isHost,
         setGameData,
-        clearGameData
+        clearGameData,
+        setGamePhase,
+        setHostReady
       }}
     >
       <GameEndOverlay 

@@ -115,7 +115,7 @@ const GamePlay: React.FC = () => {
     players,
     updatePlayer
   } = usePlayerManagement({
-    gameCode,
+    gameCode: gameCode || '',
     playerName,
     setHostJoined: () => {},
     setStartGameDisabled: () => {}
@@ -241,7 +241,6 @@ const GamePlay: React.FC = () => {
         }
         if (data && isMounted) {
           console.log('Fetched players:', data);
-          setPlayers(data);
           if (playerName) {
             const currentPlayerData = data.find(p => p.name === playerName);
             if (currentPlayerData) {
@@ -279,16 +278,8 @@ const GamePlay: React.FC = () => {
       if (!isMounted) return;
       try {
         if (payload.eventType === 'INSERT') {
-          setPlayers(prev => {
-            const newPlayer = payload.new as SupabasePlayer;
-            if (prev.some(p => p.id === newPlayer.id)) return prev;
-            return [...prev, newPlayer];
-          });
+          console.log('New player detected, will be updated by usePlayerManagement');
         } else if (payload.eventType === 'UPDATE') {
-          setPlayers(prev => prev.map(player => player.id === payload.new.id ? {
-            ...player,
-            ...payload.new
-          } : player));
           if (playerName && payload.new.name === playerName) {
             setCurrentPlayer(prev => ({
               ...prev,
@@ -298,7 +289,7 @@ const GamePlay: React.FC = () => {
             }));
           }
         } else if (payload.eventType === 'DELETE') {
-          setPlayers(prev => prev.filter(player => player.id !== payload.old.id));
+          console.log('Player deleted, will be updated by usePlayerManagement');
         }
       } catch (err) {
         console.error('Error handling player change:', err);
@@ -696,8 +687,8 @@ const GamePlay: React.FC = () => {
             {showYouTubeEmbed && currentSong && <div className="relative w-full h-40">
                 <iframe width="100%" height="100%" src={currentSong.embedUrl} frameBorder="0" allow="autoplay; encrypted-media" allowFullScreen className="absolute top-0 left-0 z-10"></iframe>
                 <div className="absolute top-0 left-0 w-full h-full z-20 bg-black" style={{
-              opacity: 0.95
-            }}></div>
+                  opacity: 0.95
+                }}></div>
               </div>}
             {isHost && <AppButton variant="primary" size="lg" onClick={playSong} className="max-w-xs" disabled={isPlaying}>
                 {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
