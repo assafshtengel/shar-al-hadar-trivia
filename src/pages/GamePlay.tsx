@@ -482,9 +482,20 @@ const GamePlay: React.FC = () => {
       const isCorrect = selectedAnswer === currentRound.correctAnswerIndex;
       const points = isCorrect ? 10 : 0;
       
-      pendingUpdates.push({\n        player_name: playerName,\n        is_correct: isCorrect,\n        points\n      });
+      pendingUpdates.push({
+        player_name: playerName,
+        is_correct: isCorrect,
+        points
+      });
       
-      setCurrentPlayer(prev => ({\n        ...prev,\n        hasAnswered: true,\n        lastAnswer: currentRound.options[selectedAnswer].name,\n        lastAnswerCorrect: isCorrect,\n        lastScore: points,\n        score: prev.score + points\n      }));
+      setCurrentPlayer(prev => ({
+        ...prev,
+        hasAnswered: true,
+        lastAnswer: currentRound.options[selectedAnswer].name,
+        lastAnswerCorrect: isCorrect,
+        lastScore: points,
+        score: prev.score + points
+      }));
     }
     
     setPendingAnswers(pendingUpdates);
@@ -970,3 +981,38 @@ const GamePlay: React.FC = () => {
                 <div className="flex items-center justify-center gap-2 text-xl">
                   <span>קיבלת</span>
                   <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
+                  <span>נקודות</span>
+                </div>
+              </>
+            )}
+          </div>
+        );
+
+      case 'leaderboard':
+        return (
+          <div className="flex flex-col items-center justify-center py-8 space-y-6">
+            <h2 className="text-2xl font-bold text-primary">רשימת השחקנים</h2>
+            <div className="flex flex-col space-y-4">
+              {players.map(player => (
+                <div key={player.id} className="flex items-center justify-between">
+                  <div className="text-lg font-bold">{player.name}</div>
+                  <div className="text-lg">{player.score}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {renderPhase()}
+    </div>
+  );
+};
+
+export default GamePlay;
