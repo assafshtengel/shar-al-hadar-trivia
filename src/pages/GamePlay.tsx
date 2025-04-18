@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useGameState } from '@/contexts/GameStateContext';
 import { useGameRound } from '@/hooks/useGameRound';
@@ -10,6 +9,7 @@ import ScoringFeedback from '@/components/game/ScoringFeedback';
 import Leaderboard from '@/components/game/Leaderboard';
 import EndGameButton from '@/components/EndGameButton';
 import ExitGameButton from '@/components/ExitGameButton';
+import AppButton from '@/components/AppButton';
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 
