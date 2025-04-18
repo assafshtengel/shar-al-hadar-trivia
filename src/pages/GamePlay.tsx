@@ -99,7 +99,7 @@ const GamePlay: React.FC = () => {
         console.error('Error updating game state:', error);
         toast({
           title: "שגיאה בעדכון מצב המשחק",
-          description: "אירעה שגיאה בעדכון מצב המשחק",
+          description: "אירעה שגיא�� בעדכון מצב המשחק",
           variant: "destructive"
         });
       } else {
@@ -697,8 +697,8 @@ const GamePlay: React.FC = () => {
       <div className="fixed bottom-0 right-0 left-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border">
         <AdSenseAd 
           className="py-2 px-4 mx-auto max-w-5xl"
-          adSlot="XXXXXXXXXX" // Replace with your ad slot ID
-          adFormat="fluid"
+          adSlot="1234567890"
+          adFormat="300x250"
         />
       </div>
     </div>
