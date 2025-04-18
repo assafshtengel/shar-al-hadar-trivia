@@ -727,6 +727,32 @@ const GamePlay: React.FC = () => {
     }
   };
 
+  const showLeaderboard = async () => {
+    if (!isHost || !gameCode) return;
+    
+    const { error } = await supabase
+      .from('game_state')
+      .update({
+        game_phase: 'end'
+      })
+      .eq('game_code', gameCode);
+    
+    if (error) {
+      console.error('Error updating game phase to end:', error);
+      toast({
+        title: "שגיאה במעבר לטבלת המובילים",
+        description: "אירעה שגיאה במעבר לטבלת המובילים",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: "מעבר לטבלת המובילים",
+      description: "כל המשתתפים יועברו לטבלת המובילים"
+    });
+  };
+
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
@@ -740,6 +766,18 @@ const GamePlay: React.FC = () => {
               <Play className="mr-2" />
             </AppButton>
             
+            {isHost && (
+              <AppButton 
+                variant="secondary" 
+                size="lg" 
+                onClick={showLeaderboard} 
+                className="max-w-xs"
+              >
+                הצג טבלת מובילים
+                <Trophy className="mr-2" />
+              </AppButton>
+            )}
+
             {isPlaying && !showYouTubeEmbed && <div className="relative w-40 h-40 flex items-center justify-center">
                 <div className="absolute w-full h-full">
                   <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
