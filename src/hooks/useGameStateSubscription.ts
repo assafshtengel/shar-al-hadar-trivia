@@ -117,8 +117,11 @@ export const useGameStateSubscription = ({
       return;
     }
 
+    console.log("Game state change detected:", payload.new);
+
     if (payload.new && typeof payload.new === 'object' && 'game_phase' in payload.new) {
       const newPhase = payload.new.game_phase as GamePhase;
+      console.log(`Setting game phase to: ${newPhase}`);
       setGamePhase(newPhase);
       
       if ('host_ready' in payload.new) {
@@ -153,6 +156,11 @@ export const useGameStateSubscription = ({
       .subscribe();
 
     channelRef.current = channel;
+    
+    // Check initial game state
+    if (!initialCheckDoneRef.current) {
+      isHost ? checkGameState() : fetchGameState();
+    }
 
     return () => {
       console.log('Cleaning up game state subscription');
@@ -161,7 +169,7 @@ export const useGameStateSubscription = ({
         channelRef.current = null;
       }
     };
-  }, [gameCode, channelName, handleGameStateChange]);
+  }, [gameCode, channelName, handleGameStateChange, checkGameState, fetchGameState, isHost]);
 
   const updateGameState = useCallback(async (updates: Partial<{ game_phase: GamePhase, host_ready: boolean }>) => {
     if (!gameCode || updatingGameStateRef.current) {
@@ -170,6 +178,7 @@ export const useGameStateSubscription = ({
     }
 
     try {
+      console.log(`Updating game state for ${gameCode}:`, updates);
       updatingGameStateRef.current = true;
       lastGameStateUpdateRef.current = gameCode;
 
