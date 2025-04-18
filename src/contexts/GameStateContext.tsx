@@ -5,17 +5,15 @@ import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
 import GameEndOverlay from '@/components/GameEndOverlay';
 import { useGamePhaseNavigation } from '@/hooks/useGamePhaseNavigation';
 
-export type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
+type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
 
-export interface GameStateContextType {
+interface GameStateContextType {
   gameCode: string | null;
   playerName: string | null;
   gamePhase: GamePhase | null;
   isHost: boolean;
   setGameData: (data: { gameCode: string; playerName: string; isHost?: boolean }) => void;
   clearGameData: () => void;
-  setGamePhase: (phase: GamePhase | null) => void;
-  setHostReady: (ready: boolean) => void;
 }
 
 const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
@@ -82,9 +80,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         gamePhase,
         isHost,
         setGameData,
-        clearGameData,
-        setGamePhase,
-        setHostReady
+        clearGameData
       }}
     >
       <GameEndOverlay 

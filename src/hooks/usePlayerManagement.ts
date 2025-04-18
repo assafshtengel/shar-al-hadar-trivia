@@ -1,11 +1,9 @@
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface UsePlayerManagementParams {
-  gameCode: string | null;
+  gameCode: string;
   playerName: string | null;
   setHostJoined: (joined: boolean) => void;
   setStartGameDisabled: (disabled: boolean) => void;
@@ -17,8 +15,6 @@ interface Player {
   game_code: string;
   joined_at: string | null;
   score: number | null;
-  hasAnswered?: boolean;
-  isReady?: boolean;
 }
 
 export const usePlayerManagement = ({ 
@@ -28,162 +24,105 @@ export const usePlayerManagement = ({
   setStartGameDisabled 
 }: UsePlayerManagementParams) => {
   const [players, setPlayers] = useState<Player[]>([]);
-  const channelRef = useRef<RealtimeChannel | null>(null);
-  const hostCheckCompletedRef = useRef<boolean>(false);
-  const updatingPlayerRef = useRef<boolean>(false);
-  const lastUpdateIdRef = useRef<string | null>(null);
-  const fetchingPlayersRef = useRef<boolean>(false);
-  
-  // Create channel name outside of effects
-  const channelName = gameCode ? `players-changes-${gameCode}` : null;
 
-  const checkHostJoined = useCallback(async () => {
-    if (hostCheckCompletedRef.current || !playerName || !gameCode) return;
-    
-    console.log(`Checking if host ${playerName} has already joined game ${gameCode}`);
-    hostCheckCompletedRef.current = true;
-    
-    try {
-      const { exists } = await checkPlayerExists({ 
-        game_code: gameCode, 
-        player_name: playerName 
-      });
-      
-      if (exists) {
-        console.log(`Host ${playerName} already joined, enabling start game`);
-        setHostJoined(true);
-        setStartGameDisabled(false);
-      }
-    } catch (err) {
-      console.error('Error checking if host joined:', err);
-    }
-  }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
-
-  const fetchPlayers = useCallback(async () => {
-    if (!gameCode || fetchingPlayersRef.current) return;
-    console.log('Initial players fetch starting');
-    
-    fetchingPlayersRef.current = true;
-    try {
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .eq('game_code', gameCode);
-
-      if (error) {
-        console.error('Error fetching players:', error);
-        toast('שגיאה בטעינת השחקנים', {
-          description: 'אירעה שגיאה בטעינת רשימת השחקנים',
+  // Check if host is already in the players list
+  useEffect(() => {
+    const checkHostJoined = async () => {
+      if (playerName) {
+        const { exists } = await checkPlayerExists({ 
+          game_code: gameCode, 
+          player_name: playerName 
         });
-        return;
-      }
-
-      if (data) {
-        console.log('Initial players fetch completed:', data);
-        setPlayers(data);
         
-        if (playerName && data.some(player => player.name === playerName)) {
-          console.log(`Host ${playerName} found in players list, enabling start game`);
+        if (exists) {
           setHostJoined(true);
           setStartGameDisabled(false);
-          hostCheckCompletedRef.current = true;
         }
       }
-    } finally {
-      fetchingPlayersRef.current = false;
-      console.log('Initial players fetch completed');
-    }
-  }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
-
-  const handlePlayerChange = useCallback((payload: any) => {
-    if (!payload || updatingPlayerRef.current) {
-      return;
-    }
-
-    if (payload.eventType === 'INSERT') {
-      setPlayers((prevPlayers) => {
-        const newPlayer = payload.new as Player;
-        if (prevPlayers.some(p => p.id === newPlayer.id)) {
-          return prevPlayers;
-        }
-        return [...prevPlayers, newPlayer];
-      });
-    } else if (payload.eventType === 'UPDATE') {
-      setPlayers((prevPlayers) => 
-        prevPlayers.map(player => 
-          player.id === payload.new.id ? { ...player, ...payload.new } : player
-        )
-      );
-    } else if (payload.eventType === 'DELETE' && payload.old?.id) {
-      setPlayers((prevPlayers) => 
-        prevPlayers.filter(player => player.id !== payload.old.id)
-      );
-    }
-  }, []);
+    };
+    
+    checkHostJoined();
+  }, [playerName, gameCode, setHostJoined, setStartGameDisabled]);
 
   useEffect(() => {
-    if (!gameCode || !channelName) return;
-    
-    // If we already have a channel subscription, don't create a new one
-    if (channelRef.current) return;
+    // Initial fetch of current players
+    const fetchPlayers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('players')
+          .select('*')
+          .eq('game_code', gameCode);
 
-    console.log(`Setting up player tracking for ${channelName}`);
-    
+        if (error) {
+          console.error('Error fetching players:', error);
+          return;
+        }
+
+        if (data) {
+          console.log('Fetched players:', data);
+          setPlayers(data);
+          
+          // Check if host is already in the players list
+          if (playerName && data.some(player => player.name === playerName)) {
+            setHostJoined(true);
+            setStartGameDisabled(false);
+          }
+        }
+      } catch (err) {
+        console.error('Exception when fetching players:', err);
+      }
+    };
+
+    fetchPlayers();
+
+    // Set up realtime subscription for ALL database changes to the players table
     const channel = supabase
-      .channel(channelName)
+      .channel('schema-db-changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'players',
           filter: `game_code=eq.${gameCode}`
         },
-        handlePlayerChange
+        (payload) => {
+          console.log('Player change detected:', payload);
+          
+          // Handle different event types
+          if (payload.eventType === 'INSERT') {
+            // Add new player to the list
+            setPlayers((prevPlayers) => [...prevPlayers, payload.new as Player]);
+            
+            // If the new player is the host, enable the start game button
+            if (playerName && payload.new.name === playerName) {
+              setHostJoined(true);
+              setStartGameDisabled(false);
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            // Update existing player in the list
+            setPlayers((prevPlayers) => 
+              prevPlayers.map(player => 
+                player.id === payload.new.id ? { ...player, ...payload.new } : player
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            // Remove player from the list
+            setPlayers((prevPlayers) => 
+              prevPlayers.filter(player => player.id !== payload.old.id)
+            );
+          }
+        }
       )
-      .subscribe();
-
-    channelRef.current = channel;
-
-    if (!hostCheckCompletedRef.current) {
-      fetchPlayers();
-    }
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
-      console.log('Cleaning up players subscription');
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      console.log('Cleaning up subscription');
+      supabase.removeChannel(channel);
     };
-  }, [gameCode, channelName, handlePlayerChange, fetchPlayers]);
+  }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
 
-  const updatePlayer = useCallback(async (playerId: string, updates: Partial<Player>) => {
-    if (updatingPlayerRef.current) {
-      console.log('Update already in progress, skipping');
-      return;
-    }
-
-    try {
-      updatingPlayerRef.current = true;
-      lastUpdateIdRef.current = playerId;
-
-      const { error } = await supabase
-        .from('players')
-        .update(updates)
-        .eq('id', playerId);
-
-      if (error) {
-        console.error('Error updating player:', error);
-        throw error;
-      }
-    } finally {
-      updatingPlayerRef.current = false;
-      setTimeout(() => {
-        lastUpdateIdRef.current = null;
-      }, 1000);
-    }
-  }, []);
-
-  return { players, updatePlayer };
+  return { players };
 };

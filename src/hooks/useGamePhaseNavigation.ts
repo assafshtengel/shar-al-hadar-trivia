@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -18,18 +18,15 @@ export const useGamePhaseNavigation = ({
 }: UseGamePhaseNavigationProps) => {
   const navigate = useNavigate();
   const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
-  const lastNavigatedPhaseRef = useRef<GamePhase | null>(null);
-  const navigationInProgressRef = useRef<boolean>(false);
 
-  const handleNavigation = useCallback((phase: GamePhase) => {
-    if (navigationInProgressRef.current) return;
-    navigationInProgressRef.current = true;
+  useEffect(() => {
+    if (!gamePhase) return;
     
-    try {
+    const handleGamePhaseNavigation = () => {
       const currentPath = window.location.pathname;
-      console.log(`Navigation for phase=${phase}, path=${currentPath}, isHost=${isHost}, lastNavigated=${lastNavigatedPhaseRef.current}`);
+      console.log(`Navigation check: phase=${gamePhase}, path=${currentPath}, isHost=${isHost}`);
 
-      switch (phase) {
+      switch (gamePhase) {
         case 'waiting':
           // Only navigate if not already in gameplay or setup screens
           if (isHost && currentPath !== '/host-setup' && currentPath !== '/gameplay') {
@@ -45,7 +42,7 @@ export const useGamePhaseNavigation = ({
         case 'results':
           // Make sure players stay in the gameplay page, but don't force navigation if already there
           if (currentPath !== '/gameplay') {
-            console.log('Navigating to gameplay screen for game phase:', phase);
+            console.log('Navigating to gameplay screen for game phase:', gamePhase);
             navigate('/gameplay');
           }
           break;
@@ -56,32 +53,15 @@ export const useGamePhaseNavigation = ({
             toast('המשחק הסתיים', {
               description: 'המשחק הסתיים על ידי המארח',
             });
+            
+            // Game end navigation now handled by GameEndOverlay
           }
           break;
       }
-      
-      // Update last navigated phase
-      lastNavigatedPhaseRef.current = phase;
-    } finally {
-      // Allow navigation again after a delay
-      setTimeout(() => {
-        navigationInProgressRef.current = false;
-      }, 300);
-    }
-  }, [isHost, navigate, isRedirecting]);
+    };
 
-  useEffect(() => {
-    if (!gamePhase) return;
-
-    // Prevent unnecessary navigation if phase hasn't changed
-    if (gamePhase === lastNavigatedPhaseRef.current) {
-      console.log(`Skipping navigation - already at phase ${gamePhase}`);
-      return;
-    }
-    
-    console.log(`Game phase changed to: ${gamePhase}`);
-    handleNavigation(gamePhase);
-  }, [gamePhase, handleNavigation]);
+    handleGamePhaseNavigation();
+  }, [gamePhase, isHost, clearGameData, navigate, isRedirecting]);
 
   return { isRedirecting };
 };

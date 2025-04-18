@@ -61,43 +61,15 @@ const JoinGame = () => {
         return;
       }
 
-      // Check if player name already exists in this game
-      const { data: existingPlayer, error: checkPlayerError } = await supabase
-        .from('players')
-        .select('name')
-        .eq('game_code', gameCode)
-        .eq('name', playerName)
-        .maybeSingle();
-
-      if (checkPlayerError && checkPlayerError.code !== 'PGRST116') {
-        console.error('Error checking existing player:', checkPlayerError);
-        setError('שגיאה בבדיקת שם שחקן, נסו שוב');
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (existingPlayer) {
-        setError('שם השחקן כבר קיים במשחק זה. אנא בחר שם אחר.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      console.log("Attempting to insert player:", { name: playerName, game_code: gameCode });
-
       // Insert player data into Supabase
-      const { error: insertError, data: newPlayer } = await supabase
+      const { error: insertError } = await supabase
         .from('players')
         .insert([
           { 
             name: playerName,
             game_code: gameCode,
-            score: 0,
-            hasAnswered: false,
-            isReady: false
           }
-        ])
-        .select('*')
-        .single();
+        ]);
 
       if (insertError) {
         console.error('Error inserting player:', insertError);
@@ -105,8 +77,6 @@ const JoinGame = () => {
         setIsSubmitting(false);
         return;
       }
-
-      console.log('Player successfully joined:', newPlayer);
 
       toast({
         title: "הצטרפת בהצלחה!",
