@@ -1,6 +1,7 @@
+
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Music } from 'lucide-react';
+import { Music, ExternalLink } from 'lucide-react';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { useGameState } from '@/contexts/GameStateContext';
@@ -61,13 +62,17 @@ const GameHostSetup: React.FC = () => {
       <div className="container mx-auto px-4 py-6 flex-1 flex flex-col relative z-10 max-w-md">
         <div className="w-full flex flex-col items-center">
           <div className="mb-8 text-center relative w-full">
-            <Link to="/" className="block mb-2">
-              <h1 className="text-3xl font-bold text-primary inline-flex items-center gap-2">
-                <Music className="h-6 w-6" />
-                שיר על הדרך
-              </h1>
+            <Link 
+              to="/" 
+              className="block mb-2 group transition-all duration-300 hover:scale-105"
+            >
+              <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-lg px-4 py-2 shadow-md hover:shadow-lg">
+                <Music className="h-6 w-6 text-primary group-hover:rotate-12 transition-transform" />
+                <h1 className="text-3xl font-bold text-primary">שיר על הדרך</h1>
+                <ExternalLink className="h-4 w-4 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
             </Link>
-            <h2 className="text-lg text-gray-600">מסך מנהל המשחק</h2>
+            <h2 className="text-lg text-gray-600 mt-2">מסך מנהל המשחק</h2>
             
             <div className="absolute top-0 right-0 flex items-center gap-2">
               <LeaveGameButton />
