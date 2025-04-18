@@ -1129,8 +1129,11 @@ const GamePlay: React.FC = () => {
           <span className="text-primary">מנחש</span> 
           <span className="text-secondary">השירים</span>
         </h1>
-        <div className="text-lg font-semibold bg-primary/10 px-3 py-1 rounded-md">
-          קוד משחק: {gameCode}
+        <div className="flex items-center gap-4">
+          <div className="text-lg font-semibold bg-primary/10 px-3 py-1 rounded-md">
+            קוד משחק: {gameCode}
+          </div>
+          <EndGameButton gameCode={gameCode} />
         </div>
       </div>
       
@@ -1146,3 +1149,4 @@ const GamePlay: React.FC = () => {
 };
 
 export default GamePlay;
+
