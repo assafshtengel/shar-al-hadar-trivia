@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
@@ -57,13 +56,11 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.removeItem('isHost');
   };
 
-  // Log phase changes for debugging
   useEffect(() => {
     if (previousGamePhaseRef.current !== gamePhase) {
       console.log(`Game phase changed: ${previousGamePhaseRef.current} -> ${gamePhase}`);
       previousGamePhaseRef.current = gamePhase;
       
-      // Show toast notification for significant phase changes
       if (gamePhase === 'end' && !isHost) {
         toast('המשחק הסתיים', {
           description: 'המארח סיים את המשחק',
@@ -72,7 +69,6 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [gamePhase, isHost]);
 
-  // Use the subscription hook to listen for game state changes
   useGameStateSubscription({
     gameCode,
     isHost,
@@ -82,7 +78,6 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     navigate
   });
 
-  // Use a separate hook for game phase navigation logic
   const { isRedirecting } = useGamePhaseNavigation({
     gamePhase,
     isHost,
