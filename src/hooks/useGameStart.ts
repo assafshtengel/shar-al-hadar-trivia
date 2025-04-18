@@ -8,9 +8,10 @@ interface UseGameStartParams {
   gameCode: string;
   players: any[];
   hostJoined: boolean;
+  gameMode: 'local' | 'remote';
 }
 
-export const useGameStart = ({ gameCode, players, hostJoined }: UseGameStartParams) => {
+export const useGameStart = ({ gameCode, players, hostJoined, gameMode }: UseGameStartParams) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [gameStarted, setGameStarted] = useState(false);
@@ -38,7 +39,8 @@ export const useGameStart = ({ gameCode, players, hostJoined }: UseGameStartPara
       .from('game_state')
       .update({ 
         game_phase: 'playing',
-        host_ready: true
+        host_ready: true,
+        game_mode: gameMode
       })
       .eq('game_code', gameCode);
 
@@ -55,7 +57,7 @@ export const useGameStart = ({ gameCode, players, hostJoined }: UseGameStartPara
     setGameStarted(true);
     toast({
       title: "המשחק התחיל!",
-      description: "כעת אתה יכול להשמיע שירים"
+      description: `המשחק התחיל במצב ${gameMode === 'local' ? 'קרוב' : 'מרוחק'}`
     });
 
     navigate('/gameplay');

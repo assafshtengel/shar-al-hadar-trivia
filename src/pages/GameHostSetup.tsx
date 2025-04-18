@@ -9,13 +9,18 @@ import EndGameButton from '@/components/EndGameButton';
 import PlayersList from '@/components/GameHostSetup/PlayersList';
 import GameCodeDisplay from '@/components/GameHostSetup/GameCodeDisplay';
 import HostJoinForm from '@/components/GameHostSetup/HostJoinForm';
+import GameModeSelector from '@/components/GameHostSetup/GameModeSelector';
 import { useHostJoin } from '@/hooks/useHostJoin';
 import { useGameStart } from '@/hooks/useGameStart';
 import { usePlayerManagement } from '@/hooks/usePlayerManagement';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 const GameHostSetup: React.FC = () => {
   const { gameCode: contextGameCode, setGameData, playerName: contextPlayerName } = useGameState();
   const [gameCode] = React.useState(() => contextGameCode || Math.floor(100000 + Math.random() * 900000).toString());
+  const [gameMode, setGameMode] = React.useState<'local' | 'remote'>('local');
+  const { toast } = useToast();
   
   const {
     hostName,
@@ -42,7 +47,8 @@ const GameHostSetup: React.FC = () => {
   const { gameStarted, startGame } = useGameStart({
     gameCode,
     players,
-    hostJoined
+    hostJoined,
+    gameMode
   });
 
   useEffect(() => {
@@ -50,6 +56,26 @@ const GameHostSetup: React.FC = () => {
       setGameData({ gameCode, playerName: hostName || 'מנחה', isHost: true });
     }
   }, [contextGameCode, gameCode, hostName, setGameData]);
+
+  const handleGameModeChange = async (mode: 'local' | 'remote') => {
+    if (hostJoined) {
+      const { error } = await supabase
+        .from('game_state')
+        .update({ game_mode: mode })
+        .eq('game_code', gameCode);
+
+      if (error) {
+        console.error('Error updating game mode:', error);
+        toast({
+          title: "שגיאה בעדכון מצב המשחק",
+          description: "אירעה שגיאה בעדכון סוג המשחק",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    setGameMode(mode);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
@@ -76,6 +102,12 @@ const GameHostSetup: React.FC = () => {
 
           <GameCodeDisplay gameCode={gameCode} />
           
+          <GameModeSelector
+            selectedMode={gameMode}
+            onModeChange={handleGameModeChange}
+            disabled={!hostJoined}
+          />
+
           <HostJoinForm 
             hostName={hostName}
             setHostName={setHostName}
