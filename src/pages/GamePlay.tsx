@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import EndGameButton from '@/components/EndGameButton';
 import { defaultSongBank, createGameRound, Song } from '@/data/songBank';
 import SongPlayer from '@/components/SongPlayer';
+import LogoutButton from '@/components/LogoutButton';
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 interface Player {
@@ -1049,6 +1050,7 @@ const GamePlay: React.FC = () => {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-primary">משחק שירים</h1>
           <div className="flex items-center gap-4">
+            <LogoutButton />
             {isHost && currentRound && <AppButton variant="secondary" onClick={playFullSong} className="w-auto">
                 השמע את השיר המלא
                 <Youtube className="mr-2" />
