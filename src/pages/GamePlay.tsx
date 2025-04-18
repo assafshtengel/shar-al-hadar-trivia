@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -533,12 +532,12 @@ const GamePlay: React.FC = () => {
           .maybeSingle();
           
         if (fetchError) {
-          console.error(`Error fetching player ${update.player_name}:`, fetchError);
+          console.error(`Error fetching player ${update.playerName}:`, fetchError);
           continue;
         }
         
         if (!playerData) {
-          console.error(`Player ${update.player_name} not found`);
+          console.error(`Player ${update.playerName} not found`);
           continue;
         }
         
@@ -555,9 +554,9 @@ const GamePlay: React.FC = () => {
           .eq('name', update.player_name);
           
         if (updateError) {
-          console.error(`Error updating player ${update.player_name}:`, updateError);
+          console.error(`Error updating player ${update.playerName}:`, updateError);
         } else {
-          console.log(`Successfully updated player ${update.player_name} score to ${newScore}`);
+          console.log(`Successfully updated player ${update.playerName} score to ${newScore}`);
         }
       }
     } catch (error) {
@@ -731,7 +730,7 @@ const GamePlay: React.FC = () => {
       console.error('Error resetting players ready status:', error);
       toast({
         title: "שגיאה באיפוס סטטוס מוכנות השחקנים",
-        description: "אירעה שגיאה באיפוס סטטוס מוכנות השחקנים",
+        description: "אירעה שגיאה באיפוס סטטус מוכנות השחקנים",
         variant: "destructive"
       });
     }
@@ -973,7 +972,7 @@ const GamePlay: React.FC = () => {
                 
                 {!currentPlayer.lastAnswerCorrect && currentRound && (
                   <div className="text-lg font-semibold text-green-500">
-                    תשובה נכונה: {currentRound.correctSong.name}
+                    תשו��ה נכונה: {currentRound.correctSong.name}
                   </div>
                 )}
               </>

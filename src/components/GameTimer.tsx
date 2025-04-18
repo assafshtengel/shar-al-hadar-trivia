@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock } from 'lucide-react';
+import { Timer } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 
 interface GameTimerProps {
@@ -19,8 +19,8 @@ const GameTimer: React.FC<GameTimerProps> = ({
   const startTimeRef = useRef<number | null>(null);
   const lastTickTimeRef = useRef<number>(Date.now());
 
+  // Reset timer when props change
   useEffect(() => {
-    // Reset timer when initialSeconds changes or timer becomes active
     if (isActive) {
       console.log(`Timer started with ${initialSeconds} seconds`);
       setTimeLeft(initialSeconds);
@@ -35,6 +35,7 @@ const GameTimer: React.FC<GameTimerProps> = ({
     }
   }, [initialSeconds, isActive]);
 
+  // Handle timer logic
   useEffect(() => {
     if (isActive && !timerRef.current) {
       console.log('Starting game timer interval');
@@ -73,19 +74,28 @@ const GameTimer: React.FC<GameTimerProps> = ({
     };
   }, [isActive, onTimeout]);
 
+  // Calculate percentage for progress bar
+  const progressPercentage = (timeLeft / initialSeconds) * 100;
+  const isAlmostTimeUp = timeLeft < initialSeconds * 0.3;
+
   return (
-    <>
-      <div className="w-full flex items-center justify-between px-2 mb-2">
-        <div className="flex items-center">
-          <Clock className="mr-2 text-primary" />
-          <span className="font-bold">{Math.ceil(timeLeft)} שניות</span>
+    <div className="w-full mb-4">
+      <div className="w-full flex items-center justify-between px-2 mb-2 bg-slate-100 rounded-md p-2">
+        <div className="flex items-center gap-2">
+          <Timer className={`${isAlmostTimeUp ? 'text-red-500 animate-pulse' : 'text-primary'}`} />
+          <span className={`font-bold text-lg ${isAlmostTimeUp ? 'text-red-500' : ''}`}>
+            {Math.ceil(timeLeft)} שניות
+          </span>
+        </div>
+        <div className="text-sm font-medium text-gray-600">
+          זמן לבחירת תשובה
         </div>
       </div>
       <Progress 
-        value={(timeLeft / initialSeconds) * 100} 
-        className="w-full h-2 mb-4" 
+        value={progressPercentage} 
+        className={`w-full h-3 mb-4 ${isAlmostTimeUp ? 'bg-red-200' : ''}`}
       />
-    </>
+    </div>
   );
 };
 
