@@ -3,16 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { useToast } from '@/components/ui/use-toast';
+import { useGameState } from '@/contexts/GameStateContext';
 
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { clearGameData } = useGameState();
 
   const handleCreateGame = () => {
+    clearGameData(); // Clear any existing game data
     navigate('/host-setup');
   };
 
   const handleJoinGame = () => {
+    clearGameData(); // Clear any existing game data
     navigate('/join-game');
   };
 

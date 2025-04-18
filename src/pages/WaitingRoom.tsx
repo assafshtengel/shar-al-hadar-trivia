@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MusicNote from '@/components/MusicNote';
@@ -7,6 +6,7 @@ import { useGameState } from '@/contexts/GameStateContext';
 import EndGameButton from '@/components/EndGameButton';
 import { Link } from 'react-router-dom';
 import { Music } from 'lucide-react';
+import LeaveGameButton from '@/components/LeaveGameButton';
 
 const WaitingRoom = () => {
   const navigate = useNavigate();
@@ -31,8 +31,6 @@ const WaitingRoom = () => {
 
     return () => clearInterval(interval);
   }, []);
-
-  // No need to add additional handling here as the GameStateContext already manages "end" state
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
@@ -80,7 +78,8 @@ const WaitingRoom = () => {
               {isHost ? 'חדר המתנה - מסך מנהל' : 'חדר המתנה - שחקן'}
             </h2>
             
-            <div className="absolute top-0 right-0">
+            <div className="absolute top-0 right-0 flex items-center gap-2">
+              <LeaveGameButton />
               <EndGameButton gameCode={gameCode} />
             </div>
           </div>

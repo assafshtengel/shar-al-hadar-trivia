@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Music } from 'lucide-react';
@@ -12,6 +11,7 @@ import HostJoinForm from '@/components/GameHostSetup/HostJoinForm';
 import { useHostJoin } from '@/hooks/useHostJoin';
 import { useGameStart } from '@/hooks/useGameStart';
 import { usePlayerManagement } from '@/hooks/usePlayerManagement';
+import LeaveGameButton from '@/components/LeaveGameButton';
 
 const GameHostSetup: React.FC = () => {
   const { gameCode: contextGameCode, setGameData, playerName: contextPlayerName } = useGameState();
@@ -69,7 +69,8 @@ const GameHostSetup: React.FC = () => {
             </Link>
             <h2 className="text-lg text-gray-600">מסך מנהל המשחק</h2>
             
-            <div className="absolute top-0 right-0">
+            <div className="absolute top-0 right-0 flex items-center gap-2">
+              <LeaveGameButton />
               <EndGameButton gameCode={gameCode} />
             </div>
           </div>
