@@ -145,6 +145,7 @@ const GamePlay: React.FC = () => {
         break;
       case 'results':
         setPhase('scoringFeedback');
+        console.log('Moving to scoringFeedback phase');
         break;
       case 'end':
         setPhase('leaderboard');
@@ -440,9 +441,13 @@ const GamePlay: React.FC = () => {
     }
     setPendingAnswers(pendingUpdates);
     await batchUpdatePlayerScores(pendingUpdates);
+    
     if (isHost) {
+      console.log('Host is updating game state to results phase');
       updateGameState('results');
     }
+    
+    console.log('Moving to scoring feedback phase');
     setPhase('scoringFeedback');
   };
 
@@ -725,9 +730,13 @@ const GamePlay: React.FC = () => {
         variant: "destructive"
       });
     }
+    
     if (isHost) {
+      console.log('Host is updating game state to results phase after timeout');
       updateGameState('results');
     }
+    
+    console.log('Moving to scoring feedback phase after timeout');
     setPhase('scoringFeedback');
   };
 
@@ -813,12 +822,14 @@ const GamePlay: React.FC = () => {
 
   useEffect(() => {
     if (phase === 'scoringFeedback') {
+      console.log('Setting up automatic transition to leaderboard');
       const timer = setTimeout(() => {
+        console.log('Automatically transitioning to leaderboard');
         setPhase('leaderboard');
       }, 4000);
       return () => clearTimeout(timer);
     }
-  }, [phase, isHost]);
+  }, [phase]);
 
   const nextRound = async () => {
     if (!isHost) return;

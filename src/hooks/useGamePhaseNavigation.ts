@@ -58,10 +58,10 @@ export const useGamePhaseNavigation = ({
     }
 
     // Don't navigate if we just saw this phase (prevents double navigation)
-    if (lastPhaseRef.current === gamePhase && currentPath === '/gameplay' && 
-        (gamePhase === 'playing' || gamePhase === 'answering' || gamePhase === 'results')) {
-      console.log(`Skipping duplicate navigation for phase ${gamePhase}`);
-      return;
+    // IMPORTANT: Removed the condition that prevented phase transitions when on the gameplay page
+    // This was causing the issue where players weren't seeing the leaderboard
+    if (lastPhaseRef.current === gamePhase) {
+      console.log(`Same phase as before ${gamePhase}, checking if navigation is needed`);
     }
 
     switch (gamePhase) {
@@ -85,7 +85,6 @@ export const useGamePhaseNavigation = ({
       case 'playing':
       case 'answering':
       case 'results':
-      case 'end':
         // Make sure ALL players stay in the gameplay page
         if (currentPath !== '/gameplay') {
           console.log(`Navigating to gameplay screen for game phase: ${gamePhase}`);
@@ -97,6 +96,19 @@ export const useGamePhaseNavigation = ({
           }, 100); // Small delay to prevent navigation race conditions
         }
         break;
+        
+      case 'end':
+        // All players should still go to gameplay for the end screen
+        if (currentPath !== '/gameplay') {
+          console.log('Navigating to gameplay for end screen');
+          setIsRedirecting(true);
+          navigationTimeoutRef.current = setTimeout(() => {
+            navigate('/gameplay');
+            setIsRedirecting(false);
+            navigationTimeoutRef.current = null;
+          }, 100);
+        }
+        break;
     }
     
     // Update the last phase we saw
@@ -106,8 +118,8 @@ export const useGamePhaseNavigation = ({
 
   // Watch for game phase changes and navigate accordingly
   useEffect(() => {
-    if (gamePhase && gamePhase !== lastPhaseRef.current) {
-      console.log(`Game phase changed from ${lastPhaseRef.current} to ${gamePhase}, handling navigation`);
+    if (gamePhase) {
+      console.log(`Game phase changed to ${gamePhase}, handling navigation`);
       handleGamePhaseNavigation();
     }
   }, [gamePhase, handleGamePhaseNavigation]);
