@@ -85,6 +85,7 @@ export const useGamePhaseNavigation = ({
       case 'playing':
       case 'answering':
       case 'results':
+      case 'end':
         // Make sure players stay in the gameplay page, but don't force navigation if already there
         if (currentPath !== '/gameplay') {
           console.log('Navigating to gameplay screen for game phase:', gamePhase);
@@ -92,21 +93,6 @@ export const useGamePhaseNavigation = ({
             navigate('/gameplay');
             navigationTimeoutRef.current = null;
           }, 100); // Small delay to prevent navigation race conditions
-        }
-        break;
-        
-      case 'end':
-        if (!isHost && !isRedirecting) {
-          console.log('Processing game end phase for player');
-          setIsRedirecting(true);
-          
-          // We no longer handle immediate navigation here
-          // That's now managed by the GameEndOverlay component
-          // This prevents race conditions between different navigation mechanisms
-          
-          toast('המשחק הסתיים', {
-            description: 'המשחק הסתיים על ידי המארח',
-          });
         }
         break;
     }

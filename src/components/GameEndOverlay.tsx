@@ -58,28 +58,29 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
     
     // Add a delay before showing the overlay to prevent flashes when joining
     // and to allow time for other state updates to be processed
-    if (isVisible && !isHost) {
+    if (isVisible) {
       console.log('Game end detected, scheduling overlay display with delay');
       overlayTimerRef.current = setTimeout(() => {
         console.log('Displaying game end overlay');
         setShowOverlay(true);
         overlayTimerRef.current = null;
       }, 1000); // Longer delay to ensure all state updates are processed
-    } else if (!isVisible) {
-      console.log('Game end state cleared or host detected');
+    } else {
+      console.log('Game end state cleared');
       setShowOverlay(false);
     }
-  }, [isVisible, isHost]);
+  }, [isVisible]);
   
   useEffect(() => {
-    // Clear any existing redirect timer
-    if (redirectTimerRef.current) {
-      clearTimeout(redirectTimerRef.current);
-      redirectTimerRef.current = null;
-    }
-    
-    // Redirect to home and clear game data after showing the overlay
+    // The overlay should only trigger redirect for non-hosts
+    // Hosts stay on the game page to control the next round
     if (showOverlay && !isHost) {
+      // Clear any existing redirect timer
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = null;
+      }
+      
       console.log('Overlay visible, scheduling redirect with delay');
       redirectTimerRef.current = setTimeout(() => {
         console.log('Redirecting to home and clearing game data');
@@ -89,7 +90,7 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         clearGameData();
         navigate('/');
         redirectTimerRef.current = null;
-      }, 4000); // Give user more time to see the message
+      }, 8000); // Longer delay to give user more time to see the message
     }
     
     return () => {
