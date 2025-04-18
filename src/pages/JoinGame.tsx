@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -10,6 +9,7 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useGameState } from '@/contexts/GameStateContext';
+import LogoutButton from '@/components/LogoutButton';
 
 const JoinGame = () => {
   const { toast } = useToast();
@@ -25,31 +25,26 @@ const JoinGame = () => {
     setIsSubmitting(true);
     setError('');
 
-    // Validate inputs
     if (!gameCode.trim() || !playerName.trim()) {
       setError('אנא מלאו את כל השדות הנדרשים');
       setIsSubmitting(false);
       return;
     }
 
-    // Get any existing game code from localStorage
     const existingGameCode = localStorage.getItem('gameCode');
     
     if (existingGameCode) {
       try {
-        // Clean up existing game state
         await supabase
           .from('game_state')
           .delete()
           .eq('game_code', existingGameCode);
           
-        // Clean up existing players
         await supabase
           .from('players')
           .delete()
           .eq('game_code', existingGameCode);
           
-        // Clear local storage
         localStorage.removeItem('gameCode');
         localStorage.removeItem('playerName');
         localStorage.removeItem('isHost');
@@ -57,12 +52,10 @@ const JoinGame = () => {
         console.log('Cleaned up existing game data:', existingGameCode);
       } catch (err) {
         console.error('Error cleaning up existing game:', err);
-        // Continue anyway as this is not critical
       }
     }
 
     try {
-      // Check if game exists in game_state
       const { data: gameStateData, error: gameStateError } = await supabase
         .from('game_state')
         .select('game_phase')
@@ -76,21 +69,18 @@ const JoinGame = () => {
         return;
       }
 
-      // New validation check - if game doesn't exist, show error and stop
       if (!gameStateData) {
         setError('קוד המשחק שהוזן אינו קיים. נסה שוב.');
         setIsSubmitting(false);
         return;
       }
 
-      // Check if game is in "end" state
       if (gameStateData.game_phase === 'end') {
         setError('המשחק הסתיים. אנא הצטרף למשחק אחר או צור משחק חדש.');
         setIsSubmitting(false);
         return;
       }
 
-      // Insert player data into Supabase
       const { error: insertError } = await supabase
         .from('players')
         .insert([
@@ -112,23 +102,19 @@ const JoinGame = () => {
         description: `ברוכים הבאים, ${playerName}!`,
       });
       
-      // Set game data in context
       setGameData({ 
         gameCode, 
         playerName,
         isHost: false
       });
       
-      // Navigate based on game phase
       if (gameStateData && gameStateData.game_phase) {
         if (gameStateData.game_phase === 'waiting') {
           navigate('/waiting-room');
         } else {
-          // Game already started, go directly to gameplay
           navigate('/gameplay');
         }
       } else {
-        // No game state yet, go to waiting room
         navigate('/waiting-room');
       }
       
@@ -142,7 +128,7 @@ const JoinGame = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
-      {/* Background musical notes */}
+      <LogoutButton />
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <MusicNote 
           type="note1" 
@@ -230,7 +216,6 @@ const JoinGame = () => {
           </CardContent>
         </Card>
 
-        {/* Decorative musical note icons below the card */}
         <div className="flex justify-center mt-8 gap-4">
           <MusicNote type="note2" animation="float" color="#FFC22A" />
           <MusicNote type="note3" animation="float-alt" color="#6446D0" />

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MusicNote from '@/components/MusicNote';
@@ -7,6 +6,7 @@ import { useGameState } from '@/contexts/GameStateContext';
 import EndGameButton from '@/components/EndGameButton';
 import { Link } from 'react-router-dom';
 import { Music } from 'lucide-react';
+import LogoutButton from '@/components/LogoutButton';
 
 const WaitingRoom = () => {
   const navigate = useNavigate();
@@ -32,10 +32,9 @@ const WaitingRoom = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // No need to add additional handling here as the GameStateContext already manages "end" state
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
+      <LogoutButton />
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <MusicNote 
           type="note1" 
