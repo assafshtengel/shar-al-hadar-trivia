@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -40,7 +39,6 @@ interface Song {
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 
 const GamePlay: React.FC = () => {
-  // Add timer ref to maintain a single timer instance
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
@@ -67,13 +65,11 @@ const GamePlay: React.FC = () => {
   const navigate = useNavigate();
   const { gameCode, playerName, isHost } = useGameState();
 
-  // Define handleAnswerSubmit before it's used
   const handleAnswerSubmit = useCallback(async (selectedAnswer: string | null) => {
     if (!gameCode || !playerName || isAnswerSubmitted) return;
 
     setIsAnswerSubmitted(true);
     
-    // Clear any existing timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -83,7 +79,6 @@ const GamePlay: React.FC = () => {
     let score = isCorrect ? timeRemaining * 10 : 0;
 
     try {
-      // Optimistic update
       setCurrentPlayer(prev => ({
         ...prev,
         hasAnswered: true,
@@ -174,7 +169,7 @@ const GamePlay: React.FC = () => {
 
     try {
       const { data: song, error } = await supabase
-        .from('game_state')  // Changed from 'songs' to 'game_state'
+        .from('game_state')
         .select('*')
         .eq('game_code', gameCode)
         .maybeSingle();
@@ -185,8 +180,6 @@ const GamePlay: React.FC = () => {
       }
 
       if (song && song.current_song_name) {
-        // We're not directly setting the song as currentSong since it's not compatible
-        // Instead, extract the video ID
         setYoutubeVideoId(extractVideoId(song.current_song_url));
       }
     } catch (err) {
@@ -222,8 +215,6 @@ const GamePlay: React.FC = () => {
     if (!gameCode) return;
 
     try {
-      // Get song titles from game_state instead - this is a placeholder 
-      // since we don't have a 'songs' table
       const options = [correctTitle, 'Alternative Song 1', 'Alternative Song 2'].sort(() => Math.random() - 0.5);
       setAnswerOptions(options);
     } catch (err) {
@@ -232,7 +223,6 @@ const GamePlay: React.FC = () => {
   }, [gameCode]);
 
   const startTimer = useCallback(() => {
-    // Clear any existing timer before starting a new one
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -314,7 +304,6 @@ const GamePlay: React.FC = () => {
     };
   }, [phase, startTimer]);
 
-  // Add cleanup effect for timer when component unmounts
   useEffect(() => {
     return () => {
       if (timerRef.current) {
@@ -436,7 +425,7 @@ const GamePlay: React.FC = () => {
         <h1 className="text-3xl font-bold text-primary">משחק מנגינות</h1>
         <div className="flex space-x-2">
           {isHost ? (
-            <EndGameButton />
+            <EndGameButton gameCode={gameCode} />
           ) : (
             <ExitGameButton className="ml-2" />
           )}
