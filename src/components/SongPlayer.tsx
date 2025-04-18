@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
 import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
@@ -29,6 +28,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const [isIOS, setIsIOS] = useState(false);
   const [manualPlayNeeded, setManualPlayNeeded] = useState(false);
   const [manualPlayClicked, setManualPlayClicked] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioLoadFailed, setAudioLoadFailed] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -42,6 +43,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     };
     
     setIsIOS(checkIsIOS());
+    console.log("Device is iOS:", checkIsIOS());
   }, []);
 
   useEffect(() => {
@@ -60,24 +62,52 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           setManualPlayNeeded(true);
           setShowYouTubeEmbed(true);
           setError(null);
+          setAudioLoadFailed(false);
           
           // Create an audio element for iOS as a fallback
           if (!audioRef.current && song.fullUrl) {
-            const audio = new Audio();
-            audio.src = song.fullUrl;
-            audio.preload = 'auto';
-            audioRef.current = audio;
-            
-            audio.oncanplay = () => {
-              console.log("Audio can be played now");
-            };
-            
-            audio.onerror = (e) => {
-              console.error("Audio error:", e);
-              if (onPlaybackError) {
-                onPlaybackError();
-              }
-            };
+            try {
+              const audio = new Audio();
+              audio.src = song.fullUrl;
+              audio.preload = 'auto';
+              audioRef.current = audio;
+              
+              audio.oncanplay = () => {
+                console.log("Audio can be played now");
+                setAudioLoadFailed(false);
+              };
+              
+              audio.onplaying = () => {
+                console.log("Audio is now playing");
+                setAudioPlaying(true);
+              };
+              
+              audio.onended = () => {
+                console.log("Audio playback ended naturally");
+                setAudioPlaying(false);
+                if (timeoutRef.current) {
+                  clearTimeout(timeoutRef.current);
+                }
+                onPlaybackEnded();
+              };
+              
+              audio.onerror = (e) => {
+                console.error("Audio error:", e);
+                setAudioLoadFailed(true);
+                if (onPlaybackError) {
+                  onPlaybackError();
+                }
+                toast.error("שגיאה בהשמעת השיר", {
+                  description: "לא ניתן להשמיע את השיר דרך נגן השמע"
+                });
+              };
+              
+              // Attempt to preload
+              audio.load();
+            } catch (error) {
+              console.error("Error setting up audio element:", error);
+              setAudioLoadFailed(true);
+            }
           }
         } else {
           // For non-iOS, proceed as normal
@@ -110,11 +140,16 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       setShowYouTubeEmbed(false);
       setManualPlayNeeded(false);
       setManualPlayClicked(false);
+      setAudioPlaying(false);
       
       // Clean up audio element
       if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
+        try {
+          audioRef.current.pause();
+          audioRef.current.src = '';
+        } catch (error) {
+          console.error("Error cleaning up audio element:", error);
+        }
       }
     }
 
@@ -127,9 +162,13 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       
       // Clean up audio element
       if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-        audioRef.current = null;
+        try {
+          audioRef.current.pause();
+          audioRef.current.src = '';
+          audioRef.current = null;
+        } catch (error) {
+          console.error("Error cleaning up audio element on unmount:", error);
+        }
       }
     };
   }, [isPlaying, song, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError, isIOS]);
@@ -141,57 +180,91 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     
     // Try both YouTube iframe and direct audio playback for iOS
     if (iframeRef.current) {
-      // Force reload the iframe with autoplay=1
-      const src = iframeRef.current.src;
-      iframeRef.current.src = '';
-      setTimeout(() => {
-        if (iframeRef.current) {
-          // Add or update autoplay parameter
-          const newSrc = src.includes('autoplay=') 
-            ? src.replace('autoplay=0', 'autoplay=1') 
-            : `${src}&autoplay=1`;
-          iframeRef.current.src = newSrc;
-          console.log('Updated iframe src with autoplay:', newSrc);
-        }
-      }, 100);
+      try {
+        // Force reload the iframe with autoplay=1
+        const src = iframeRef.current.src;
+        iframeRef.current.src = '';
+        setTimeout(() => {
+          if (iframeRef.current) {
+            // Add or update autoplay parameter
+            const newSrc = src.includes('autoplay=') 
+              ? src.replace('autoplay=0', 'autoplay=1') 
+              : `${src}&autoplay=1`;
+            iframeRef.current.src = newSrc;
+            console.log('Updated iframe src with autoplay:', newSrc);
+          }
+        }, 100);
+      } catch (error) {
+        console.error("Error updating iframe:", error);
+      }
     }
     
-    // Try audio fallback for iOS
+    // Try audio fallback for iOS - this is the critical part
     if (audioRef.current && song?.fullUrl) {
-      console.log('Attempting to play audio directly');
-      const playPromise = audioRef.current.play();
+      console.log('Attempting to play audio directly from URL:', song.fullUrl);
       
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log('Audio playback started successfully');
-          })
-          .catch(error => {
-            console.error('Audio playback failed:', error);
-            toast.error('השמעת השיר נכשלה', {
-              description: 'יש לנסות שוב או להשתמש במכשיר אחר'
+      try {
+        // Reset audio element to ensure we have a fresh start
+        audioRef.current.currentTime = 0;
+        
+        const playPromise = audioRef.current.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('Audio playback started successfully');
+              setAudioPlaying(true);
+              
+              if (onPlaybackStarted) {
+                onPlaybackStarted();
+              }
+              
+              // Set up timer to end playback
+              timeoutRef.current = setTimeout(() => {
+                console.log('Song playback ended (iOS timer):', song?.title);
+                setShowYouTubeEmbed(false);
+                setAudioPlaying(false);
+                onPlaybackEnded();
+                
+                // Stop audio if it's playing
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                }
+              }, duration);
+            })
+            .catch(error => {
+              console.error('Audio playback failed:', error);
+              setAudioLoadFailed(true);
+              
+              toast.error('השמעת השיר נכשלה', {
+                description: 'יש לנסות שוב או להשתמש במכשיר אחר'
+              });
+              
+              if (onPlaybackError) {
+                onPlaybackError();
+              }
             });
-          });
+        }
+      } catch (error) {
+        console.error("Exception during audio play attempt:", error);
+        setAudioLoadFailed(true);
+        
+        if (onPlaybackError) {
+          onPlaybackError();
+        }
       }
-    }
-    
-    if (onPlaybackStarted) {
-      onPlaybackStarted();
-    }
-    
-    // Set up timer to end playback
-    timeoutRef.current = setTimeout(() => {
-      console.log('Song playback ended (iOS):', song?.title);
-      setShowYouTubeEmbed(false);
-      onPlaybackEnded();
+    } else {
+      console.error("Cannot play audio: audioRef or song.fullUrl is missing");
+      toast.error('השמעת השיר נכשלה', {
+        description: 'קישור השיר חסר או לא תקין'
+      });
       
-      // Stop audio if it's playing
-      if (audioRef.current) {
-        audioRef.current.pause();
+      if (onPlaybackError) {
+        onPlaybackError();
       }
-    }, duration);
+    }
     
-    toast.success('השיר מתנגן', {
+    toast.success('מנסה להשמיע את השיר', {
       description: 'במכשירי אפל, יש צורך בלחיצה ידנית להפעלת השיר'
     });
   };
@@ -249,9 +322,16 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           )}
           
           {/* iOS playback indicator */}
-          {isIOS && manualPlayClicked && (
+          {isIOS && (manualPlayClicked || audioPlaying) && (
             <div className="absolute top-2 right-2 z-40 bg-green-500 text-white px-2 py-1 rounded-md text-sm animate-pulse">
-              השיר מתנגן...
+              {audioPlaying ? "השיר מתנגן..." : "מנסה להשמיע..."}
+            </div>
+          )}
+          
+          {/* Audio error indicator */}
+          {audioLoadFailed && (
+            <div className="absolute top-2 left-2 z-40 bg-red-500 text-white px-2 py-1 rounded-md text-sm">
+              לא ניתן להשמיע את השיר
             </div>
           )}
           
@@ -271,15 +351,15 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         </div>
       )}
       
-      {/* Hidden audio element for iOS fallback */}
+      {/* Hidden audio element for iOS fallback - moved outside to prevent hiding issues */}
       {isIOS && song.fullUrl && (
-        <div className="hidden">
-          <audio 
-            ref={(el) => { audioRef.current = el; }}
-            src={song.fullUrl} 
-            preload="auto"
-          />
-        </div>
+        <audio 
+          ref={(el) => { audioRef.current = el; }}
+          src={song.fullUrl}
+          preload="auto"
+          style={{ display: 'none' }}
+          controls={false}
+        />
       )}
     </div>
   );
