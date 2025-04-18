@@ -1,20 +1,9 @@
-
 import React from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { useGameState } from '@/contexts/GameStateContext';
 
@@ -22,12 +11,16 @@ import { useGameState } from '@/contexts/GameStateContext';
 interface EndGameButtonProps {
   gameCode: string | null;
 }
-
-const EndGameButton: React.FC<EndGameButtonProps> = ({ gameCode }) => {
-  const { toast } = useToast();
+const EndGameButton: React.FC<EndGameButtonProps> = ({
+  gameCode
+}) => {
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
-  const { clearGameData } = useGameState();
-
+  const {
+    clearGameData
+  } = useGameState();
   const handleEndGame = async () => {
     if (!gameCode) {
       toast({
@@ -37,14 +30,13 @@ const EndGameButton: React.FC<EndGameButtonProps> = ({ gameCode }) => {
       });
       return;
     }
-
     try {
       // עדכון מצב המשחק ל-'end'
-      const { error: stateError } = await supabase
-        .from('game_state')
-        .update({ game_phase: 'end' })
-        .eq('game_code', gameCode);
-
+      const {
+        error: stateError
+      } = await supabase.from('game_state').update({
+        game_phase: 'end'
+      }).eq('game_code', gameCode);
       if (stateError) {
         throw stateError;
       }
@@ -53,20 +45,15 @@ const EndGameButton: React.FC<EndGameButtonProps> = ({ gameCode }) => {
       setTimeout(async () => {
         try {
           // מחיקת נתוני המשחק מהדאטאבייס
-          const { error: playersError } = await supabase
-            .from('players')
-            .delete()
-            .eq('game_code', gameCode);
-
+          const {
+            error: playersError
+          } = await supabase.from('players').delete().eq('game_code', gameCode);
           if (playersError) {
             console.error('Error deleting players:', playersError);
           }
-
-          const { error: gameStateError } = await supabase
-            .from('game_state')
-            .delete()
-            .eq('game_code', gameCode);
-
+          const {
+            error: gameStateError
+          } = await supabase.from('game_state').delete().eq('game_code', gameCode);
           if (gameStateError) {
             console.error('Error deleting game state:', gameStateError);
           }
@@ -92,14 +79,9 @@ const EndGameButton: React.FC<EndGameButtonProps> = ({ gameCode }) => {
       });
     }
   };
-
-  return (
-    <AlertDialog>
+  return <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" className="flex items-center gap-2">
-          <X className="h-4 w-4" />
-          סיים משחק
-        </Button>
+        
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -113,8 +95,6 @@ const EndGameButton: React.FC<EndGameButtonProps> = ({ gameCode }) => {
           <AlertDialogAction onClick={handleEndGame}>סיים משחק</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
-    </AlertDialog>
-  );
+    </AlertDialog>;
 };
-
 export default EndGameButton;
