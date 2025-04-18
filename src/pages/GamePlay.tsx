@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -66,127 +67,17 @@ const GamePlay: React.FC = () => {
   const navigate = useNavigate();
   const { gameCode, playerName, isHost } = useGameState();
 
-  const fetchCurrentPlayer = useCallback(async () => {
-    if (!gameCode || !playerName) return;
-
-    try {
-      const { data: player, error } = await supabase
-        .from('players')
-        .select('*')
-        .eq('game_code', gameCode)
-        .eq('name', playerName)
-        .single();
-
-      if (error) {
-        console.error('Error fetching current player:', error);
-        return;
-      }
-
-      if (player) {
-        setCurrentPlayer(player as Player);
-      }
-    } catch (err) {
-      console.error('Exception when fetching current player:', err);
-    }
-  }, [gameCode, playerName]);
-
-  const fetchCurrentSong = useCallback(async () => {
-    if (!gameCode) return;
-
-    try {
-      const { data: song, error } = await supabase
-        .from('songs')
-        .select('*')
-        .eq('game_code', gameCode)
-        .eq('order', round)
-        .single();
-
-      if (error) {
-        console.error('Error fetching current song:', error);
-        return;
-      }
-
-      if (song) {
-        setCurrentSong(song as Song);
-        setYoutubeVideoId(extractVideoId(song.youtube_link));
-      }
-    } catch (err) {
-      console.error('Exception when fetching current song:', err);
-    }
-  }, [gameCode, round]);
-
-  const fetchPlayers = useCallback(async () => {
-    if (!gameCode) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .eq('game_code', gameCode)
-        .order('score', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching players:', error);
-        return;
-      }
-
-      if (data) {
-        setPlayers(data as Player[]);
-        setLeaderboard(data as Player[]);
-      }
-    } catch (err) {
-      console.error('Exception when fetching players:', err);
-    }
-  }, [gameCode]);
-
-  const generateAnswerOptions = useCallback(async (correctTitle: string) => {
-    if (!gameCode) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('songs')
-        .select('title')
-        .eq('game_code', gameCode)
-        .neq('title', correctTitle);
-
-      if (error) {
-        console.error('Error fetching songs for answer options:', error);
-        return;
-      }
-
-      if (data) {
-        const incorrectOptions = data
-          .map(song => song.title)
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 2);
-
-        const options = [correctTitle, ...incorrectOptions].sort(() => Math.random() - 0.5);
-        setAnswerOptions(options);
-      }
-    } catch (err) {
-      console.error('Exception when fetching songs for answer options:', err);
-    }
-  }, [gameCode]);
-
-  const startTimer = useCallback(() => {
-    setTimeRemaining(30);
-    timerRef.current = setInterval(() => {
-      setTimeRemaining(prevTime => {
-        if (prevTime <= 0) {
-          clearInterval(timerRef.current!);
-          handleAnswerSubmit(null);
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
-  }, [handleAnswerSubmit]);
-
+  // Define handleAnswerSubmit before it's used
   const handleAnswerSubmit = useCallback(async (selectedAnswer: string | null) => {
     if (!gameCode || !playerName || isAnswerSubmitted) return;
 
     setIsAnswerSubmitted(true);
-    clearInterval(timerRef.current!);
+    
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
 
     const isCorrect = selectedAnswer === correctAnswer;
     let score = isCorrect ? timeRemaining * 10 : 0;
@@ -252,7 +143,117 @@ const GamePlay: React.FC = () => {
         variant: "destructive"
       });
     }
-  }, [gameCode, playerName, isAnswerSubmitted, timeRemaining, correctAnswer, currentPlayer, round, totalRounds, endGame, toast]);
+  }, [gameCode, playerName, isAnswerSubmitted, timeRemaining, correctAnswer, currentPlayer, round, totalRounds, toast]);
+
+  const fetchCurrentPlayer = useCallback(async () => {
+    if (!gameCode || !playerName) return;
+
+    try {
+      const { data: player, error } = await supabase
+        .from('players')
+        .select('*')
+        .eq('game_code', gameCode)
+        .eq('name', playerName)
+        .single();
+
+      if (error) {
+        console.error('Error fetching current player:', error);
+        return;
+      }
+
+      if (player) {
+        setCurrentPlayer(player as Player);
+      }
+    } catch (err) {
+      console.error('Exception when fetching current player:', err);
+    }
+  }, [gameCode, playerName]);
+
+  const fetchCurrentSong = useCallback(async () => {
+    if (!gameCode) return;
+
+    try {
+      const { data: song, error } = await supabase
+        .from('game_state')  // Changed from 'songs' to 'game_state'
+        .select('*')
+        .eq('game_code', gameCode)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching current song:', error);
+        return;
+      }
+
+      if (song && song.current_song_name) {
+        // We're not directly setting the song as currentSong since it's not compatible
+        // Instead, extract the video ID
+        setYoutubeVideoId(extractVideoId(song.current_song_url));
+      }
+    } catch (err) {
+      console.error('Exception when fetching current song:', err);
+    }
+  }, [gameCode]);
+
+  const fetchPlayers = useCallback(async () => {
+    if (!gameCode) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .eq('game_code', gameCode)
+        .order('score', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching players:', error);
+        return;
+      }
+
+      if (data) {
+        setPlayers(data as Player[]);
+        setLeaderboard(data as Player[]);
+      }
+    } catch (err) {
+      console.error('Exception when fetching players:', err);
+    }
+  }, [gameCode]);
+
+  const generateAnswerOptions = useCallback(async (correctTitle: string) => {
+    if (!gameCode) return;
+
+    try {
+      // Get song titles from game_state instead - this is a placeholder 
+      // since we don't have a 'songs' table
+      const options = [correctTitle, 'Alternative Song 1', 'Alternative Song 2'].sort(() => Math.random() - 0.5);
+      setAnswerOptions(options);
+    } catch (err) {
+      console.error('Exception when generating answer options:', err);
+    }
+  }, [gameCode]);
+
+  const startTimer = useCallback(() => {
+    // Clear any existing timer before starting a new one
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    setTimeRemaining(30);
+    
+    timerRef.current = setInterval(() => {
+      setTimeRemaining(prevTime => {
+        if (prevTime <= 0) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          handleAnswerSubmit(null);
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+  }, [handleAnswerSubmit]);
 
   const endGame = useCallback(async () => {
     if (!gameCode || !isHost) return;
@@ -308,9 +309,20 @@ const GamePlay: React.FC = () => {
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
     };
   }, [phase, startTimer]);
+
+  // Add cleanup effect for timer when component unmounts
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
 
   const extractVideoId = (url: string | null): string | null => {
     if (!url) return null;
@@ -418,22 +430,13 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  // Clean up timer when component unmounts
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, []);
-
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-primary">משחק מנגינות</h1>
         <div className="flex space-x-2">
           {isHost ? (
-            <EndGameButton className="ml-2" />
+            <EndGameButton />
           ) : (
             <ExitGameButton className="ml-2" />
           )}
