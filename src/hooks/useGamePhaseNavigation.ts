@@ -20,12 +20,21 @@ export const useGamePhaseNavigation = ({
   const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
   const lastPhaseRef = useRef<GamePhase | null>(null);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const gamePhaseRef = useRef<GamePhase | null>(null);
+  const isHostRef = useRef<boolean>(isHost);
+  
+  // Update refs when dependencies change
+  useEffect(() => {
+    gamePhaseRef.current = gamePhase;
+    isHostRef.current = isHost;
+  }, [gamePhase, isHost]);
 
   // Clean up timers on unmount
   useEffect(() => {
     return () => {
       if (navigationTimeoutRef.current) {
         clearTimeout(navigationTimeoutRef.current);
+        navigationTimeoutRef.current = null;
       }
     };
   }, []);
@@ -48,15 +57,28 @@ export const useGamePhaseNavigation = ({
       navigationTimeoutRef.current = null;
     }
 
+    // Don't navigate if we just saw this phase (prevents double navigation)
+    if (lastPhaseRef.current === gamePhase && currentPath === '/gameplay' && 
+        (gamePhase === 'playing' || gamePhase === 'answering' || gamePhase === 'results')) {
+      console.log(`Skipping duplicate navigation for phase ${gamePhase}`);
+      return;
+    }
+
     switch (gamePhase) {
       case 'waiting':
         // Only navigate if not already in gameplay or setup screens
         if (isHost && currentPath !== '/host-setup' && currentPath !== '/gameplay') {
           console.log('Navigating host to setup screen');
-          navigate('/host-setup');
+          navigationTimeoutRef.current = setTimeout(() => {
+            navigate('/host-setup');
+            navigationTimeoutRef.current = null;
+          }, 100);
         } else if (!isHost && currentPath !== '/waiting-room' && currentPath !== '/gameplay') {
           console.log('Navigating player to waiting room');
-          navigate('/waiting-room');
+          navigationTimeoutRef.current = setTimeout(() => {
+            navigate('/waiting-room');
+            navigationTimeoutRef.current = null;
+          }, 100);
         }
         break;
         
@@ -92,10 +114,12 @@ export const useGamePhaseNavigation = ({
     // Update the last phase we saw
     lastPhaseRef.current = gamePhase;
     
-  }, [gamePhase, isHost, clearGameData, navigate, isRedirecting]);
+  }, [gamePhase, isHost, navigate, isRedirecting]);
 
+  // Watch for game phase changes and navigate accordingly
   useEffect(() => {
-    if (gamePhase) {
+    if (gamePhase && gamePhase !== lastPhaseRef.current) {
+      console.log(`Game phase changed from ${lastPhaseRef.current} to ${gamePhase}, handling navigation`);
       handleGamePhaseNavigation();
     }
   }, [gamePhase, handleGamePhaseNavigation]);
