@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
 import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
@@ -26,11 +25,9 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isIOS, setIsIOS] = useState(false);
-  const [manualPlayNeeded, setManualPlayNeeded] = useState(false);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
-  const [playButtonClicked, setPlayButtonClicked] = useState(false);
+  const [showPlaceholder, setShowPlaceholder] = useState(false);
+  const [iframeCreated, setIframeCreated] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Detect iOS devices
   useEffect(() => {
@@ -54,13 +51,15 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         console.log('Starting song playback:', song.title);
         
         if (isIOS) {
-          // For iOS, we need manual user interaction
-          setManualPlayNeeded(true);
-          setShowYouTubeEmbed(true);
+          // For iOS, show placeholder instead of iframe
+          setShowPlaceholder(true);
+          setShowYouTubeEmbed(false);
+          setIframeCreated(false);
           setError(null);
         } else {
           // For non-iOS, proceed as normal
           setShowYouTubeEmbed(true);
+          setShowPlaceholder(false);
           setError(null);
           
           if (onPlaybackStarted) {
@@ -71,8 +70,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           timeoutRef.current = setTimeout(() => {
             console.log('Song playback ended:', song.title);
             setShowYouTubeEmbed(false);
-            setIframeLoaded(false);
-            setPlayButtonClicked(false);
+            setShowPlaceholder(false);
+            setIframeCreated(false);
             onPlaybackEnded();
           }, duration);
         }
@@ -89,9 +88,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       }
     } else {
       setShowYouTubeEmbed(false);
-      setManualPlayNeeded(false);
-      setIframeLoaded(false);
-      setPlayButtonClicked(false);
+      setShowPlaceholder(false);
+      setIframeCreated(false);
     }
 
     // Cleanup function
@@ -103,10 +101,14 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     };
   }, [isPlaying, song, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError, isIOS]);
 
-  const handleManualPlay = () => {
-    setManualPlayNeeded(false);
-    setPlayButtonClicked(true);
-    setIframeLoaded(true);
+  // Function to handle iOS play button click - creates iframe dynamically within touch event
+  const handleiOSPlay = () => {
+    if (!song || !song.embedUrl) return;
+    
+    console.log('iOS play button clicked, creating iframe...');
+    setIframeCreated(true);
+    setShowPlaceholder(false);
+    setShowYouTubeEmbed(true);
     
     if (onPlaybackStarted) {
       onPlaybackStarted();
@@ -114,27 +116,27 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     
     // Set up timer to end playback
     timeoutRef.current = setTimeout(() => {
-      console.log('Song playback ended (iOS):', song?.title);
+      console.log('Song playback ended (iOS):', song.title);
       setShowYouTubeEmbed(false);
-      setIframeLoaded(false);
-      setPlayButtonClicked(false);
+      setShowPlaceholder(false);
+      setIframeCreated(false);
       onPlaybackEnded();
     }, duration);
     
     toast.success('השיר מתנגן', {
-      description: 'במכשירי אפל, יש צורך בלחיצה ידנית להפעלת השיר'
+      description: 'במכשירי אפל, השיר מתנגן כעת'
     });
   };
 
-  // Create YouTube embed URL with autoplay disabled for iOS (will be enabled on click)
+  // Create YouTube embed URL with autoplay for iOS
   const createYouTubeUrl = (embedUrl: string) => {
     // Check if the URL already has parameters
     const hasParams = embedUrl.includes('?');
     const connector = hasParams ? '&' : '?';
     
-    // For iOS devices that have clicked play, enable sound with mute=0
-    if (isIOS && playButtonClicked) {
-      return `${embedUrl}${connector}autoplay=1&mute=0`;
+    // For iOS devices, the iframe creation happens within a touch event, so we can use autoplay
+    if (isIOS) {
+      return `${embedUrl}${connector}autoplay=1&mute=0&playsinline=1`;
     } 
     
     // For non-iOS devices, use the original URL
@@ -156,50 +158,63 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     );
   }
 
+  // Derive YouTube video ID from embedUrl to create thumbnail
+  const getYouTubeVideoId = (url: string): string | null => {
+    const regExp = /^.*(youtu.be\/|v\/|e\/|u\/\w+\/|embed\/|v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
   return (
     <div className="relative w-full h-40">
-      {showYouTubeEmbed && song.embedUrl ? (
-        <>
-          {/* Show iframe only if non-iOS or if play button has been clicked on iOS */}
-          {(!isIOS || (isIOS && iframeLoaded)) && (
-            <iframe 
-              ref={iframeRef}
-              width="100%" 
-              height="100%" 
-              src={createYouTubeUrl(song.embedUrl)} 
-              frameBorder="0" 
-              allow="autoplay; encrypted-media" 
-              allowFullScreen 
-              className="absolute top-0 left-0 z-10"
-              onError={() => {
-                setError('שגיאה בטעינת השיר');
-                if (onPlaybackError) onPlaybackError();
-              }}
+      {/* Show placeholder for iOS devices */}
+      {isIOS && showPlaceholder && song.embedUrl && !iframeCreated && (
+        <div 
+          className="absolute top-0 left-0 w-full h-full bg-black flex items-center justify-center cursor-pointer z-10"
+          onClick={handleiOSPlay}
+        >
+          {/* YouTube thumbnail as background */}
+          {getYouTubeVideoId(song.embedUrl) && (
+            <img 
+              src={`https://img.youtube.com/vi/${getYouTubeVideoId(song.embedUrl)}/hqdefault.jpg`}
+              alt="YouTube Thumbnail"
+              className="absolute top-0 left-0 w-full h-full object-cover opacity-50"
             />
           )}
           
-          {/* iOS Manual Play Button */}
-          {manualPlayNeeded && !playButtonClicked && (
-            <div className="absolute top-0 left-0 w-full h-full z-30 flex items-center justify-center bg-black/70">
-              <div className="text-center">
-                <AppButton 
-                  variant="primary" 
-                  size="lg" 
-                  onClick={handleManualPlay}
-                  className="flex items-center gap-2"
-                >
-                  <Play className="w-5 h-5" />
-                  לחץ כאן להפעלת השיר
-                </AppButton>
-                <p className="text-white mt-2 text-sm">במכשירי אפל נדרשת הפעלה ידנית</p>
-              </div>
+          <div className="relative z-20 flex flex-col items-center gap-2">
+            <div className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center">
+              <Play className="w-8 h-8 text-white" />
             </div>
-          )}
+            <span className="text-white font-medium bg-black/50 px-3 py-1 rounded-md">הפעל שיר</span>
+          </div>
+        </div>
+      )}
+        
+      {/* Show YouTube iframe for non-iOS or after play button clicked on iOS */}
+      {showYouTubeEmbed && song.embedUrl && (!isIOS || (isIOS && iframeCreated)) && (
+        <>
+          <iframe 
+            width="100%" 
+            height="100%" 
+            src={createYouTubeUrl(song.embedUrl)} 
+            frameBorder="0" 
+            allow="autoplay; encrypted-media; playsinline" 
+            allowFullScreen 
+            className="absolute top-0 left-0 z-10"
+            onError={() => {
+              setError('שגיאה בטעינת השיר');
+              if (onPlaybackError) onPlaybackError();
+            }}
+          />
           
           {/* Visual overlay to hide video but keep audio playing */}
           <div className="absolute top-0 left-0 w-full h-full z-20 bg-black"></div>
         </>
-      ) : (
+      )}
+      
+      {/* Fallback music note animation when nothing is shown */}
+      {!showYouTubeEmbed && !showPlaceholder && (
         <div className="relative w-full h-full flex items-center justify-center">
           <div className="absolute w-full h-full">
             <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
