@@ -796,7 +796,7 @@ const GamePlay: React.FC = () => {
     setPhase('songPlayback');
     
     toast({
-      title: "מתכוננים לסיבוב ה��א",
+      title: "מתכ��ננים לסיבוב ה��א",
       description: "סיבוב חדש עומד להתחיל",
     });
   };
@@ -823,22 +823,35 @@ const GamePlay: React.FC = () => {
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
             {showYouTubeEmbed && currentSong && (
-              <div className="relative w-full h-40">
-                <iframe 
-                  width="100%" 
-                  height="100%"
-                  src={currentSong.embedUrl}
-                  frameBorder="0" 
-                  allow="autoplay; encrypted-media" 
-                  allowFullScreen
-                  className="absolute top-0 left-0 z-10"
-                ></iframe>
-                
-                <div 
-                  className="absolute top-0 left-0 w-full h-full z-20 bg-black"
-                  style={{ opacity: 0.95 }}
-                ></div>
-              </div>
+              <>
+                <GameTimer 
+                  initialSeconds={10} 
+                  isActive={true}
+                  onTimeout={() => {
+                    if (isHost) {
+                      updateGameState('answering');
+                    }
+                    setPhase('answerOptions');
+                    setTimerActive(true);
+                  }}
+                />
+                <div className="relative w-full h-40">
+                  <iframe 
+                    width="100%" 
+                    height="100%"
+                    src={currentSong.embedUrl}
+                    frameBorder="0" 
+                    allow="autoplay; encrypted-media" 
+                    allowFullScreen
+                    className="absolute top-0 left-0 z-10"
+                  ></iframe>
+                  
+                  <div 
+                    className="absolute top-0 left-0 w-full h-full z-20 bg-black"
+                    style={{ opacity: 0.95 }}
+                  ></div>
+                </div>
+              </>
             )}
             
             <AppButton 
