@@ -64,8 +64,9 @@ export const useGameStateSubscription = ({
 
     checkGameState();
 
+    // Create a unique channel name based on the game code
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel(`game_state_${gameCode}`)
       .on(
         'postgres_changes',
         {
