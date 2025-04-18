@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
 import { Youtube, AlertTriangle, Music, Play, Volume2, ExternalLink } from 'lucide-react';

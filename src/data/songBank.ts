@@ -6,6 +6,7 @@ export interface Song {
   youtubeUrl?: string;
   embedUrl?: string;
   fullUrl?: string;
+  audioUrl?: string;  // Added this property
 }
 
 export const defaultSongBank: Song[] = [
