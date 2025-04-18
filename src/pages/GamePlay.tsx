@@ -11,6 +11,7 @@ import { useGameState } from '@/contexts/GameStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import EndGameButton from '@/components/EndGameButton';
 import { defaultSongBank, createGameRound, Song } from '@/data/songBank';
+import SongPlayer from '@/components/SongPlayer';
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 interface Player {
@@ -367,6 +368,29 @@ const GamePlay: React.FC = () => {
     });
   };
 
+  const handleSongPlaybackEnded = () => {
+    setShowYouTubeEmbed(false);
+    setIsPlaying(false);
+    if (isHost) {
+      updateGameState('answering');
+    }
+    setPhase('answerOptions');
+    if (!isHost) {
+      console.log('Setting timer active after YouTube embed finishes (non-host)');
+      setTimerActive(true);
+    }
+  };
+
+  const handleSongPlaybackError = () => {
+    toast({
+      title: "שגיאה בהשמעת השיר",
+      description: "אירעה שגיאה בהשמעת השיר, בחר שיר אחר",
+      variant: "destructive"
+    });
+    setIsPlaying(false);
+    setShowYouTubeEmbed(false);
+  };
+
   const handleTimerTimeout = () => {
     console.log('Timer timeout handler called');
     if (selectedAnswer === null && !currentPlayer.hasAnswered) {
@@ -707,13 +731,12 @@ const GamePlay: React.FC = () => {
         return <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
-            {showYouTubeEmbed && currentSong && <div className="relative w-full h-40">
-                <iframe width="100%" height="100%" src={currentSong.embedUrl} frameBorder="0" allow="autoplay; encrypted-media" allowFullScreen className="absolute top-0 left-0 z-10"></iframe>
-                
-                <div className="absolute top-0 left-0 w-full h-full z-20 bg-black" style={{
-              opacity: 0.95
-            }}></div>
-              </div>}
+            <SongPlayer 
+              song={currentSong}
+              isPlaying={isPlaying && showYouTubeEmbed} 
+              onPlaybackEnded={handleSongPlaybackEnded} 
+              onPlaybackError={handleSongPlaybackError}
+            />
             
             <AppButton variant="primary" size="lg" onClick={playSong} className="max-w-xs" disabled={!isHost || isPlaying}>
               {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
