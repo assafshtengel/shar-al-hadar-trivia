@@ -832,11 +832,11 @@ const GamePlay: React.FC = () => {
             </div>
             
             {isHost && <div className="mt-8 flex flex-col gap-4 w-full max-w-xs">
-                <AppButton variant="primary" size="lg" onClick={nextRound}>
+                <AppButton variant="primary" size="lg" onClick={nextRound} className="mx-0 my-[35px] py-[54px]">
                   התחל סיבוב חדש
                   <Play className="mr-2" />
                 </AppButton>
-                <AppButton variant="secondary" onClick={resetAllPlayerScores}>
+                <AppButton variant="secondary" onClick={resetAllPlayerScores} className="py-0 mx-0 text-sm px-[7px] my-0">
                   איפוס ניקוד לכולם
                 </AppButton>
               </div>}
