@@ -85,22 +85,29 @@ const GamePlay: React.FC = () => {
     pendingAnswer: null
   });
 
-  // ... keep existing code (useEffects, checkAllPlayersAnswered, checkAllPlayersReady, etc.)
-
-  const createGameRound = () => {
-    const randomIndex = Math.floor(Math.random() * songs.length);
-    const correctSong = songs[randomIndex];
-    const otherSongs = songs.filter(song => song.id !== correctSong.id && song.title);
-    const shuffledWrongSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
-    const allOptions = [correctSong, ...shuffledWrongSongs];
-    const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
-    const correctSongTitle = correctSong.title || '';
-    const correctIndex = shuffledOptions.findIndex(song => song.title === correctSongTitle);
-    return {
-      correctSong,
-      options: shuffledOptions,
-      correctAnswerIndex: correctIndex
-    };
+  const updateGameState = async (phase: 'waiting' | 'playing' | 'answering' | 'results' | 'end') => {
+    if (!isHost || !gameCode) return;
+    
+    console.log(`Updating game state to ${phase}`);
+    try {
+      const { error } = await supabase
+        .from('game_state')
+        .update({ game_phase: phase })
+        .eq('game_code', gameCode);
+        
+      if (error) {
+        console.error('Error updating game state:', error);
+        toast({
+          title: "שגיאה בעדכון מצב המשחק",
+          description: "אירעה שגיאה בעדכון מצב המשחק",
+          variant: "destructive"
+        });
+      } else {
+        console.log(`Successfully updated game state to ${phase}`);
+      }
+    } catch (err) {
+      console.error('Exception when updating game state:', err);
+    }
   };
 
   useEffect(() => {
