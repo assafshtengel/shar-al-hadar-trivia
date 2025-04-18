@@ -210,7 +210,7 @@ const GamePlay: React.FC = () => {
       console.log('Fetching game round data for game code:', gameCode);
       const { data, error } = await supabase
         .from('game_state')
-        .select('current_song_name, current_song_url')
+        .select('current_round, current_song_name, current_song_url')
         .eq('game_code', gameCode)
         .maybeSingle();
 
@@ -222,52 +222,54 @@ const GamePlay: React.FC = () => {
 
       console.log('Game round data received:', data);
 
-      if (data && data.current_song_name) {
-        try {
-          const roundData = JSON.parse(data.current_song_name);
-          console.log('Parsed round data:', roundData);
-          
-          if (roundData && roundData.correctSong) {
-            if (roundData.correctSong.name && !roundData.correctSong.title) {
-              console.log('Converting name field to title field');
-              roundData.correctSong.title = roundData.correctSong.name;
-            }
+      if (data) {
+        if (data.current_round) {
+          setRound(data.current_round);
+        }
+
+        if (data.current_song_name) {
+          try {
+            const roundData = JSON.parse(data.current_song_name);
+            console.log('Parsed round data:', roundData);
             
-            setCurrentRound(roundData);
-            setCurrentSong(roundData.correctSong);
-            setAnswerOptions(roundData.options || []);
-            
-            if (roundData.correctSong.title) {
-              setCorrectAnswer(roundData.correctSong.title);
-            } else if (roundData.correctSong.name) {
-              setCorrectAnswer(roundData.correctSong.name);
+            if (roundData && roundData.correctSong) {
+              if (roundData.correctSong.name && !roundData.correctSong.title) {
+                console.log('Converting name field to title field');
+                roundData.correctSong.title = roundData.correctSong.name;
+              }
+              
+              setCurrentRound(roundData);
+              setCurrentSong(roundData.correctSong);
+              setAnswerOptions(roundData.options || []);
+              
+              if (roundData.correctSong.title) {
+                setCorrectAnswer(roundData.correctSong.title);
+              } else {
+                console.warn('No title field found in correctSong');
+                setCorrectAnswer('Unknown Song');
+              }
+              
+              setYoutubeVideoId(extractVideoId(roundData.correctSong.embedUrl));
             } else {
-              console.warn('No title or name field found in correctSong');
-              setCorrectAnswer('Unknown Song');
+              console.log('No valid song data in round data');
+              createFallbackSongData(data.current_song_url);
             }
-            
-            setYoutubeVideoId(extractVideoId(roundData.correctSong.embedUrl));
-          } else {
-            console.log('No valid song data in round data');
+          } catch (parseError) {
+            console.error('Error parsing round data:', parseError);
+            setParseError(`Error parsing JSON: ${parseError.message}`);
             createFallbackSongData(data.current_song_url);
           }
-        } catch (parseError) {
-          console.error('Error parsing round data:', parseError);
-          setParseError(`Error parsing JSON: ${parseError.message}`);
-          
-          console.log('Using current_song_name as plain text:', data.current_song_name);
-          createFallbackSongData(data.current_song_url, data.current_song_name);
+        } else if (isHost) {
+          console.log('Host mode: Using demo song data');
+          createHostDemoSongData();
+        } else {
+          console.log('No song data available and not host');
+          setCurrentRound(null);
+          setCurrentSong(null);
+          setAnswerOptions([]);
+          setCorrectAnswer(null);
+          setYoutubeVideoId(null);
         }
-      } else if (isHost) {
-        console.log('Host mode: Using demo song data');
-        createHostDemoSongData();
-      } else {
-        console.log('No song data available and not host');
-        setCurrentRound(null);
-        setCurrentSong(null);
-        setAnswerOptions([]);
-        setCorrectAnswer(null);
-        setYoutubeVideoId(null);
       }
     } catch (err) {
       console.error('Exception when fetching current song:', err);
@@ -379,7 +381,8 @@ const GamePlay: React.FC = () => {
         .from('game_state')
         .update({ 
           current_song_name: JSON.stringify(roundData),
-          current_song_url: song.embedUrl
+          current_song_url: song.embedUrl,
+          current_round: round
         })
         .eq('game_code', gameCode);
 
