@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
@@ -96,6 +96,7 @@ const songs: Song[] = [
 const GamePlay: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const { gameCode, playerName, isHost, gamePhase: serverGamePhase, answerTimeLimit } = useGameState();
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
   const [timeLeft, setTimeLeft] = useState(answerTimeLimit);
@@ -795,7 +796,7 @@ const GamePlay: React.FC = () => {
     setPhase('songPlayback');
     
     toast({
-      title: "מתכוננים לסיבוב הבא",
+      title: "מתכוננים לסיבוב ה��א",
       description: "סיבוב חדש עומד להתחיל",
     });
   };
@@ -1088,17 +1089,19 @@ const GamePlay: React.FC = () => {
           <span className="text-secondary">השירים</span>
         </h1>
         <div className="flex items-center gap-4">
-          <GameTimer 
-            initialSeconds={10} 
-            isActive={phase === 'songPlayback'} 
-            onTimeout={() => {
-              if (isHost) {
-                updateGameState('answering');
-              }
-              setPhase('answerOptions');
-              setTimerActive(true);
-            }}
-          />
+          {location.pathname === '/gameplay' && (
+            <GameTimer 
+              initialSeconds={10} 
+              isActive={phase === 'songPlayback'} 
+              onTimeout={() => {
+                if (isHost) {
+                  updateGameState('answering');
+                }
+                setPhase('answerOptions');
+                setTimerActive(true);
+              }}
+            />
+          )}
           <div className="text-lg font-semibold bg-primary/10 px-3 py-1 rounded-md">
             קוד משחק: {gameCode}
           </div>
