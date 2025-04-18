@@ -20,9 +20,9 @@ export const useGameAnswer = (
   timeRemaining: number,
   correctAnswer: string | null,
   currentPlayer: Player,
-  setCurrentPlayer: (player: Player) => void,
-  setPlayers: (players: Player[]) => void,
-  setLeaderboard: (players: Player[]) => void,
+  setCurrentPlayer: (player: Player | ((prev: Player) => Player)) => void,
+  setPlayers: (players: Player[] | ((prev: Player[]) => Player[])) => void,
+  setLeaderboard: (players: Player[] | ((prev: Player[]) => Player[])) => void,
   endGame: () => void
 ) => {
   const { toast } = useToast();
@@ -43,20 +43,20 @@ export const useGameAnswer = (
     let score = isCorrect ? timeRemaining * 10 : 0;
 
     try {
-      setCurrentPlayer(prev => ({
+      setCurrentPlayer((prev: Player) => ({
         ...prev,
         hasAnswered: true,
         lastAnswerCorrect: isCorrect,
         lastScore: score
       }));
       
-      setPlayers(prevPlayers =>
+      setPlayers((prevPlayers: Player[]) =>
         prevPlayers.map(p =>
           p.name === playerName ? { ...p, hasAnswered: true, lastAnswerCorrect: isCorrect, lastScore: score } : p
         )
       );
       
-      setLeaderboard(prevLeaderboard =>
+      setLeaderboard((prevLeaderboard: Player[]) =>
         prevLeaderboard.map(p =>
           p.name === playerName ? { ...p, hasAnswered: true, lastAnswerCorrect: isCorrect, lastScore: score } : p
         )
