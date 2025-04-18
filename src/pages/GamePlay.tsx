@@ -1114,9 +1114,21 @@ const GamePlay: React.FC = () => {
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-primary">משחק שירים</h1>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">קוד משחק: </span>
-            <span className="font-mono font-bold text-lg">{gameCode}</span>
+          <div className="flex items-center gap-4">
+            {isHost && currentRound && (
+              <AppButton 
+                variant="secondary" 
+                onClick={playFullSong}
+                className="w-auto"
+              >
+                השמע את השיר המלא
+                <Youtube className="mr-2" />
+              </AppButton>
+            )}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">קוד משחק: </span>
+              <span className="font-mono font-bold text-lg">{gameCode}</span>
+            </div>
           </div>
         </div>
         
