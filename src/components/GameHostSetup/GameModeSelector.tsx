@@ -20,7 +20,10 @@ const GameModeSelector: React.FC<GameModeSelectorProps> = ({ selectedMode, onMod
         disabled={disabled}
         className="flex flex-col gap-4"
       >
-        <div className="flex items-center space-x-4 space-x-reverse">
+        <div 
+          className="flex items-center space-x-4 space-x-reverse cursor-pointer"
+          onClick={() => onModeChange('local')}
+        >
           <RadioGroupItem value="local" id="local" />
           <Label htmlFor="local" className="flex items-center gap-2 cursor-pointer">
             <Users className="h-5 w-5 text-primary" />
@@ -30,7 +33,10 @@ const GameModeSelector: React.FC<GameModeSelectorProps> = ({ selectedMode, onMod
             </div>
           </Label>
         </div>
-        <div className="flex items-center space-x-4 space-x-reverse">
+        <div 
+          className="flex items-center space-x-4 space-x-reverse cursor-pointer"
+          onClick={() => onModeChange('remote')}
+        >
           <RadioGroupItem value="remote" id="remote" />
           <Label htmlFor="remote" className="flex items-center gap-2 cursor-pointer">
             <Globe className="h-5 w-5 text-primary" />
@@ -46,3 +52,4 @@ const GameModeSelector: React.FC<GameModeSelectorProps> = ({ selectedMode, onMod
 };
 
 export default GameModeSelector;
+
