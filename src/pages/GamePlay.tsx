@@ -266,42 +266,9 @@ const GamePlay: React.FC = () => {
       }
     };
     fetchPlayers();
-    const channelId = `players-changes-gameplay-${gameCode}-${Date.now()}`;
-    console.log(`Creating players subscription channel: ${channelId}`);
-    const channel = supabase.channel(channelId).on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'players',
-      filter: `game_code=eq.${gameCode}`
-    }, payload => {
-      console.log('Players table changed:', payload);
-      if (!isMounted) return;
-      try {
-        if (payload.eventType === 'INSERT') {
-          console.log('New player detected, will be updated by usePlayerManagement');
-        } else if (payload.eventType === 'UPDATE') {
-          if (playerName && payload.new.name === playerName) {
-            setCurrentPlayer(prev => ({
-              ...prev,
-              score: payload.new.score || 0,
-              hasAnswered: payload.new.hasAnswered || false,
-              isReady: payload.new.isReady || false
-            }));
-          }
-        } else if (payload.eventType === 'DELETE') {
-          console.log('Player deleted, will be updated by usePlayerManagement');
-        }
-      } catch (err) {
-        console.error('Error handling player change:', err);
-        fetchPlayers();
-      }
-    }).subscribe(status => {
-      console.log('Players table subscription status:', status);
-    });
     return () => {
-      console.log('Cleaning up players subscription in GamePlay');
+      console.log('Cleaning up players effect in GamePlay');
       isMounted = false;
-      supabase.removeChannel(channel);
     };
   }, [gameCode, toast, playerName]);
 
@@ -332,31 +299,7 @@ const GamePlay: React.FC = () => {
       }
     };
     fetchGameRoundData();
-    const gameStateChannel = supabase.channel('game-state-changes').on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'game_state',
-      filter: `game_code=eq.${gameCode}`
-    }, payload => {
-      console.log('Game state changed:', payload);
-      if (payload.new && payload.new.current_song_name) {
-        try {
-          const roundData = JSON.parse(payload.new.current_song_name);
-          if (roundData && roundData.correctSong && roundData.options) {
-            console.log('New game round data from real-time update:', roundData);
-            setCurrentRound(roundData);
-            if (roundData.correctSong) {
-              setCurrentSong(roundData.correctSong);
-            }
-          }
-        } catch (parseError) {
-          console.error('Error parsing real-time game round data:', parseError);
-        }
-      }
-    }).subscribe();
-    return () => {
-      supabase.removeChannel(gameStateChannel);
-    };
+    return () => {};
   }, [gameCode]);
 
   const createGameRound = () => {
@@ -684,17 +627,22 @@ const GamePlay: React.FC = () => {
         return (
           <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
-            {showYouTubeEmbed && currentSong && <div className="relative w-full h-40">
+            {showYouTubeEmbed && currentSong && (
+              <div className="relative w-full h-40">
                 <iframe width="100%" height="100%" src={currentSong.embedUrl} frameBorder="0" allow="autoplay; encrypted-media" allowFullScreen className="absolute top-0 left-0 z-10"></iframe>
                 <div className="absolute top-0 left-0 w-full h-full z-20 bg-black" style={{
                   opacity: 0.95
                 }}></div>
-              </div>}
-            {isHost && <AppButton variant="primary" size="lg" onClick={playSong} className="max-w-xs" disabled={isPlaying}>
+              </div>
+            )}
+            {isHost && (
+              <AppButton variant="primary" size="lg" onClick={playSong} className="max-w-xs" disabled={isPlaying}>
                 {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
                 <Play className="mr-2" />
-              </AppButton>}
-            {isPlaying && !showYouTubeEmbed && <div className="relative w-40 h-40 flex items-center justify-center">
+              </AppButton>
+            )}
+            {isPlaying && !showYouTubeEmbed && (
+              <div className="relative w-40 h-40 flex items-center justify-center">
                 <div className="absolute w-full h-full">
                   <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
                   <MusicNote type="note2" className="absolute top-10 left-0 text-secondary animate-float-alt" size={28} />
@@ -703,10 +651,13 @@ const GamePlay: React.FC = () => {
                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
                   <Music className="w-10 h-10 text-primary" />
                 </div>
-              </div>}
-            {!isHost && <div className="text-lg text-gray-600 text-center">
+              </div>
+            )}
+            {!isHost && (
+              <div className="text-lg text-gray-600 text-center">
                 המתן למנהל המשחק להשמיע את השיר הבא
-              </div>}
+              </div>
+            )}
           </div>
         );
       case 'answerOptions':

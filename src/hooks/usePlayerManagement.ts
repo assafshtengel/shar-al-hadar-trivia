@@ -1,9 +1,10 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface UsePlayerManagementParams {
-  gameCode: string;
+  gameCode: string | null;
   playerName: string | null;
   setHostJoined: (joined: boolean) => void;
   setStartGameDisabled: (disabled: boolean) => void;
@@ -138,7 +139,7 @@ export const usePlayerManagement = ({
             return;
           }
 
-          if (payload.new && 'id' in payload.new && lastUpdateIdRef.current === payload.new.id) {
+          if (payload.new && typeof payload.new === 'object' && 'id' in payload.new && lastUpdateIdRef.current === payload.new.id) {
             console.log('Skipping own update:', payload.new.id);
             return;
           }
@@ -154,7 +155,7 @@ export const usePlayerManagement = ({
               return [...prevPlayers, newPlayer];
             });
             
-            if (playerName && payload.new.name === playerName) {
+            if (playerName && payload.new && typeof payload.new === 'object' && 'name' in payload.new && payload.new.name === playerName) {
               console.log(`Host ${playerName} joined through realtime, enabling start game`);
               setHostJoined(true);
               setStartGameDisabled(false);
@@ -166,7 +167,7 @@ export const usePlayerManagement = ({
                 player.id === payload.new.id ? { ...player, ...payload.new } : player
               )
             );
-          } else if (payload.eventType === 'DELETE' && payload.old && 'id' in payload.old) {
+          } else if (payload.eventType === 'DELETE' && payload.old && typeof payload.old === 'object' && 'id' in payload.old) {
             setPlayers((prevPlayers) => 
               prevPlayers.filter(player => player.id !== payload.old.id)
             );

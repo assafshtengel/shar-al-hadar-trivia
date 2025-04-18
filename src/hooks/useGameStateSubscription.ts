@@ -1,8 +1,8 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
+import { GamePhase } from '@/contexts/GameStateContext';
 
 interface UseGameStateSubscriptionProps {
   gameCode: string | null;
@@ -144,15 +144,14 @@ export const useGameStateSubscription = ({
           }
           
           // Skip if this update was triggered by our own code
-          // Fix the type check here
-          if (payload.new && 'game_code' in payload.new && lastGameStateUpdateRef.current === payload.new.game_code) {
+          if (payload.new && typeof payload.new === 'object' && 'game_code' in payload.new && lastGameStateUpdateRef.current === payload.new.game_code) {
             console.log('Skipping own game state update');
             return;
           }
           
           console.log('Game state change detected:', payload);
           
-          if (payload.new && 'game_phase' in payload.new) {
+          if (payload.new && typeof payload.new === 'object' && 'game_phase' in payload.new) {
             const newPhase = payload.new.game_phase as GamePhase;
             console.log(`Game phase update: ${newPhase}, isHost: ${isHost}`);
             

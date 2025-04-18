@@ -5,9 +5,9 @@ import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
 import GameEndOverlay from '@/components/GameEndOverlay';
 import { useGamePhaseNavigation } from '@/hooks/useGamePhaseNavigation';
 
-type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
+export type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
 
-interface GameStateContextType {
+export interface GameStateContextType {
   gameCode: string | null;
   playerName: string | null;
   gamePhase: GamePhase | null;
