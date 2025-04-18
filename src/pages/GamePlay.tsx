@@ -972,7 +972,7 @@ const GamePlay: React.FC = () => {
                 
                 {!currentPlayer.lastAnswerCorrect && currentRound && (
                   <div className="text-lg font-semibold text-green-500">
-                    תשובה נכונה: {currentRound.correctSong.name}
+                    תשובה נכונ��: {currentRound.correctSong.name}
                   </div>
                 )}
               </>
@@ -1065,26 +1065,9 @@ const GamePlay: React.FC = () => {
                       onClick={nextRound}
                       className="max-w-xs"
                     >
-                      סיבוב הב��
+                      סיבוב הבא
                       <SkipForward className="mr-2" />
                     </AppButton>
-                  </div>
-                )}
-                
-                {!isHost && !playerReady && (
-                  <AppButton
-                    variant="secondary" 
-                    onClick={markPlayerReady}
-                    className="max-w-xs mt-2"
-                  >
-                    מוכן לסיבוב הבא
-                    <CheckCircle2 className="mr-2" />
-                  </AppButton>
-                )}
-                
-                {!isHost && playerReady && (
-                  <div className="bg-green-100 text-green-800 px-4 py-2 rounded-md mt-2">
-                    סימנת שאתה מוכן לסיבוב הבא, ממתין למארח...
                   </div>
                 )}
                 
