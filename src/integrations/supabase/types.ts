@@ -74,10 +74,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      update_game_mode: {
-        Args: { p_game_code: string; p_game_mode: string }
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
