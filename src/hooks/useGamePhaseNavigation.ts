@@ -58,8 +58,6 @@ export const useGamePhaseNavigation = ({
     }
 
     // Don't navigate if we just saw this phase (prevents double navigation)
-    // IMPORTANT: Removed the condition that prevented phase transitions when on the gameplay page
-    // This was causing the issue where players weren't seeing the leaderboard
     if (lastPhaseRef.current === gamePhase) {
       console.log(`Same phase as before ${gamePhase}, checking if navigation is needed`);
     }
@@ -72,28 +70,25 @@ export const useGamePhaseNavigation = ({
           navigationTimeoutRef.current = setTimeout(() => {
             navigate('/host-setup');
             navigationTimeoutRef.current = null;
-          }, 100);
+          }, 50); // Faster navigation
         } else if (!isHost && currentPath !== '/waiting-room' && currentPath !== '/gameplay') {
           console.log('Navigating player to waiting room');
           navigationTimeoutRef.current = setTimeout(() => {
             navigate('/waiting-room');
             navigationTimeoutRef.current = null;
-          }, 100);
+          }, 50); // Faster navigation
         }
         break;
         
       case 'playing':
       case 'answering':
       case 'results':
-        // Make sure ALL players stay in the gameplay page
+        // Make sure ALL players go to the gameplay page immediately
         if (currentPath !== '/gameplay') {
           console.log(`Navigating to gameplay screen for game phase: ${gamePhase}`);
           setIsRedirecting(true);
-          navigationTimeoutRef.current = setTimeout(() => {
-            navigate('/gameplay');
-            setIsRedirecting(false);
-            navigationTimeoutRef.current = null;
-          }, 100); // Small delay to prevent navigation race conditions
+          navigate('/gameplay'); // Immediate navigation without timeout
+          setIsRedirecting(false);
         }
         break;
         
@@ -102,11 +97,8 @@ export const useGamePhaseNavigation = ({
         if (currentPath !== '/gameplay') {
           console.log('Navigating to gameplay for end screen');
           setIsRedirecting(true);
-          navigationTimeoutRef.current = setTimeout(() => {
-            navigate('/gameplay');
-            setIsRedirecting(false);
-            navigationTimeoutRef.current = null;
-          }, 100);
+          navigate('/gameplay'); // Immediate navigation without timeout
+          setIsRedirecting(false);
         }
         break;
     }

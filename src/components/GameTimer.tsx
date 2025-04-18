@@ -49,11 +49,12 @@ const GameTimer: React.FC<GameTimerProps> = ({
         lastTickTimeRef.current = now;
         
         setTimeLeft(prev => {
+          // Immediately trigger timeout when timer gets close to zero (0.1 seconds)
           const newTime = Math.max(prev - elapsed / 1000, 0);
           
-          // Check if timer reached zero and timeout has not been triggered yet
-          if (newTime <= 0 && !timeoutTriggeredRef.current) {
-            console.log('Timer reached zero, triggering onTimeout');
+          // Trigger the timeout when time is very low (0.1 seconds) or zero
+          if (newTime <= 0.1 && !timeoutTriggeredRef.current) {
+            console.log(`Timer reached threshold (${newTime}s), triggering onTimeout immediately`);
             timeoutTriggeredRef.current = true;
             
             if (timerRef.current) {
@@ -62,17 +63,13 @@ const GameTimer: React.FC<GameTimerProps> = ({
               timerRef.current = null;
             }
             
-            // Use setTimeout to ensure the state update completes before calling onTimeout
-            setTimeout(() => {
-              console.log('Executing onTimeout callback');
-              onTimeout();
-            }, 100);
-            
+            // Execute onTimeout immediately without delay
+            onTimeout();
             return 0;
           }
           return newTime;
         });
-      }, 100); // Update more frequently for smoother countdown
+      }, 50); // Update more frequently (50ms) for more precise timing
     }
 
     return () => {
