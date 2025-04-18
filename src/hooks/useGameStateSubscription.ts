@@ -145,17 +145,25 @@ export const useGameStateSubscription = ({
               const newPhase = payload.new.game_phase as GamePhase;
               const currentTime = Date.now();
               
-              // Process phase updates immediately regardless of previous state
-              console.log(`Game phase update: ${newPhase}, isHost: ${isHost}, last phase: ${lastGamePhaseRef.current}`);
-              
-              lastGamePhaseRef.current = newPhase;
-              phaseUpdateTimeRef.current = currentTime;
-              
-              // Set game phase immediately to ensure UI updates
-              setGamePhase(newPhase);
-              
-              if ('host_ready' in payload.new) {
-                setHostReady(!!payload.new.host_ready);
+              // Always process all phases for all players regardless of rank
+              if (
+                lastGamePhaseRef.current === null || 
+                lastGamePhaseRef.current !== newPhase ||
+                (currentTime - phaseUpdateTimeRef.current) > 500
+              ) {
+                console.log(`Game phase update: ${newPhase}, isHost: ${isHost}, last phase: ${lastGamePhaseRef.current}`);
+                
+                lastGamePhaseRef.current = newPhase;
+                phaseUpdateTimeRef.current = currentTime;
+                
+                // Always set the game phase, regardless of the player rank
+                setGamePhase(newPhase);
+                
+                if ('host_ready' in payload.new) {
+                  setHostReady(!!payload.new.host_ready);
+                }
+              } else {
+                console.log(`Ignoring frequent phase update to ${newPhase} (last update was ${currentTime - phaseUpdateTimeRef.current}ms ago)`);
               }
             } else if (payload.eventType === 'DELETE') {
               if (!isHost) {
@@ -204,7 +212,6 @@ export const useGameStateSubscription = ({
           lastGamePhaseRef.current = currentPhase;
           phaseUpdateTimeRef.current = Date.now();
           
-          // Set game phase immediately to ensure UI updates
           setGamePhase(currentPhase);
           
           if ('host_ready' in data) {

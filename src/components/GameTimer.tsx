@@ -18,7 +18,6 @@ const GameTimer: React.FC<GameTimerProps> = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const lastTickTimeRef = useRef<number>(Date.now());
-  const timeoutTriggeredRef = useRef<boolean>(false);
 
   // Reset timer when props change
   useEffect(() => {
@@ -27,7 +26,6 @@ const GameTimer: React.FC<GameTimerProps> = ({
       setTimeLeft(initialSeconds);
       startTimeRef.current = Date.now();
       lastTickTimeRef.current = Date.now();
-      timeoutTriggeredRef.current = false;
     } else {
       if (timerRef.current) {
         console.log('Clearing timer due to isActive change');
@@ -47,31 +45,21 @@ const GameTimer: React.FC<GameTimerProps> = ({
         const now = Date.now();
         const elapsed = now - lastTickTimeRef.current;
         lastTickTimeRef.current = now;
-        
         setTimeLeft(prev => {
-          // Calculate new time first
           const newTime = Math.max(prev - elapsed / 1000, 0);
-          
-          // Force immediate timeout at exactly 0.1 seconds or less
-          if (newTime <= 0.1 && !timeoutTriggeredRef.current) {
-            console.log(`Timer reached zero threshold (${newTime}s)! Calling onTimeout IMMEDIATELY`);
-            timeoutTriggeredRef.current = true;
-            
+          if (newTime <= 0) {
             if (timerRef.current) {
-              console.log('Clearing timer interval before calling timeout handler');
+              console.log('Timer reached zero, cleaning up');
               clearInterval(timerRef.current);
               timerRef.current = null;
+              onTimeout();
             }
-            
-            // Execute onTimeout synchronously with no delays
-            onTimeout();
             return 0;
           }
           return newTime;
         });
-      }, 20); // Update even more frequently (20ms) for more precise timing
+      }, 100); // Update more frequently for smoother countdown
     }
-
     return () => {
       if (timerRef.current) {
         console.log('Cleaning up timer on effect cleanup');

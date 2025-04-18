@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Music } from 'lucide-react';
@@ -11,7 +12,6 @@ import HostJoinForm from '@/components/GameHostSetup/HostJoinForm';
 import { useHostJoin } from '@/hooks/useHostJoin';
 import { useGameStart } from '@/hooks/useGameStart';
 import { usePlayerManagement } from '@/hooks/usePlayerManagement';
-import LogoutButton from '@/components/LogoutButton';
 
 const GameHostSetup: React.FC = () => {
   const { gameCode: contextGameCode, setGameData, playerName: contextPlayerName } = useGameState();
@@ -53,7 +53,6 @@ const GameHostSetup: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
-      <LogoutButton />
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <MusicNote type="note1" className="absolute top-[10%] right-[15%] opacity-20" size={36} animation="float" color="#6446D0" />
         <MusicNote type="note4" className="absolute bottom-[15%] left-[15%] opacity-20" size={32} animation="float-alt" color="#FFC22A" />

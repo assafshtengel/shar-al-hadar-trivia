@@ -58,8 +58,10 @@ export const useGamePhaseNavigation = ({
     }
 
     // Don't navigate if we just saw this phase (prevents double navigation)
-    if (lastPhaseRef.current === gamePhase) {
-      console.log(`Same phase as before ${gamePhase}, checking if navigation is needed`);
+    if (lastPhaseRef.current === gamePhase && currentPath === '/gameplay' && 
+        (gamePhase === 'playing' || gamePhase === 'answering' || gamePhase === 'results')) {
+      console.log(`Skipping duplicate navigation for phase ${gamePhase}`);
+      return;
     }
 
     switch (gamePhase) {
@@ -67,32 +69,32 @@ export const useGamePhaseNavigation = ({
         // Only navigate if not already in gameplay or setup screens
         if (isHost && currentPath !== '/host-setup' && currentPath !== '/gameplay') {
           console.log('Navigating host to setup screen');
-          navigate('/host-setup'); // Immediate navigation
+          navigationTimeoutRef.current = setTimeout(() => {
+            navigate('/host-setup');
+            navigationTimeoutRef.current = null;
+          }, 100);
         } else if (!isHost && currentPath !== '/waiting-room' && currentPath !== '/gameplay') {
           console.log('Navigating player to waiting room');
-          navigate('/waiting-room'); // Immediate navigation
+          navigationTimeoutRef.current = setTimeout(() => {
+            navigate('/waiting-room');
+            navigationTimeoutRef.current = null;
+          }, 100);
         }
         break;
         
       case 'playing':
       case 'answering':
       case 'results':
-        // Make sure ALL players go to the gameplay page immediately
+      case 'end':
+        // Make sure ALL players stay in the gameplay page
         if (currentPath !== '/gameplay') {
           console.log(`Navigating to gameplay screen for game phase: ${gamePhase}`);
           setIsRedirecting(true);
-          navigate('/gameplay'); // Immediate navigation without timeout
-          setIsRedirecting(false);
-        }
-        break;
-        
-      case 'end':
-        // All players should still go to gameplay for the end screen
-        if (currentPath !== '/gameplay') {
-          console.log('Navigating to gameplay for end screen');
-          setIsRedirecting(true);
-          navigate('/gameplay'); // Immediate navigation without timeout
-          setIsRedirecting(false);
+          navigationTimeoutRef.current = setTimeout(() => {
+            navigate('/gameplay');
+            setIsRedirecting(false);
+            navigationTimeoutRef.current = null;
+          }, 100); // Small delay to prevent navigation race conditions
         }
         break;
     }
@@ -104,8 +106,8 @@ export const useGamePhaseNavigation = ({
 
   // Watch for game phase changes and navigate accordingly
   useEffect(() => {
-    if (gamePhase) {
-      console.log(`Game phase changed to ${gamePhase}, handling navigation`);
+    if (gamePhase && gamePhase !== lastPhaseRef.current) {
+      console.log(`Game phase changed from ${lastPhaseRef.current} to ${gamePhase}, handling navigation`);
       handleGamePhaseNavigation();
     }
   }, [gamePhase, handleGamePhaseNavigation]);

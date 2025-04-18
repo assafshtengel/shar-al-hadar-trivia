@@ -3,42 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleCreateGame = async () => {
-    // Get any existing game code from localStorage
-    const existingGameCode = localStorage.getItem('gameCode');
-    
-    if (existingGameCode) {
-      try {
-        // Clean up existing game state
-        await supabase
-          .from('game_state')
-          .delete()
-          .eq('game_code', existingGameCode);
-          
-        // Clean up existing players
-        await supabase
-          .from('players')
-          .delete()
-          .eq('game_code', existingGameCode);
-          
-        // Clear local storage
-        localStorage.removeItem('gameCode');
-        localStorage.removeItem('playerName');
-        localStorage.removeItem('isHost');
-        
-        console.log('Cleaned up existing game data:', existingGameCode);
-      } catch (err) {
-        console.error('Error cleaning up existing game:', err);
-        // Continue anyway as this is not critical
-      }
-    }
-
+  const handleCreateGame = () => {
     navigate('/host-setup');
   };
 
