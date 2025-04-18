@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -18,13 +18,17 @@ export const useGamePhaseNavigation = ({
 }: UseGamePhaseNavigationProps) => {
   const navigate = useNavigate();
   const [isRedirecting, setIsRedirecting] = useState<boolean>(false);
+  const lastNavigatedPhaseRef = useRef<GamePhase | null>(null);
 
   useEffect(() => {
-    if (!gamePhase) return;
+    if (!gamePhase || gamePhase === lastNavigatedPhaseRef.current) return;
     
     const handleGamePhaseNavigation = () => {
       const currentPath = window.location.pathname;
-      console.log(`Navigation check: phase=${gamePhase}, path=${currentPath}, isHost=${isHost}`);
+      console.log(`Navigation check: phase=${gamePhase}, path=${currentPath}, isHost=${isHost}, lastNavigated=${lastNavigatedPhaseRef.current}`);
+
+      // Update the last navigated phase to prevent redundant navigation
+      lastNavigatedPhaseRef.current = gamePhase;
 
       switch (gamePhase) {
         case 'waiting':

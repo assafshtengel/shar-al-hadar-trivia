@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -27,36 +27,80 @@ export const usePlayerManagement = ({
   const [players, setPlayers] = useState<Player[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const hostCheckCompletedRef = useRef<boolean>(false);
-
+  const fetchingPlayersRef = useRef<boolean>(false);
+  
   // Check if host is already in the players list
-  useEffect(() => {
+  const checkHostJoined = useCallback(async () => {
     // Skip if already checked or if no playerName/gameCode
     if (hostCheckCompletedRef.current || !playerName || !gameCode) return;
     
-    const checkHostJoined = async () => {
-      try {
-        const { exists } = await checkPlayerExists({ 
-          game_code: gameCode, 
-          player_name: playerName 
+    console.log(`Checking if host ${playerName} has already joined game ${gameCode}`);
+    hostCheckCompletedRef.current = true; // Set immediately to prevent concurrent calls
+    
+    try {
+      const { exists } = await checkPlayerExists({ 
+        game_code: gameCode, 
+        player_name: playerName 
+      });
+      
+      if (exists) {
+        console.log(`Host ${playerName} already joined, enabling start game`);
+        setHostJoined(true);
+        setStartGameDisabled(false);
+      }
+    } catch (err) {
+      console.error('Error checking if host joined:', err);
+    }
+  }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
+
+  // Stable fetch players function that doesn't create infinite loops
+  const fetchPlayers = useCallback(async () => {
+    if (!gameCode || fetchingPlayersRef.current) return;
+    
+    fetchingPlayersRef.current = true;
+    console.log(`Fetching players for game ${gameCode}`);
+    
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .eq('game_code', gameCode);
+
+      if (error) {
+        console.error('Error fetching players:', error);
+        toast('שגיאה בטעינת השחקנים', {
+          description: 'אירעה שגיאה בטעינת רשימת השחקנים',
         });
+        return;
+      }
+
+      if (data) {
+        console.log('Fetched players:', data);
+        setPlayers(data);
         
-        if (exists) {
-          console.log(`Host ${playerName} already joined, enabling start game`);
+        // Check if host is already in the players list
+        if (playerName && data.some(player => player.name === playerName)) {
+          console.log(`Host ${playerName} found in players list, enabling start game`);
           setHostJoined(true);
           setStartGameDisabled(false);
+          hostCheckCompletedRef.current = true;
         }
-        // Mark check as completed to prevent repeated calls
-        hostCheckCompletedRef.current = true;
-      } catch (err) {
-        console.error('Error checking if host joined:', err);
-        // Mark as completed even on error to avoid infinite retries
-        hostCheckCompletedRef.current = true;
       }
-    };
-    
-    checkHostJoined();
-  }, [playerName, gameCode, setHostJoined, setStartGameDisabled]);
+    } catch (err) {
+      console.error('Exception when fetching players:', err);
+    } finally {
+      fetchingPlayersRef.current = false;
+    }
+  }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
 
+  // Host check effect - runs once
+  useEffect(() => {
+    if (!hostCheckCompletedRef.current) {
+      checkHostJoined();
+    }
+  }, [checkHostJoined]);
+
+  // Main subscription effect
   useEffect(() => {
     if (!gameCode) {
       console.error('No game code provided to usePlayerManagement');
@@ -66,47 +110,11 @@ export const usePlayerManagement = ({
     console.log('Setting up player tracking for game:', gameCode);
     
     let isMounted = true;
-    let fetchingPlayers = false;
     
-    // Initial fetch of current players
-    const fetchPlayers = async () => {
-      if (fetchingPlayers) return;
-      
-      fetchingPlayers = true;
-      try {
-        const { data, error } = await supabase
-          .from('players')
-          .select('*')
-          .eq('game_code', gameCode);
-
-        if (error) {
-          console.error('Error fetching players:', error);
-          toast('שגיאה בטעינת השחקנים', {
-            description: 'אירעה שגיאה בטעינת רשימת השחקנים',
-          });
-          return;
-        }
-
-        if (data && isMounted) {
-          console.log('Fetched players:', data);
-          setPlayers(data);
-          
-          // Check if host is already in the players list
-          if (playerName && data.some(player => player.name === playerName)) {
-            console.log(`Host ${playerName} found in players list, enabling start game`);
-            setHostJoined(true);
-            setStartGameDisabled(false);
-            hostCheckCompletedRef.current = true;
-          }
-        }
-      } catch (err) {
-        console.error('Exception when fetching players:', err);
-      } finally {
-        fetchingPlayers = false;
-      }
-    };
-
-    fetchPlayers();
+    // Initial fetch of current players (if not already fetching)
+    if (!fetchingPlayersRef.current) {
+      fetchPlayers();
+    }
 
     // Clean up any existing channel before creating a new one
     if (channelRef.current) {
@@ -131,12 +139,12 @@ export const usePlayerManagement = ({
           filter: `game_code=eq.${gameCode}`
         },
         (payload) => {
-          console.log('Player change detected:', payload);
-          
           if (!isMounted) {
             console.log('Component unmounted, ignoring player change');
             return;
           }
+          
+          console.log('Player change detected:', payload);
           
           // Handle different event types
           if (payload.eventType === 'INSERT') {
@@ -182,14 +190,14 @@ export const usePlayerManagement = ({
     return () => {
       console.log('Cleaning up players subscription');
       isMounted = false;
-      fetchingPlayers = false;
       
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
+  // Only depend on values that truly require re-subscription  
+  }, [gameCode, playerName, fetchPlayers, setHostJoined, setStartGameDisabled]);
 
   return { players };
 };
