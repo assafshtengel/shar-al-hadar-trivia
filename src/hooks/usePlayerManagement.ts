@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface UsePlayerManagementParams {
   gameCode: string;
@@ -45,6 +46,13 @@ export const usePlayerManagement = ({
   }, [playerName, gameCode, setHostJoined, setStartGameDisabled]);
 
   useEffect(() => {
+    if (!gameCode) {
+      console.error('No game code provided to usePlayerManagement');
+      return;
+    }
+
+    console.log('Setting up player tracking for game:', gameCode);
+    
     // Initial fetch of current players
     const fetchPlayers = async () => {
       try {
@@ -55,6 +63,9 @@ export const usePlayerManagement = ({
 
         if (error) {
           console.error('Error fetching players:', error);
+          toast('שגיאה בטעינת השחקנים', {
+            description: 'אירעה שגיאה בטעינת רשימת השחקנים',
+          });
           return;
         }
 
@@ -77,7 +88,7 @@ export const usePlayerManagement = ({
 
     // Set up realtime subscription for ALL database changes to the players table
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel('players-changes')
       .on(
         'postgres_changes',
         {
@@ -92,7 +103,14 @@ export const usePlayerManagement = ({
           // Handle different event types
           if (payload.eventType === 'INSERT') {
             // Add new player to the list
-            setPlayers((prevPlayers) => [...prevPlayers, payload.new as Player]);
+            setPlayers((prevPlayers) => {
+              const newPlayer = payload.new as Player;
+              // Check if player already exists to avoid duplicates
+              if (prevPlayers.some(p => p.id === newPlayer.id)) {
+                return prevPlayers;
+              }
+              return [...prevPlayers, newPlayer];
+            });
             
             // If the new player is the host, enable the start game button
             if (playerName && payload.new.name === playerName) {
@@ -115,11 +133,11 @@ export const usePlayerManagement = ({
         }
       )
       .subscribe((status) => {
-        console.log('Subscription status:', status);
+        console.log('Players subscription status:', status);
       });
 
     return () => {
-      console.log('Cleaning up subscription');
+      console.log('Cleaning up players subscription');
       supabase.removeChannel(channel);
     };
   }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);

@@ -65,7 +65,7 @@ export const useGameStateSubscription = ({
     checkGameState();
 
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel('game-state-changes')
       .on(
         'postgres_changes',
         {
