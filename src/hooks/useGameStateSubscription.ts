@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -25,6 +26,7 @@ export const useGameStateSubscription = ({
   const initialCheckDoneRef = useRef<boolean>(false);
   const updatingGameStateRef = useRef<boolean>(false);
   const lastGameStateUpdateRef = useRef<string | null>(null);
+  const isSubscribingRef = useRef<boolean>(false);
   const channelName = `game-state-changes-${gameCode}`;
 
   const checkGameState = useCallback(async () => {

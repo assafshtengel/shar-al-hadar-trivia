@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -31,6 +32,7 @@ export const usePlayerManagement = ({
   const hostCheckCompletedRef = useRef<boolean>(false);
   const updatingPlayerRef = useRef<boolean>(false);
   const lastUpdateIdRef = useRef<string | null>(null);
+  const fetchingPlayersRef = useRef<boolean>(false);
   const channelName = `players-changes-${gameCode}`;
 
   const checkHostJoined = useCallback(async () => {
