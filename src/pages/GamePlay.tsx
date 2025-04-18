@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -69,12 +68,12 @@ const GamePlay: React.FC = () => {
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [parseError, setParseError] = useState<string | null>(null);
 
   const { toast } = useToast();
   const navigate = useNavigate();
   const { gameCode, playerName, isHost } = useGameState();
 
-  // הגדרה מוקדמת של endGame כדי למנוע את שגיאת TS2448
   const endGame = useCallback(async () => {
     if (!gameCode || !isHost) return;
 
@@ -205,8 +204,10 @@ const GamePlay: React.FC = () => {
     if (!gameCode) return;
     
     setIsLoading(true);
+    setParseError(null);
 
     try {
+      console.log('Fetching game round data for game code:', gameCode);
       const { data, error } = await supabase
         .from('game_state')
         .select('current_song_name, current_song_url')
@@ -219,58 +220,54 @@ const GamePlay: React.FC = () => {
         return;
       }
 
+      console.log('Game round data received:', data);
+
       if (data && data.current_song_name) {
         try {
-          // נסה לפרסר את הנתונים כ-JSON
           const roundData = JSON.parse(data.current_song_name);
           console.log('Parsed round data:', roundData);
           
           if (roundData && roundData.correctSong) {
+            if (roundData.correctSong.name && !roundData.correctSong.title) {
+              console.log('Converting name field to title field');
+              roundData.correctSong.title = roundData.correctSong.name;
+            }
+            
             setCurrentRound(roundData);
             setCurrentSong(roundData.correctSong);
             setAnswerOptions(roundData.options || []);
-            setCorrectAnswer(roundData.correctSong.title);
+            
+            if (roundData.correctSong.title) {
+              setCorrectAnswer(roundData.correctSong.title);
+            } else if (roundData.correctSong.name) {
+              setCorrectAnswer(roundData.correctSong.name);
+            } else {
+              console.warn('No title or name field found in correctSong');
+              setCorrectAnswer('Unknown Song');
+            }
+            
             setYoutubeVideoId(extractVideoId(roundData.correctSong.embedUrl));
           } else {
             console.log('No valid song data in round data');
+            createFallbackSongData(data.current_song_url);
           }
         } catch (parseError) {
           console.error('Error parsing round data:', parseError);
-          // אם זה לא JSON, נתייחס אליו כמחרוזת רגילה
+          setParseError(`Error parsing JSON: ${parseError.message}`);
+          
           console.log('Using current_song_name as plain text:', data.current_song_name);
-          const dummySong = {
-            id: '1',
-            title: data.current_song_name,
-            artist: 'Unknown',
-            embedUrl: data.current_song_url || '',
-            order: 1
-          };
-          
-          setCurrentSong(dummySong);
-          setCorrectAnswer(dummySong.title);
-          setYoutubeVideoId(extractVideoId(data.current_song_url));
-          
-          // יצירת אפשרויות תשובה פיקטיביות
-          setAnswerOptions([dummySong.title, 'שיר אחר 1', 'שיר אחר 2'].sort(() => Math.random() - 0.5));
+          createFallbackSongData(data.current_song_url, data.current_song_name);
         }
       } else if (isHost) {
-        // אם המארח ואין נתוני שיר, נייצר נתוני דמו בסיסיים
-        const demoSong = {
-          id: 'demo1',
-          title: 'שיר דוגמה',
-          artist: 'אמן דוגמה',
-          embedUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          order: 1
-        };
-        
-        // אם אתה המארח, תיצור נתוני שיר זמניים עד שתעלה שירים אמיתיים
         console.log('Host mode: Using demo song data');
-        setCurrentSong(demoSong);
-        setCorrectAnswer(demoSong.title);
-        setYoutubeVideoId(extractVideoId(demoSong.embedUrl));
-        setAnswerOptions([demoSong.title, 'שיר אחר 1', 'שיר אחר 2'].sort(() => Math.random() - 0.5));
+        createHostDemoSongData();
       } else {
         console.log('No song data available and not host');
+        setCurrentRound(null);
+        setCurrentSong(null);
+        setAnswerOptions([]);
+        setCorrectAnswer(null);
+        setYoutubeVideoId(null);
       }
     } catch (err) {
       console.error('Exception when fetching current song:', err);
@@ -278,6 +275,37 @@ const GamePlay: React.FC = () => {
       setIsLoading(false);
     }
   }, [gameCode, isHost]);
+
+  const createFallbackSongData = (songUrl?: string, songName?: string) => {
+    const dummySong = {
+      id: '1',
+      title: songName || 'שיר לא ידוע',
+      artist: 'אמן לא ידוע',
+      embedUrl: songUrl || '',
+      order: 1
+    };
+    
+    setCurrentSong(dummySong);
+    setCorrectAnswer(dummySong.title);
+    setYoutubeVideoId(extractVideoId(dummySong.embedUrl));
+    
+    setAnswerOptions([dummySong.title, 'שיר אחר 1', 'שיר אחר 2'].sort(() => Math.random() - 0.5));
+  };
+
+  const createHostDemoSongData = () => {
+    const demoSong = {
+      id: 'demo1',
+      title: 'שיר דוגמה למארח',
+      artist: 'אמן דוגמה',
+      embedUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      order: 1
+    };
+    
+    setCurrentSong(demoSong);
+    setCorrectAnswer(demoSong.title);
+    setYoutubeVideoId(extractVideoId(demoSong.embedUrl));
+    setAnswerOptions([demoSong.title, 'שיר אחר 1', 'שיר אחר 2'].sort(() => Math.random() - 0.5));
+  };
 
   const fetchPlayers = useCallback(async () => {
     if (!gameCode) return;
@@ -326,17 +354,27 @@ const GamePlay: React.FC = () => {
     }, 1000);
   }, [handleAnswerSubmit]);
 
-  // אם אתה מארח, הנה פונקציה לעדכון נתוני השיר הנוכחי
   const updateCurrentSong = useCallback(async (song: Song, options: string[]) => {
     if (!gameCode || !isHost) return;
 
+    if (!song.title && (song as any).name) {
+      song.title = (song as any).name;
+    }
+
     const roundData: RoundData = {
       round: round,
-      correctSong: song,
+      correctSong: {
+        id: song.id,
+        title: song.title,
+        artist: song.artist,
+        embedUrl: song.embedUrl,
+        order: song.order
+      },
       options: options
     };
 
     try {
+      console.log('Updating current song with data:', roundData);
       const { error } = await supabase
         .from('game_state')
         .update({ 
@@ -352,11 +390,36 @@ const GamePlay: React.FC = () => {
           description: "אירעה שגיאה בעדכון השיר הנוכחי",
           variant: "destructive"
         });
+      } else {
+        toast({
+          title: "השיר עודכן",
+          description: `השיר "${song.title}" עודכן בהצלחה`
+        });
+        setCurrentRound(roundData);
+        setCurrentSong(roundData.correctSong);
+        setAnswerOptions(options);
+        setCorrectAnswer(song.title);
+        setYoutubeVideoId(extractVideoId(song.embedUrl));
       }
     } catch (err) {
       console.error('Exception when updating current song:', err);
     }
   }, [gameCode, isHost, round, toast]);
+
+  const playDemoSong = useCallback(() => {
+    if (!isHost) return;
+    
+    const demoSong = {
+      id: 'demo1',
+      title: 'שיר דוגמה למארח',
+      artist: 'אמן דוגמה',
+      embedUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      order: 1
+    };
+    
+    const options = [demoSong.title, 'שיר אחר 1', 'שיר אחר 2', 'שיר אחר 4'];
+    updateCurrentSong(demoSong, options);
+  }, [isHost, updateCurrentSong]);
 
   useEffect(() => {
     fetchCurrentPlayer();
@@ -399,16 +462,39 @@ const GamePlay: React.FC = () => {
     return (match && match[7].length === 11) ? match[7] : null;
   };
 
-  // הוספת ממשק פשוט למארח לעדכון מידע אם הוא מארח
   const renderHostControls = () => {
     if (!isHost) return null;
     
     return (
       <div className="mt-4 p-4 border border-primary rounded-md">
         <h3 className="text-xl font-semibold mb-2">בקרות מארח</h3>
-        <p className="text-sm mb-4">כרגע אתה צריך להוסיף שירים ישירות דרך Supabase. בהמשך נוסיף ממשק למארח לניהול שירים.</p>
-        <div className="flex gap-2">
+        <p className="text-sm mb-4">כרגע אתה צריך להוסיף שירים ישירות דרך Supabase או להשתמש בכפתורים למטה.</p>
+        <div className="flex gap-2 flex-wrap">
           <AppButton onClick={() => fetchGameRoundData()}>רענן נתוני שיר</AppButton>
+          <AppButton onClick={() => playDemoSong()}>הפעל שיר דוגמה</AppButton>
+        </div>
+        {parseError && (
+          <p className="text-sm text-red-500 mt-2">
+            שגיאת פרסור JSON: {parseError}
+          </p>
+        )}
+        <div className="mt-4">
+          <p className="text-sm">
+            מבנה JSON נכון לשירים:
+          </p>
+          <pre className="text-xs mt-1 bg-gray-100 p-2 rounded overflow-x-auto">
+            {`{
+  "round": 1,
+  "correctSong": {
+    "id": "song1",
+    "title": "שם השיר",
+    "artist": "שם האמן",
+    "embedUrl": "https://youtube.com/...",
+    "order": 1
+  },
+  "options": ["שם השיר", "אפשרות 2", "אפשרות 3", "אפשרות 4"]
+}`}
+          </pre>
         </div>
       </div>
     );
