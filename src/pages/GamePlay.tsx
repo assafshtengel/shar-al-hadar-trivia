@@ -99,7 +99,7 @@ const GamePlay: React.FC = () => {
         console.error('Error updating game state:', error);
         toast({
           title: "שגיאה בעדכון מצב המשחק",
-          description: "אירעה שגיא�� בעדכון מצב המשחק",
+          description: "אירעה שגי���� בעדכון מצב המשחק",
           variant: "destructive"
         });
       } else {
@@ -497,6 +497,37 @@ const GamePlay: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [phase, isHost]);
+
+  useEffect(() => {
+    if (phase === 'leaderboard' && gameCode) {
+      const fetchPlayers = async () => {
+        try {
+          console.log('Fetching players for leaderboard display');
+          const { data, error } = await supabase
+            .from('players')
+            .select('*')
+            .eq('game_code', gameCode)
+            .order('score', { ascending: false });
+            
+          if (error) {
+            console.error('Error fetching players:', error);
+            toast({
+              title: "שגיאה בטעינת השחקנים",
+              description: "אירעה שגיאה בטעינת רשימת השחקנים",
+              variant: "destructive"
+            });
+          } else if (data) {
+            console.log('Successfully loaded players for leaderboard:', data.length);
+            setPlayers(data);
+          }
+        } catch (err) {
+          console.error('Exception when fetching players:', err);
+        }
+      };
+      
+      fetchPlayers();
+    }
+  }, [phase, gameCode, toast]);
 
   const nextRound = async () => {
     if (!isHost) return;
