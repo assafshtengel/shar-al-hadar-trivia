@@ -468,7 +468,6 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  // Modified submitAllAnswers function to correctly handle score updates
   const submitAllAnswers = async () => {
     console.log('Timer ended, submitting all answers');
     
@@ -489,7 +488,6 @@ const GamePlay: React.FC = () => {
         points
       });
       
-      // Update local state with correct score calculation
       setCurrentPlayer(prev => {
         const updatedScore = prev.score + points;
         console.log(`Updating player score: ${prev.score} + ${points} = ${updatedScore}`);
@@ -514,7 +512,6 @@ const GamePlay: React.FC = () => {
     setPhase('scoringFeedback');
   };
 
-  // Improved batchUpdatePlayerScores to ensure accurate score updates
   const batchUpdatePlayerScores = async (updates: PendingAnswerUpdate[]) => {
     if (!gameCode || updates.length === 0) {
       return;
@@ -577,7 +574,6 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  // Modified handleAnswer function to correctly handle score calculation
   const handleAnswer = async (index: number) => {
     if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound) {
       console.log("Already answered or missing round data - ignoring selection");
@@ -591,12 +587,10 @@ const GamePlay: React.FC = () => {
     const isCorrect = index === currentRound.correctAnswerIndex;
     const points = isCorrect ? 10 : 0;
     
-    // Get the player's current score before updating
     let currentScore = currentPlayer.score;
     
     if (gameCode && playerName) {
       try {
-        // Get the latest score from the database
         const { data, error } = await supabase
           .from('players')
           .select('score')
@@ -985,4 +979,151 @@ const GamePlay: React.FC = () => {
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
             {currentPlayer.lastAnswerCorrect !== undefined ? (
               <>
-                <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text
+                <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text-center`}>
+                  {currentPlayer.lastAnswerCorrect ? 'כל הכבוד! ענית נכון!' : 'אוי לא! טעית.'}
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-xl">
+                  <span>קיבלת</span>
+                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
+                  <span>נקודות</span>
+                </div>
+                
+                {currentPlayer.lastAnswer && (
+                  <div className="text-lg">
+                    {currentPlayer.lastAnswerCorrect ? 'תשובה נכונה:' : 'בחרת:'} {currentPlayer.lastAnswer}
+                  </div>
+                )}
+                
+                {!currentPlayer.lastAnswerCorrect && currentRound && (
+                  <div className="text-lg font-semibold text-green-500">
+                    התשובה הנכונה: {currentRound.correctSong.name}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-secondary text-center">
+                  דילגת על השאלה
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-xl">
+                  <span>קיבלת</span>
+                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
+                  <span>נקודות</span>
+                </div>
+              </>
+            )}
+            
+            {isHost && currentRound && (
+              <AppButton 
+                variant="secondary" 
+                size="lg"
+                onClick={playFullSong}
+                className="max-w-xs mt-4"
+              >
+                השמע את השיר המלא
+                <Youtube className="mr-2" />
+              </AppButton>
+            )}
+          </div>
+        );
+
+      case 'leaderboard':
+        return (
+          <div className="flex flex-col items-center justify-center py-8">
+            <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
+            
+            <div className="w-full max-w-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">מיקום</TableHead>
+                    <TableHead className="text-right">שם</TableHead>
+                    <TableHead className="text-right">ניקוד</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {players.map((player, idx) => (
+                    <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
+                      <TableCell className="font-medium">{idx + 1}</TableCell>
+                      <TableCell className="font-semibold">{player.name}</TableCell>
+                      <TableCell>{player.score}</TableCell>
+                      <TableCell className="text-right">
+                        {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
+                        {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
+                        {idx === 2 && <Award className="h-5 w-5 text-amber-700" />}
+                        {player.name === playerName && idx > 2 && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {isHost && (
+              <div className="flex flex-col items-center gap-4 mt-8">
+                <AppButton 
+                  variant="primary" 
+                  size="lg"
+                  onClick={nextRound}
+                  className="max-w-xs"
+                >
+                  התחל סיבוב חדש
+                  <Play className="mr-2" />
+                </AppButton>
+                
+                <EndGameButton gameCode={gameCode} />
+              </div>
+            )}
+            
+            {!isHost && !playerReady && (
+              <AppButton 
+                variant="primary" 
+                onClick={markPlayerReady}
+                className="mt-8"
+              >
+                מוכן לסיבוב הבא
+                <CheckCircle2 className="mr-2" />
+              </AppButton>
+            )}
+            
+            {!isHost && playerReady && (
+              <div className="mt-8 p-4 bg-primary/10 rounded-lg text-center">
+                <div className="font-semibold mb-2">אתה מוכן לסיבוב הבא</div>
+                <div className="text-sm">ממתין למנהל המשחק להתחיל...</div>
+              </div>
+            )}
+          </div>
+        );
+        
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="text-lg text-gray-600 animate-pulse">
+              טוען...
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8 min-h-screen">
+      <div className="max-w-3xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-primary">משחק שירים</h1>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">קוד משחק: </span>
+            <span className="font-mono font-bold text-lg">{gameCode}</span>
+          </div>
+        </div>
+        
+        {renderPhase()}
+      </div>
+    </div>
+  );
+};
+
+export default GamePlay;
