@@ -19,8 +19,8 @@ interface Player {
   isReady?: boolean; // Make sure this field is included
 }
 
-// Constants
-const MAX_PLAYERS = 6;
+// Update the constant
+const MAX_PLAYERS = 20;  // Changed from 6 to 20 players per game
 
 export const usePlayerManagement = ({ 
   gameCode, 
@@ -163,7 +163,7 @@ export const usePlayerManagement = ({
       console.log('Cleaning up subscription');
       supabase.removeChannel(channel);
     };
-  }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
+  }, [gameCode, playerName, setHostJoined, setStartGameDisabled, players, setPlayerLimitReached]);
 
   // New function to reset player scores when a new game starts
   const resetPlayerScores = async () => {
