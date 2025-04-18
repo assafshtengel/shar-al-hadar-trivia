@@ -22,7 +22,7 @@ const GameModeSelector: React.FC<GameModeSelectorProps> = ({ selectedMode, onMod
       <h3 className="text-xl font-bold mb-4 text-center text-primary/80">בחר מצב משחק</h3>
       <RadioGroup
         value={selectedMode}
-        onValueChange={(value: 'local' | 'remote') => onModeChange(value)}
+        onValueChange={(value: 'local' | 'remote') => handleOptionClick(value)}
         disabled={disabled}
         className="flex flex-col gap-4"
       >
@@ -38,6 +38,8 @@ const GameModeSelector: React.FC<GameModeSelectorProps> = ({ selectedMode, onMod
             }
           `}
           onClick={() => handleOptionClick('local')}
+          role="button"
+          aria-pressed={selectedMode === 'local'}
         >
           <RadioGroupItem value="local" id="local" className="cursor-pointer" />
           <Label 
@@ -66,6 +68,8 @@ const GameModeSelector: React.FC<GameModeSelectorProps> = ({ selectedMode, onMod
             }
           `}
           onClick={() => handleOptionClick('remote')}
+          role="button"
+          aria-pressed={selectedMode === 'remote'}
         >
           <RadioGroupItem value="remote" id="remote" className="cursor-pointer" />
           <Label 
