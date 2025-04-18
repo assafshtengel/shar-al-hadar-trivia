@@ -749,7 +749,8 @@ const GamePlay: React.FC = () => {
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
-        return <div className="flex flex-col items-center justify-center py-6 space-y-6">
+        return (
+          <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
             <SongPlayer 
@@ -778,10 +779,12 @@ const GamePlay: React.FC = () => {
             {!isHost && !isPlaying && <div className="text-lg text-gray-600 text-center">
                 המתן למנהל המשחק להשמיע את השיר הבא
               </div>}
-          </div>;
+          </div>
+        );
       
       case 'answerOptions':
-        return <div className="flex flex-col items-center py-6 space-y-6">
+        return (
+          <div className="flex flex-col items-center py-6 space-y-6">
             <GameTimer initialSeconds={10} isActive={true} onTimeout={handleTimerTimeout} />
             
             <div className="flex items-center">
@@ -817,10 +820,12 @@ const GamePlay: React.FC = () => {
             {selectedAnswer !== null && <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
                 הבחירה שלך נקלטה! ממתין לסיום הזמן...
               </div>}
-          </div>;
+          </div>
+        );
       
       case 'scoringFeedback':
-        return <div className="flex flex-col items-center justify-center py-8 space-y-6">
+        return (
+          <div className="flex flex-col items-center justify-center py-8 space-y-6">
             {currentPlayer.lastAnswerCorrect !== undefined ? <>
                 <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text-center`}>
                   {currentPlayer.lastAnswerCorrect ? 'כל הכבוד! ענית נכון!' : 'אוי לא! טעית.'}
@@ -855,10 +860,12 @@ const GamePlay: React.FC = () => {
                 השמע את השיר המלא
                 <Youtube className="mr-2" />
               </AppButton>}
-          </div>;
+          </div>
+        );
       
       case 'leaderboard':
-        return <div className="flex flex-col items-center justify-center py-8">
+        return (
+          <div className="flex flex-col items-center justify-center py-8">
             <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
             
             <div className="w-full max-w-md">
@@ -872,10 +879,59 @@ const GamePlay: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {players.map((player, idx) => <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
+                  {players.map((player, idx) => (
+                    <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
                       <TableCell className="font-medium">{idx + 1}</TableCell>
                       <TableCell className="font-semibold">{player.name}</TableCell>
                       <TableCell>{player.score}</TableCell>
                       <TableCell className="text-right">
                         {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
-                        {idx === 1 && <Award className="h
+                        {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
+                        {idx === 2 && <Crown className="h-5 w-5 text-orange-400" />}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {isHost && (
+              <div className="mt-8 flex flex-col gap-4 w-full max-w-xs">
+                <AppButton variant="primary" size="lg" onClick={nextRound}>
+                  התחל סיבוב חדש
+                  <Play className="mr-2" />
+                </AppButton>
+                <AppButton variant="secondary" onClick={resetAllPlayerScores}>
+                  איפוס ניקוד לכולם
+                </AppButton>
+              </div>
+            )}
+          </div>
+        );
+      
+      default:
+        return <div className="text-xl text-center p-8">Loading...</div>;
+    }
+  };
+
+  return (
+    <div className="container mx-auto p-4">
+      <div className="text-right mb-4">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-primary">משחק ניחוש שירים</h1>
+          <div className="flex items-center gap-4">
+            <div className="bg-primary/10 px-4 py-2 rounded-md flex items-center gap-2">
+              <span className="font-semibold">{playerName}</span>
+              <span className="font-bold text-primary">{currentPlayer.score} נק׳</span>
+            </div>
+            {isHost && <EndGameButton />}
+          </div>
+        </div>
+      </div>
+      
+      {renderPhase()}
+    </div>
+  );
+};
+
+export default GamePlay;
