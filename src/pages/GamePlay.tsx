@@ -772,8 +772,13 @@ const GamePlay: React.FC = () => {
             
             {currentRound ? <div className="grid grid-cols-1 gap-4 w-full max-w-md">
                 {currentRound.options.map((song, index) => <div key={index} className="relative">
-                    <AppButton variant={selectedAnswer === index ? "primary" : "secondary"} className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full`} disabled={selectedAnswer !== null} onClick={() => handleAnswer(index)}>
-                      {song.title || song.name}
+                    <AppButton 
+                      variant={selectedAnswer === index ? "primary" : "secondary"} 
+                      className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full`} 
+                      disabled={selectedAnswer !== null} 
+                      onClick={() => handleAnswer(index)}
+                    >
+                      {song.title}
                     </AppButton>
                     {selectedAnswer === index && showAnswerConfirmation && <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 rounded-md animate-fade-in">
                         ✓ הבחירה שלך נקלטה!
