@@ -15,6 +15,8 @@ interface Player {
   game_code: string;
   joined_at: string | null;
   score: number | null;
+  hasAnswered?: boolean; // Make sure this field is included
+  isReady?: boolean; // Make sure this field is included
 }
 
 export const usePlayerManagement = ({ 
@@ -35,6 +37,7 @@ export const usePlayerManagement = ({
         });
         
         if (exists) {
+          console.log(`Host ${playerName} found in players table`);
           setHostJoined(true);
           setStartGameDisabled(false);
         }
@@ -64,6 +67,7 @@ export const usePlayerManagement = ({
           
           // Check if host is already in the players list
           if (playerName && data.some(player => player.name === playerName)) {
+            console.log(`Host ${playerName} found in initial players fetch`);
             setHostJoined(true);
             setStartGameDisabled(false);
           }
@@ -96,6 +100,7 @@ export const usePlayerManagement = ({
             
             // If the new player is the host, enable the start game button
             if (playerName && payload.new.name === playerName) {
+              console.log(`Host ${playerName} added to players table (realtime)`);
               setHostJoined(true);
               setStartGameDisabled(false);
             }
@@ -106,6 +111,16 @@ export const usePlayerManagement = ({
                 player.id === payload.new.id ? { ...player, ...payload.new } : player
               )
             );
+            
+            // Log score updates to help track potential issues
+            if (payload.old.score !== payload.new.score) {
+              console.log(`Player ${payload.new.name} score changed: ${payload.old.score} -> ${payload.new.score}`);
+            }
+            
+            // Log hasAnswered changes to debug potential issues
+            if (payload.old.hasAnswered !== payload.new.hasAnswered) {
+              console.log(`Player ${payload.new.name} hasAnswered changed: ${payload.old.hasAnswered} -> ${payload.new.hasAnswered}`);
+            }
           } else if (payload.eventType === 'DELETE') {
             // Remove player from the list
             setPlayers((prevPlayers) => 
@@ -129,9 +144,13 @@ export const usePlayerManagement = ({
     if (!gameCode) return;
     
     try {
+      console.log('Resetting all player scores to 0');
       const { error } = await supabase
         .from('players')
-        .update({ score: 0 })
+        .update({ 
+          score: 0,
+          hasAnswered: false // Also reset hasAnswered flags
+        })
         .eq('game_code', gameCode);
         
       if (error) {
@@ -141,7 +160,7 @@ export const usePlayerManagement = ({
         
         // Update local state to reflect the score reset
         setPlayers(prevPlayers => 
-          prevPlayers.map(player => ({ ...player, score: 0 }))
+          prevPlayers.map(player => ({ ...player, score: 0, hasAnswered: false }))
         );
       }
     } catch (err) {

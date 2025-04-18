@@ -18,9 +18,12 @@ const GameTimer: React.FC<GameTimerProps> = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const lastTickTimeRef = useRef<number>(Date.now());
+  const timeoutTriggeredRef = useRef<boolean>(false); // Add a ref to track if timeout was triggered
 
   // Reset timer when props change
   useEffect(() => {
+    timeoutTriggeredRef.current = false; // Reset the timeout flag
+    
     if (isActive) {
       console.log(`Timer started with ${initialSeconds} seconds`);
       setTimeLeft(initialSeconds);
@@ -45,9 +48,15 @@ const GameTimer: React.FC<GameTimerProps> = ({
         const now = Date.now();
         const elapsed = now - lastTickTimeRef.current;
         lastTickTimeRef.current = now;
+        
         setTimeLeft(prev => {
           const newTime = Math.max(prev - elapsed / 1000, 0);
-          if (newTime <= 0) {
+          
+          // Only trigger timeout once when time is very close to 0
+          if (newTime <= 0.1 && !timeoutTriggeredRef.current) {
+            console.log('Timer reached threshold (0.1s), triggering timeout callback');
+            timeoutTriggeredRef.current = true; // Mark timeout as triggered
+            
             if (timerRef.current) {
               console.log('Timer reached zero, cleaning up');
               clearInterval(timerRef.current);
@@ -60,6 +69,7 @@ const GameTimer: React.FC<GameTimerProps> = ({
         });
       }, 100); // Update more frequently for smoother countdown
     }
+    
     return () => {
       if (timerRef.current) {
         console.log('Cleaning up timer on effect cleanup');
