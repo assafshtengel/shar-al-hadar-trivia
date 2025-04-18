@@ -181,6 +181,11 @@ const GamePlay: React.FC = () => {
       case 'results':
         setPhase('scoringFeedback');
         setTimerActive(false);
+        
+        // Immediately go to leaderboard after a short delay
+        setTimeout(() => {
+          setPhase('leaderboard');
+        }, 1500);
         break;
       case 'end':
         setPhase('leaderboard');
@@ -406,6 +411,7 @@ const GamePlay: React.FC = () => {
   const updateGameState = async (phase: string) => {
     if (!isHost || !gameCode) return;
 
+    console.log(`Host updating game state to: ${phase}`);
     const { error } = await supabase
       .from('game_state')
       .update({ game_phase: phase })
@@ -418,6 +424,8 @@ const GamePlay: React.FC = () => {
         description: "אירעה שגיאה בעדכון מצב המשחק",
         variant: "destructive"
       });
+    } else {
+      console.log(`Successfully updated game state to: ${phase}`);
     }
   };
 
@@ -790,16 +798,6 @@ const GamePlay: React.FC = () => {
       });
     }
   };
-
-  useEffect(() => {
-    if (phase === 'scoringFeedback') {
-      const timer = setTimeout(() => {
-        setPhase('leaderboard');
-      }, 4000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [phase, isHost]);
 
   const nextRound = async () => {
     if (!isHost) return;

@@ -38,6 +38,7 @@ export const usePlayerManagement = ({
           });
           
           if (exists) {
+            console.log(`Host ${playerName} already joined, enabling start game`);
             setHostJoined(true);
             setStartGameDisabled(false);
           }
@@ -82,6 +83,7 @@ export const usePlayerManagement = ({
           
           // Check if host is already in the players list
           if (playerName && data.some(player => player.name === playerName)) {
+            console.log(`Host ${playerName} found in players list, enabling start game`);
             setHostJoined(true);
             setStartGameDisabled(false);
           }
@@ -102,7 +104,7 @@ export const usePlayerManagement = ({
 
     // Create a unique channel ID to avoid conflicts
     const channelId = `players-changes-${gameCode}-${Date.now()}`;
-    console.log(`Creating new channel: ${channelId}`);
+    console.log(`Creating new player channel: ${channelId}`);
     
     // Set up realtime subscription for ALL database changes to the players table
     const channel = supabase
@@ -137,6 +139,7 @@ export const usePlayerManagement = ({
             
             // If the new player is the host, enable the start game button
             if (playerName && payload.new.name === playerName) {
+              console.log(`Host ${playerName} joined through realtime, enabling start game`);
               setHostJoined(true);
               setStartGameDisabled(false);
             }
