@@ -99,7 +99,7 @@ const GamePlay: React.FC = () => {
         console.error('Error updating game state:', error);
         toast({
           title: "שגיאה בעדכון מצב המשחק",
-          description: "אירעה שגיאה בעדכון מצב המשחק",
+          description: "אירעה שגיאה בעדכון מצב ��משחק",
           variant: "destructive"
         });
       } else {
@@ -671,7 +671,7 @@ const GamePlay: React.FC = () => {
             
             <div className="flex gap-3">
               <AppButton
-                variant="outline"
+                variant="secondary"
                 onClick={handleSkip}
                 disabled={currentPlayer.skipsLeft <= 0 || selectedAnswer !== null || currentPlayer.hasAnswered}
               >
@@ -780,7 +780,7 @@ const GamePlay: React.FC = () => {
                     סיבוב הבא
                   </AppButton>
                   <AppButton
-                    variant="outline"
+                    variant="secondary"
                     onClick={resetAllPlayerScores}
                   >
                     אפס ניקוד
@@ -818,7 +818,7 @@ const GamePlay: React.FC = () => {
           <h1 className="text-3xl font-bold">משחק מוזיקה</h1>
           <div className="text-gray-600">קוד משחק: {gameCode}</div>
         </div>
-        <EndGameButton isHost={isHost} />
+        <EndGameButton gameCode={gameCode} />
       </div>
       
       {showAnswerConfirmation && (
@@ -838,7 +838,7 @@ const GamePlay: React.FC = () => {
       
       {renderPhase()}
       
-      <AdSenseAd />
+      <AdSenseAd adSlot="1234567890" />
     </div>
   );
 };

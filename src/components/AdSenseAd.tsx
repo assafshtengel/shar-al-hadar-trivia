@@ -9,7 +9,7 @@ interface AdSenseAdProps {
 
 const AdSenseAd: React.FC<AdSenseAdProps> = ({ 
   className = '', 
-  adSlot, 
+  adSlot = 'default-slot', 
   adFormat = '300x250' 
 }) => {
   return (
