@@ -12,37 +12,71 @@ interface GameModeSelectorProps {
 
 const GameModeSelector: React.FC<GameModeSelectorProps> = ({ selectedMode, onModeChange, disabled }) => {
   return (
-    <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-md">
-      <h3 className="text-lg font-semibold mb-4 text-center">בחר מצב משחק</h3>
+    <div className="w-full bg-gradient-to-br from-primary/10 to-accent/10 backdrop-blur-sm rounded-2xl p-6 mb-6 shadow-lg transition-all duration-300 hover:shadow-xl">
+      <h3 className="text-xl font-bold mb-4 text-center text-primary/80">בחר מצב משחק</h3>
       <RadioGroup
         value={selectedMode}
         onValueChange={(value: 'local' | 'remote') => onModeChange(value)}
         disabled={disabled}
         className="flex flex-col gap-4"
       >
-        <div className="flex items-center space-x-4 space-x-reverse">
+        <div className={`
+          flex items-center space-x-4 space-x-reverse 
+          border-2 border-transparent 
+          rounded-xl p-4 
+          transition-all duration-300
+          ${selectedMode === 'local' 
+            ? 'bg-primary/10 border-primary/30 shadow-sm' 
+            : 'bg-gray-100/50 hover:bg-primary/5'
+          }
+        `}>
           <RadioGroupItem value="local" id="local" />
-          <Label htmlFor="local" className="flex items-center gap-2 cursor-pointer">
-            <Users className="h-5 w-5 text-primary" />
+          <Label 
+            htmlFor="local" 
+            className="flex items-center gap-4 cursor-pointer w-full"
+          >
+            <div className="bg-primary/20 p-3 rounded-full">
+              <Users className="h-6 w-6 text-primary" />
+            </div>
             <div>
-              <div className="font-medium">משחק קרוב</div>
-              <p className="text-sm text-gray-500">כל המשתתפים נמצאים באותו מקום</p>
+              <div className="font-semibold text-primary/90">משחק קרוב</div>
+              <p className="text-sm text-gray-600">כל המשתתפים נמצאים באותו מקום</p>
             </div>
           </Label>
         </div>
-        <div className="flex items-center space-x-4 space-x-reverse">
+        <div className={`
+          flex items-center space-x-4 space-x-reverse 
+          border-2 border-transparent 
+          rounded-xl p-4 
+          transition-all duration-300
+          ${selectedMode === 'remote' 
+            ? 'bg-accent/10 border-accent/30 shadow-sm' 
+            : 'bg-gray-100/50 hover:bg-accent/5'
+          }
+        `}>
           <RadioGroupItem value="remote" id="remote" />
-          <Label htmlFor="remote" className="flex items-center gap-2 cursor-pointer">
-            <Globe className="h-5 w-5 text-primary" />
+          <Label 
+            htmlFor="remote" 
+            className="flex items-center gap-4 cursor-pointer w-full"
+          >
+            <div className="bg-accent/20 p-3 rounded-full">
+              <Globe className="h-6 w-6 text-accent" />
+            </div>
             <div>
-              <div className="font-medium">משחק מרוחק</div>
-              <p className="text-sm text-gray-500">המשתתפים נמצאים במקומות שונים</p>
+              <div className="font-semibold text-accent/90">משחק מרוחק</div>
+              <p className="text-sm text-gray-600">המשתתפים נמצאים במקומות שונים</p>
             </div>
           </Label>
         </div>
       </RadioGroup>
+      {disabled && (
+        <div className="text-sm text-gray-500 text-center mt-4">
+          יש להצטרף כמנחה כדי לשנות את מצב המשחק
+        </div>
+      )}
     </div>
   );
 };
 
 export default GameModeSelector;
+
