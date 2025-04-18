@@ -10,11 +10,8 @@ import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import EndGameButton from '@/components/EndGameButton';
-interface Song {
-  name: string;
-  embedUrl: string;
-  fullUrl: string;
-}
+import { defaultSongBank, createGameRound, Song } from '@/data/songBank';
+
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 interface Player {
   name: string;
@@ -46,31 +43,9 @@ interface PendingAnswerUpdate {
   is_correct: boolean;
   points: number;
 }
-const songs: Song[] = [{
-  name: "עתיד מתוק - משינה",
-  embedUrl: "https://www.youtube.com/embed/_3OOrrGxJ1M?autoplay=1&controls=0&modestbranding=1&rel=0",
-  fullUrl: "https://www.youtube.com/watch?v=_3OOrrGxJ1M"
-}, {
-  name: "ריקוד המכונה - משינה",
-  embedUrl: "https://www.youtube.com/embed/U0THoV7yTeA?autoplay=1&controls=0&modestbranding=1&rel=0",
-  fullUrl: "https://www.youtube.com/watch?v=U0THoV7yTeA"
-}, {
-  name: "אהובתי - משינה",
-  embedUrl: "https://www.youtube.com/embed/GgNFq1sSz5s?autoplay=1&controls=0&modestbranding=1&rel=0",
-  fullUrl: "https://www.youtube.com/watch?v=GgNFq1sSz5s"
-}, {
-  name: "אחכה לך בשדות - משינה",
-  embedUrl: "https://www.youtube.com/embed/aEWr8V-w9yc?autoplay=1&controls=0&modestbranding=1&rel=0",
-  fullUrl: "https://www.youtube.com/watch?v=aEWr8V-w9yc"
-}, {
-  name: "אין מקום אחר - משינה",
-  embedUrl: "https://www.youtube.com/embed/PVAD3KWgQrQ?autoplay=1&controls=0&modestbranding=1&rel=0",
-  fullUrl: "https://www.youtube.com/watch?v=PVAD3KWgQrQ"
-}, {
-  name: "אנה - משינה",
-  embedUrl: "https://www.youtube.com/embed/35J7emcpOio?autoplay=1&controls=0&modestbranding=1&rel=0",
-  fullUrl: "https://www.youtube.com/watch?v=35J7emcpOio"
-}];
+
+const songs = defaultSongBank.filter(song => song.embedUrl || song.spotifyUrl);
+
 const GamePlay: React.FC = () => {
   const {
     toast
@@ -106,6 +81,7 @@ const GamePlay: React.FC = () => {
     isReady: false,
     pendingAnswer: null
   });
+
   const checkAllPlayersAnswered = useCallback(async () => {
     if (!gameCode) return false;
     const {
@@ -114,6 +90,7 @@ const GamePlay: React.FC = () => {
     if (!data) return false;
     return data.every(player => player.hasAnswered === true);
   }, [gameCode]);
+
   const checkAllPlayersReady = useCallback(async () => {
     if (!gameCode) return false;
     const {
@@ -122,11 +99,13 @@ const GamePlay: React.FC = () => {
     if (!data) return false;
     return data.every(player => player.isReady === true);
   }, [gameCode]);
+
   useEffect(() => {
     if (!gameCode) {
       navigate('/');
     }
   }, [gameCode, navigate]);
+
   useEffect(() => {
     return () => {
       if (timerRef.current) {
@@ -136,6 +115,7 @@ const GamePlay: React.FC = () => {
       }
     };
   }, []);
+
   useEffect(() => {
     if (!serverGamePhase) return;
     console.log('Server game phase changed:', serverGamePhase);
@@ -168,6 +148,7 @@ const GamePlay: React.FC = () => {
         break;
     }
   }, [serverGamePhase, isHost]);
+
   useEffect(() => {
     if (!gameCode || phase !== 'answerOptions' || !timerActive) return;
     const interval = setInterval(async () => {
@@ -183,6 +164,7 @@ const GamePlay: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [gameCode, phase, timerActive, checkAllPlayersAnswered, isHost]);
+
   useEffect(() => {
     if (!gameCode) return;
     const fetchPlayers = async () => {
@@ -235,6 +217,7 @@ const GamePlay: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, [gameCode, toast, playerName]);
+
   useEffect(() => {
     if (!gameCode) return;
     const fetchGameRoundData = async () => {
@@ -288,6 +271,7 @@ const GamePlay: React.FC = () => {
       supabase.removeChannel(gameStateChannel);
     };
   }, [gameCode]);
+
   const updateGameState = async (phase: string) => {
     if (!isHost || !gameCode) return;
     const {
@@ -304,20 +288,33 @@ const GamePlay: React.FC = () => {
       });
     }
   };
+
   function createGameRound(): GameRound {
     const randomIndex = Math.floor(Math.random() * songs.length);
     const correctSong = songs[randomIndex];
-    const otherSongs = songs.filter(song => song.name !== correctSong.name);
+    
+    const otherSongs = songs.filter(song => 
+      song.id !== correctSong.id && 
+      (song.title || song.name)
+    );
+    
     const shuffledWrongSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
     const allOptions = [correctSong, ...shuffledWrongSongs];
     const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
-    const correctIndex = shuffledOptions.findIndex(song => song.name === correctSong.name);
+    
+    const correctSongName = correctSong.title || correctSong.name || '';
+    
+    const correctIndex = shuffledOptions.findIndex(song => 
+      (song.title || song.name) === correctSongName
+    );
+    
     return {
       correctSong,
       options: shuffledOptions,
       correctAnswerIndex: correctIndex
     };
   }
+
   useEffect(() => {
     if (showYouTubeEmbed) {
       const timer = setTimeout(() => {
@@ -335,6 +332,7 @@ const GamePlay: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [showYouTubeEmbed, isHost]);
+
   const playSong = async () => {
     if (!isHost) return;
     await resetPlayersReadyStatus();
@@ -368,6 +366,7 @@ const GamePlay: React.FC = () => {
       description: "מנגן כעת, האזן בקשב"
     });
   };
+
   const handleTimerTimeout = () => {
     console.log('Timer timeout handler called');
     if (selectedAnswer === null && !currentPlayer.hasAnswered) {
@@ -376,6 +375,7 @@ const GamePlay: React.FC = () => {
       submitAllAnswers();
     }
   };
+
   const submitAllAnswers = async () => {
     console.log('Timer ended, submitting all answers');
     if (!currentRound || !gameCode) {
@@ -411,6 +411,7 @@ const GamePlay: React.FC = () => {
     }
     setPhase('scoringFeedback');
   };
+
   const batchUpdatePlayerScores = async (updates: PendingAnswerUpdate[]) => {
     if (!gameCode || updates.length === 0) {
       return;
@@ -454,6 +455,7 @@ const GamePlay: React.FC = () => {
       });
     }
   };
+
   const handleAnswer = async (index: number) => {
     if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound) {
       console.log("Already answered or missing round data - ignoring selection");
@@ -515,6 +517,7 @@ const GamePlay: React.FC = () => {
       submitAllAnswers();
     }
   };
+
   const handleSkip = async () => {
     if (selectedAnswer !== null || currentPlayer.skipsLeft <= 0 || !currentRound) return;
     setSelectedAnswer(null);
@@ -527,6 +530,7 @@ const GamePlay: React.FC = () => {
       description: `נותרו ${currentPlayer.skipsLeft - 1} דילוגים`
     });
   };
+
   const handleTimeout = async () => {
     console.log('Timeout reached without selection');
     if (selectedAnswer !== null || currentPlayer.hasAnswered) {
@@ -567,6 +571,7 @@ const GamePlay: React.FC = () => {
     }
     setPhase('scoringFeedback');
   };
+
   const resetPlayersAnsweredStatus = async () => {
     if (!isHost || !gameCode) return;
     const {
@@ -583,6 +588,7 @@ const GamePlay: React.FC = () => {
       });
     }
   };
+
   const resetPlayersReadyStatus = async () => {
     if (!isHost || !gameCode) return;
     const {
@@ -599,6 +605,7 @@ const GamePlay: React.FC = () => {
       });
     }
   };
+
   const markPlayerReady = async () => {
     if (!gameCode || !playerName) return;
     setPlayerReady(true);
@@ -617,6 +624,7 @@ const GamePlay: React.FC = () => {
       });
     }
   };
+
   const resetAllPlayerScores = async () => {
     if (!isHost || !gameCode) return;
     try {
@@ -643,6 +651,7 @@ const GamePlay: React.FC = () => {
       console.error('Exception when resetting player scores:', err);
     }
   };
+
   useEffect(() => {
     if (phase === 'scoringFeedback') {
       const timer = setTimeout(() => {
@@ -651,6 +660,7 @@ const GamePlay: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [phase, isHost]);
+
   const nextRound = async () => {
     if (!isHost) return;
     await resetPlayersAnsweredStatus();
@@ -678,6 +688,7 @@ const GamePlay: React.FC = () => {
       description: "סיבוב חדש עומד להתחיל"
     });
   };
+
   const playFullSong = () => {
     if (!isHost || !currentRound) return;
     toast({
@@ -689,6 +700,7 @@ const GamePlay: React.FC = () => {
       window.open(currentRound.correctSong.fullUrl, '_blank');
     }
   };
+
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
@@ -723,6 +735,7 @@ const GamePlay: React.FC = () => {
                 המתן למנהל המשחק להשמיע את השיר הבא
               </div>}
           </div>;
+      
       case 'answerOptions':
         return <div className="flex flex-col items-center py-6 space-y-6">
             <GameTimer initialSeconds={10} isActive={true} onTimeout={handleTimerTimeout} />
@@ -737,7 +750,7 @@ const GamePlay: React.FC = () => {
             {currentRound ? <div className="grid grid-cols-1 gap-4 w-full max-w-md">
                 {currentRound.options.map((song, index) => <div key={index} className="relative">
                     <AppButton variant={selectedAnswer === index ? "primary" : "secondary"} className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full`} disabled={selectedAnswer !== null} onClick={() => handleAnswer(index)}>
-                      {song.name}
+                      {song.title || song.name}
                     </AppButton>
                     {selectedAnswer === index && showAnswerConfirmation && <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 rounded-md animate-fade-in">
                         ✓ הבחירה שלך נקלטה!
@@ -756,6 +769,7 @@ const GamePlay: React.FC = () => {
                 הבחירה שלך נקלטה! ממתין לסיום הזמן...
               </div>}
           </div>;
+      
       case 'scoringFeedback':
         return <div className="flex flex-col items-center justify-center py-8 space-y-6">
             {currentPlayer.lastAnswerCorrect !== undefined ? <>
@@ -793,6 +807,7 @@ const GamePlay: React.FC = () => {
                 <Youtube className="mr-2" />
               </AppButton>}
           </div>;
+      
       case 'leaderboard':
         return <div className="flex flex-col items-center justify-center py-8">
             <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
@@ -844,6 +859,7 @@ const GamePlay: React.FC = () => {
                 <div className="text-sm">ממתין למנהל המשחק להתחיל...</div>
               </div>}
           </div>;
+      
       default:
         return <div className="flex flex-col items-center justify-center h-full">
             <div className="text-lg text-gray-600 animate-pulse">
@@ -852,6 +868,7 @@ const GamePlay: React.FC = () => {
           </div>;
     }
   };
+
   return <div className="container mx-auto px-4 py-8 min-h-screen">
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-center mb-8">
@@ -872,4 +889,5 @@ const GamePlay: React.FC = () => {
       </div>
     </div>;
 };
+
 export default GamePlay;
