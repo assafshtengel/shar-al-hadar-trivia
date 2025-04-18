@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppButton from '@/components/AppButton';
@@ -111,6 +110,30 @@ const Index = () => {
               <div className="w-24 h-1 bg-gray-400 rounded-full mb-1 mx-auto"></div>
               <div className="w-28 h-1 bg-gray-400 rounded-full mx-auto"></div>
             </div>
+          </div>
+
+          {/* Shtengel Games Logo */}
+          <div className="w-full flex flex-col items-center mt-16 mb-8">
+            <div className="relative flex items-center justify-center mb-2">
+              <MusicNote 
+                type="headphones" 
+                className="absolute -left-8 text-primary/60" 
+                size={24} 
+                animation="float"
+              />
+              <div className="bg-gradient-to-r from-primary/80 via-accent/80 to-secondary/80 text-white px-6 py-2 rounded-full font-bold text-xl tracking-wide">
+                Shtengel Games
+              </div>
+              <MusicNote 
+                type="note1" 
+                className="absolute -right-6 text-secondary/60" 
+                size={20} 
+                animation="float-alt"
+              />
+            </div>
+            <p className="text-sm text-gray-600 mt-1">
+              Powered by Shtengel Games
+            </p>
           </div>
         </div>
       </div>
