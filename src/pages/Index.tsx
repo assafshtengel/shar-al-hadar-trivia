@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { useToast } from '@/components/ui/use-toast';
+import LogoFooter from '@/components/LogoFooter';
 
 const Index = () => {
   const { toast } = useToast();
@@ -112,6 +112,9 @@ const Index = () => {
               <div className="w-28 h-1 bg-gray-400 rounded-full mx-auto"></div>
             </div>
           </div>
+
+          {/* Add the new logo footer */}
+          <LogoFooter />
         </div>
       </div>
     </div>
