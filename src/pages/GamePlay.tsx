@@ -211,49 +211,71 @@ const GamePlay: React.FC = () => {
   useEffect(() => {
     if (!gameCode) return;
 
+    let isMounted = true;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
     const fetchPlayers = async () => {
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .eq('game_code', gameCode)
-        .order('score', { ascending: false });
+      try {
+        console.log(`Fetching players for game ${gameCode}, attempt ${retryCount + 1}`);
+        const { data, error } = await supabase
+          .from('players')
+          .select('*')
+          .eq('game_code', gameCode)
+          .order('score', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching players:', error);
-        toast({
-          title: "שגיאה בטעינת השחקנים",
-          description: "אירעה שגיאה בטעינת רשימת השחקנים",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (data) {
-        console.log('Fetched players:', data);
-        setPlayers(data);
-        
-        if (playerName) {
-          const currentPlayerData = data.find(p => p.name === playerName);
-          if (currentPlayerData) {
-            console.log('Found current player in database:', currentPlayerData);
-            setCurrentPlayer(prev => ({
-              ...prev,
-              name: currentPlayerData.name,
-              score: currentPlayerData.score || 0,
-              hasAnswered: currentPlayerData.hasAnswered || false,
-              isReady: currentPlayerData.isReady || false
-            }));
+        if (error) {
+          console.error('Error fetching players:', error);
+          if (retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Retrying fetch players (${retryCount}/${maxRetries})...`);
+            setTimeout(fetchPlayers, 2000); // Retry after 2 seconds
           } else {
-            console.log('Current player not found in database. Player name:', playerName);
+            toast({
+              title: "שגיאה בטעינת השחקנים",
+              description: "אירעה שגיאה בטעינת רשימת השחקנים",
+              variant: "destructive"
+            });
           }
+          return;
+        }
+
+        if (data && isMounted) {
+          console.log('Fetched players:', data);
+          setPlayers(data);
+          
+          if (playerName) {
+            const currentPlayerData = data.find(p => p.name === playerName);
+            if (currentPlayerData) {
+              console.log('Found current player in database:', currentPlayerData);
+              setCurrentPlayer(prev => ({
+                ...prev,
+                name: currentPlayerData.name,
+                score: currentPlayerData.score || 0,
+                hasAnswered: currentPlayerData.hasAnswered || false,
+                isReady: currentPlayerData.isReady || false
+              }));
+            } else {
+              console.log('Current player not found in database. Player name:', playerName);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Exception when fetching players:', err);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(fetchPlayers, 2000); // Retry after 2 seconds
         }
       }
     };
 
     fetchPlayers();
 
+    const channelId = `players-changes-gameplay-${gameCode}-${Date.now()}`;
+    console.log(`Creating players subscription channel: ${channelId}`);
+    
     const channel = supabase
-      .channel('players-changes')
+      .channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -265,12 +287,48 @@ const GamePlay: React.FC = () => {
         (payload) => {
           console.log('Players table changed:', payload);
           
-          fetchPlayers();
+          if (!isMounted) return;
+          
+          try {
+            if (payload.eventType === 'INSERT') {
+              setPlayers(prev => {
+                const newPlayer = payload.new as SupabasePlayer;
+                if (prev.some(p => p.id === newPlayer.id)) return prev;
+                return [...prev, newPlayer];
+              });
+            } else if (payload.eventType === 'UPDATE') {
+              setPlayers(prev => 
+                prev.map(player => 
+                  player.id === payload.new.id ? { ...player, ...payload.new } : player
+                )
+              );
+              
+              if (playerName && payload.new.name === playerName) {
+                setCurrentPlayer(prev => ({
+                  ...prev,
+                  score: payload.new.score || 0,
+                  hasAnswered: payload.new.hasAnswered || false,
+                  isReady: payload.new.isReady || false
+                }));
+              }
+            } else if (payload.eventType === 'DELETE') {
+              setPlayers(prev => 
+                prev.filter(player => player.id !== payload.old.id)
+              );
+            }
+          } catch (err) {
+            console.error('Error handling player change:', err);
+            fetchPlayers();
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Players table subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up players subscription in GamePlay');
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, [gameCode, toast, playerName]);

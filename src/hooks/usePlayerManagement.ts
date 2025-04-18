@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -25,19 +25,24 @@ export const usePlayerManagement = ({
   setStartGameDisabled 
 }: UsePlayerManagementParams) => {
   const [players, setPlayers] = useState<Player[]>([]);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Check if host is already in the players list
   useEffect(() => {
     const checkHostJoined = async () => {
       if (playerName) {
-        const { exists } = await checkPlayerExists({ 
-          game_code: gameCode, 
-          player_name: playerName 
-        });
-        
-        if (exists) {
-          setHostJoined(true);
-          setStartGameDisabled(false);
+        try {
+          const { exists } = await checkPlayerExists({ 
+            game_code: gameCode, 
+            player_name: playerName 
+          });
+          
+          if (exists) {
+            setHostJoined(true);
+            setStartGameDisabled(false);
+          }
+        } catch (err) {
+          console.error('Error checking if host joined:', err);
         }
       }
     };
@@ -52,6 +57,8 @@ export const usePlayerManagement = ({
     }
 
     console.log('Setting up player tracking for game:', gameCode);
+    
+    let isMounted = true;
     
     // Initial fetch of current players
     const fetchPlayers = async () => {
@@ -69,7 +76,7 @@ export const usePlayerManagement = ({
           return;
         }
 
-        if (data) {
+        if (data && isMounted) {
           console.log('Fetched players:', data);
           setPlayers(data);
           
@@ -86,9 +93,20 @@ export const usePlayerManagement = ({
 
     fetchPlayers();
 
+    // Clean up any existing channel before creating a new one
+    if (channelRef.current) {
+      console.log('Removing existing players channel');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    // Create a unique channel ID to avoid conflicts
+    const channelId = `players-changes-${gameCode}-${Date.now()}`;
+    console.log(`Creating new channel: ${channelId}`);
+    
     // Set up realtime subscription for ALL database changes to the players table
     const channel = supabase
-      .channel('players-changes')
+      .channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -99,6 +117,11 @@ export const usePlayerManagement = ({
         },
         (payload) => {
           console.log('Player change detected:', payload);
+          
+          if (!isMounted) {
+            console.log('Component unmounted, ignoring player change');
+            return;
+          }
           
           // Handle different event types
           if (payload.eventType === 'INSERT') {
@@ -136,9 +159,17 @@ export const usePlayerManagement = ({
         console.log('Players subscription status:', status);
       });
 
+    // Store the channel reference so we can clean it up properly
+    channelRef.current = channel;
+
     return () => {
       console.log('Cleaning up players subscription');
-      supabase.removeChannel(channel);
+      isMounted = false;
+      
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
 
