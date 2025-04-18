@@ -671,6 +671,10 @@ const GamePlay: React.FC = () => {
         return <div className="flex flex-col items-center justify-center py-8">
             <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
             
+            <p className="text-lg text-gray-600 mb-4 animate-fade-in text-center">
+              מיד תועבר לצפייה בטבלת המובילים
+            </p>
+            
             {isHost && currentRound && <AppButton variant="secondary" size="lg" onClick={playFullSong} className="max-w-xs mb-6">
                 השמע את השיר האחרון
                 <Youtube className="mr-2" />
