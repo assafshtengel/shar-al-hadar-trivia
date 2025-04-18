@@ -142,5 +142,5 @@ export const useGameStateSubscription = ({
       console.log('Removing game state channel');
       supabase.removeChannel(channel);
     };
-  }, [gameCode, isHost, setGamePhase, setHostReady, clearGameData, navigate]);
+  }, [gameCode, isHost]); // Only re-run when gameCode or isHost changes
 };
