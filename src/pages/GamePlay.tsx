@@ -182,7 +182,6 @@ const GamePlay: React.FC = () => {
         setPhase('scoringFeedback');
         setTimerActive(false);
         
-        // Immediately go to leaderboard after a short delay
         setTimeout(() => {
           setPhase('leaderboard');
         }, 1500);
@@ -565,12 +564,12 @@ const GamePlay: React.FC = () => {
           .maybeSingle();
           
         if (fetchError) {
-          console.error(`Error fetching player ${update.player_name}:`, fetchError);
+          console.error(`Error fetching player ${update.playerName}:`, fetchError);
           continue;
         }
         
         if (!playerData) {
-          console.error(`Player ${update.player_name} not found`);
+          console.error(`Player ${update.playerName} not found`);
           continue;
         }
         
@@ -587,9 +586,9 @@ const GamePlay: React.FC = () => {
           .eq('name', update.player_name);
           
         if (updateError) {
-          console.error(`Error updating player ${update.player_name}:`, updateError);
+          console.error(`Error updating player ${update.playerName}:`, updateError);
         } else {
-          console.log(`Successfully updated player ${update.player_name} score to ${newScore}`);
+          console.log(`Successfully updated player ${update.playerName} score to ${newScore}`);
         }
       }
     } catch (error) {
@@ -695,19 +694,17 @@ const GamePlay: React.FC = () => {
       return;
     }
     
-    if (playerName) {
-      if (gameCode) {
-        const { data } = await supabase
-          .from('players')
-          .select('hasAnswered')
-          .eq('game_code', gameCode)
-          .eq('name', playerName)
-          .maybeSingle();
-          
-        if (data && data.hasAnswered) {
-          console.log(`Player ${playerName} already marked as answered, skipping timeout update`);
-          return;
-        }
+    if (playerName && gameCode) {
+      const { data } = await supabase
+        .from('players')
+        .select('hasAnswered')
+        .eq('game_code', gameCode)
+        .eq('name', playerName)
+        .maybeSingle();
+        
+      if (data && data.hasAnswered) {
+        console.log(`Player ${playerName} already marked as answered, skipping timeout update`);
+        return;
       }
       
       const pendingUpdate: PendingAnswerUpdate = {
@@ -735,10 +732,15 @@ const GamePlay: React.FC = () => {
       });
     }
     
+    setPhase('scoringFeedback');
+    
+    setTimeout(() => {
+      setPhase('leaderboard');
+    }, 1500);
+    
     if (isHost) {
       updateGameState('results');
     }
-    setPhase('scoringFeedback');
   };
 
   const resetPlayersAnsweredStatus = async () => {
