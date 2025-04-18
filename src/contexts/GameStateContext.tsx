@@ -1,9 +1,10 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
 import GameEndOverlay from '@/components/GameEndOverlay';
 import { useGamePhaseNavigation } from '@/hooks/useGamePhaseNavigation';
+import { toast } from 'sonner';
 
 type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
 
@@ -31,6 +32,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.getItem('isHost') === 'true'
   );
   const [hostReady, setHostReady] = useState<boolean>(false);
+  const previousGamePhaseRef = useRef<GamePhase | null>(null);
 
   const setGameData = (data: { gameCode: string; playerName: string; isHost?: boolean }) => {
     setGameCode(data.gameCode);
@@ -55,6 +57,21 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.removeItem('isHost');
   };
 
+  // Log phase changes for debugging
+  useEffect(() => {
+    if (previousGamePhaseRef.current !== gamePhase) {
+      console.log(`Game phase changed: ${previousGamePhaseRef.current} -> ${gamePhase}`);
+      previousGamePhaseRef.current = gamePhase;
+      
+      // Show toast notification for significant phase changes
+      if (gamePhase === 'end' && !isHost) {
+        toast('המשחק הסתיים', {
+          description: 'המארח סיים את המשחק',
+        });
+      }
+    }
+  }, [gamePhase, isHost]);
+
   // Use the subscription hook to listen for game state changes
   useGameStateSubscription({
     gameCode,
@@ -66,7 +83,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   });
 
   // Use a separate hook for game phase navigation logic
-  useGamePhaseNavigation({
+  const { isRedirecting } = useGamePhaseNavigation({
     gamePhase,
     isHost,
     clearGameData

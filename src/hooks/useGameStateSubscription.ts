@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -22,11 +22,16 @@ export const useGameStateSubscription = ({
   clearGameData,
   navigate
 }: UseGameStateSubscriptionProps) => {
+  const isSubscribingRef = useRef(false);
+  const channelRef = useRef<any>(null);
+  const lastGamePhaseRef = useRef<GamePhase | null>(null);
+  const phaseUpdateTimeRef = useRef<number>(0);
   
   useEffect(() => {
     if (!gameCode) return;
 
     console.log("Setting up game state monitoring for code:", gameCode);
+    isSubscribingRef.current = true;
 
     const checkGameState = async () => {
       const { data, error } = await supabase
@@ -64,8 +69,18 @@ export const useGameStateSubscription = ({
 
     checkGameState();
 
-    const channel = supabase
-      .channel('schema-db-changes')
+    // Ensure we only have one active channel at a time
+    if (channelRef.current) {
+      console.log('Removing existing game state channel before creating a new one');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    // Use a stable channel name based on the game code
+    const channelName = `game-state-changes-${gameCode}`;
+    
+    channelRef.current = supabase
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -79,31 +94,48 @@ export const useGameStateSubscription = ({
           
           if (payload.new && 'game_phase' in payload.new) {
             const newPhase = payload.new.game_phase as GamePhase;
-            console.log(`Game phase update: ${newPhase}, isHost: ${isHost}`);
+            const currentTime = Date.now();
             
-            // Don't trigger 'end' phase for non-hosts if they're just joining
-            if (newPhase === 'end' && !isHost && payload.eventType === 'UPDATE') {
-              console.log('Game end phase detected for player - set by host');
+            // Add debounce logic to prevent too frequent phase changes
+            // Only process if it's been at least 500ms since the last update
+            // or if it's the initial update or an 'end' phase
+            if (
+              newPhase === 'end' || 
+              lastGamePhaseRef.current === null || 
+              lastGamePhaseRef.current !== newPhase ||
+              (currentTime - phaseUpdateTimeRef.current) > 500
+            ) {
+              console.log(`Game phase update: ${newPhase}, isHost: ${isHost}, last phase: ${lastGamePhaseRef.current}`);
+              
+              // Update reference values
+              lastGamePhaseRef.current = newPhase;
+              phaseUpdateTimeRef.current = currentTime;
+              
+              // For 'end' phase, we now always update regardless of host status
+              // The GameEndOverlay component will handle visibility logic
               setGamePhase(newPhase);
-            } else if (newPhase !== 'end') {
-              // Process all other phases normally
-              setGamePhase(newPhase);
-            }
-            
-            if ('host_ready' in payload.new) {
-              setHostReady(!!payload.new.host_ready);
+              
+              if ('host_ready' in payload.new) {
+                setHostReady(!!payload.new.host_ready);
+              }
+            } else {
+              console.log(`Ignoring frequent phase update to ${newPhase} (last update was ${currentTime - phaseUpdateTimeRef.current}ms ago)`);
             }
           } else if (payload.eventType === 'DELETE') {
             if (!isHost) {
               console.log('Game state deleted by host - ending game for player');
               clearGameData();
               navigate('/');
+              
+              toast('המשחק נמחק', {
+                description: 'המשחק נמחק על ידי המארח',
+              });
             }
           }
         }
       )
       .subscribe((status) => {
-        console.log('Game state subscription status:', status);
+        console.log(`Game state subscription status for ${channelName}:`, status);
       });
 
     const fetchGameState = async () => {
@@ -122,13 +154,10 @@ export const useGameStateSubscription = ({
         console.log('Initial game state:', data);
         const currentPhase = data.game_phase as GamePhase;
         
-        // Only set initial phase to 'end' if user is a host or if we're sure they didn't just join
-        if (currentPhase === 'end' && !isHost) {
-          console.log('Ignoring initial "end" phase for player that just joined');
-          // Don't set the game phase to 'end' for non-hosts during initial fetch
-        } else {
-          setGamePhase(currentPhase);
-        }
+        // Set the initial game phase state
+        lastGamePhaseRef.current = currentPhase;
+        phaseUpdateTimeRef.current = Date.now();
+        setGamePhase(currentPhase);
         
         if ('host_ready' in data) {
           setHostReady(!!data.host_ready);
@@ -137,10 +166,14 @@ export const useGameStateSubscription = ({
     };
 
     fetchGameState();
+    isSubscribingRef.current = false;
 
     return () => {
-      console.log('Removing game state channel');
-      supabase.removeChannel(channel);
+      console.log(`Removing game state channel ${channelName}`);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [gameCode, isHost, setGamePhase, setHostReady, clearGameData, navigate]);
 };
