@@ -105,8 +105,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             }}
           />
           
-          {/* Visual overlay to hide video but keep audio playing - changed opacity from 0.95 to 1 */}
-          <div className="absolute top-0 left-0 w-full h-full z-20 bg-black" style={{ opacity: 1 }}></div>
+          {/* Visual overlay to hide video but keep audio playing */}
+          <div className="absolute top-0 left-0 w-full h-full z-20 bg-black" style={{ opacity: 0.95 }}></div>
         </>
       ) : (
         <div className="relative w-full h-full flex items-center justify-center">

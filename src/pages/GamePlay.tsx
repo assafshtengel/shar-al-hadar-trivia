@@ -85,30 +85,228 @@ const GamePlay: React.FC = () => {
     pendingAnswer: null
   });
 
-  const updateGameState = async (phase: 'waiting' | 'playing' | 'answering' | 'results' | 'end') => {
-    if (!isHost || !gameCode) return;
-    
-    console.log(`Updating game state to ${phase}`);
-    try {
-      const { error } = await supabase
-        .from('game_state')
-        .update({ game_phase: phase })
-        .eq('game_code', gameCode);
-        
+  const checkAllPlayersAnswered = useCallback(async () => {
+    if (!gameCode) return false;
+    const {
+      data
+    } = await supabase.from('players').select('hasAnswered').eq('game_code', gameCode);
+    if (!data) return false;
+    return data.every(player => player.hasAnswered === true);
+  }, [gameCode]);
+
+  const checkAllPlayersReady = useCallback(async () => {
+    if (!gameCode) return false;
+    const {
+      data
+    } = await supabase.from('players').select('isReady').eq('game_code', gameCode);
+    if (!data) return false;
+    return data.every(player => player.isReady === true);
+  }, [gameCode]);
+
+  useEffect(() => {
+    if (!gameCode) {
+      navigate('/');
+    }
+  }, [gameCode, navigate]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        console.log('Cleaning up timer on component unmount');
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!serverGamePhase) return;
+    console.log('Server game phase changed:', serverGamePhase);
+    setTimerActive(false);
+    switch (serverGamePhase) {
+      case 'playing':
+        setPhase('songPlayback');
+        setSelectedAnswer(null);
+        setCurrentPlayer(prev => ({
+          ...prev,
+          hasAnswered: false,
+          lastAnswer: undefined,
+          lastAnswerCorrect: undefined,
+          pendingAnswer: null
+        }));
+        break;
+      case 'answering':
+        setPhase('answerOptions');
+        setSelectedAnswer(null);
+        if (!isHost) {
+          console.log('Setting timer active for non-host in answering phase');
+          setTimerActive(true);
+        }
+        break;
+      case 'results':
+        setPhase('scoringFeedback');
+        break;
+      case 'end':
+        setPhase('leaderboard');
+        break;
+    }
+  }, [serverGamePhase, isHost]);
+
+  useEffect(() => {
+    if (!gameCode || phase !== 'answerOptions' || !timerActive) return;
+    const interval = setInterval(async () => {
+      const allAnswered = await checkAllPlayersAnswered();
+      if (allAnswered) {
+        setAllPlayersAnswered(true);
+        clearInterval(interval);
+        if (isHost) {
+          updateGameState('results');
+        }
+      }
+    }, 2000); // Check every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [gameCode, phase, timerActive, checkAllPlayersAnswered, isHost]);
+
+  useEffect(() => {
+    if (!gameCode) return;
+    const fetchPlayers = async () => {
+      const {
+        data,
+        error
+      } = await supabase.from('players').select('*').eq('game_code', gameCode).order('score', {
+        ascending: false
+      });
       if (error) {
-        console.error('Error updating game state:', error);
+        console.error('Error fetching players:', error);
         toast({
-          title: "שגיאה בעדכון מצב המשחק",
-          description: "אירעה שגי����� בעדכון מצב המשחק",
+          title: "שגיאה בטעינת השחקנים",
+          description: "אירעה שגיאה בטעינת רשימת השחקנים",
           variant: "destructive"
         });
-      } else {
-        console.log(`Successfully updated game state to ${phase}`);
+        return;
       }
-    } catch (err) {
-      console.error('Exception when updating game state:', err);
+      if (data) {
+        console.log('Fetched players:', data);
+        setPlayers(data);
+        if (playerName) {
+          const currentPlayerData = data.find(p => p.name === playerName);
+          if (currentPlayerData) {
+            console.log('Found current player in database:', currentPlayerData);
+            setCurrentPlayer(prev => ({
+              ...prev,
+              name: currentPlayerData.name,
+              score: currentPlayerData.score || 0,
+              hasAnswered: currentPlayerData.hasAnswered || false,
+              isReady: currentPlayerData.isReady || false
+            }));
+          } else {
+            console.log('Current player not found in database. Player name:', playerName);
+          }
+        }
+      }
+    };
+    fetchPlayers();
+    const channel = supabase.channel('players-changes').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'players',
+      filter: `game_code=eq.${gameCode}`
+    }, payload => {
+      console.log('Players table changed:', payload);
+      fetchPlayers();
+    }).subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gameCode, toast, playerName]);
+
+  useEffect(() => {
+    if (!gameCode) return;
+    const fetchGameRoundData = async () => {
+      const {
+        data,
+        error
+      } = await supabase.from('game_state').select('current_song_name, current_song_url').eq('game_code', gameCode).maybeSingle();
+      if (error) {
+        console.error('Error fetching game round data:', error);
+        return;
+      }
+      if (data && data.current_song_name) {
+        try {
+          const roundData = JSON.parse(data.current_song_name);
+          if (roundData && roundData.correctSong && roundData.options) {
+            console.log('Fetched game round data:', roundData);
+            setCurrentRound(roundData);
+            if (roundData.correctSong) {
+              setCurrentSong(roundData.correctSong);
+            }
+          }
+        } catch (parseError) {
+          console.error('Error parsing game round data:', parseError);
+        }
+      }
+    };
+    fetchGameRoundData();
+    const gameStateChannel = supabase.channel('game-state-changes').on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'game_state',
+      filter: `game_code=eq.${gameCode}`
+    }, payload => {
+      console.log('Game state changed:', payload);
+      if (payload.new && payload.new.current_song_name) {
+        try {
+          const roundData = JSON.parse(payload.new.current_song_name);
+          if (roundData && roundData.correctSong && roundData.options) {
+            console.log('New game round data from real-time update:', roundData);
+            setCurrentRound(roundData);
+            if (roundData.correctSong) {
+              setCurrentSong(roundData.correctSong);
+            }
+          }
+        } catch (parseError) {
+          console.error('Error parsing real-time game round data:', parseError);
+        }
+      }
+    }).subscribe();
+    return () => {
+      supabase.removeChannel(gameStateChannel);
+    };
+  }, [gameCode]);
+
+  const updateGameState = async (phase: string) => {
+    if (!isHost || !gameCode) return;
+    const {
+      error
+    } = await supabase.from('game_state').update({
+      game_phase: phase
+    }).eq('game_code', gameCode);
+    if (error) {
+      console.error('Error updating game state:', error);
+      toast({
+        title: "שגיאה בעדכון מצב המשחק",
+        description: "אירעה שגיאה בעדכון מצב המשחק",
+        variant: "destructive"
+      });
     }
   };
+
+  function createGameRound(): GameRound {
+    const randomIndex = Math.floor(Math.random() * songs.length);
+    const correctSong = songs[randomIndex];
+    const otherSongs = songs.filter(song => song.id !== correctSong.id && song.title);
+    const shuffledWrongSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
+    const allOptions = [correctSong, ...shuffledWrongSongs];
+    const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
+    const correctSongTitle = correctSong.title || '';
+    const correctIndex = shuffledOptions.findIndex(song => song.title === correctSongTitle);
+    return {
+      correctSong,
+      options: shuffledOptions,
+      correctAnswerIndex: correctIndex
+    };
+  }
 
   useEffect(() => {
     if (showYouTubeEmbed) {
@@ -489,46 +687,6 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (phase === 'scoringFeedback') {
-      const timer = setTimeout(() => {
-        setPhase('leaderboard');
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [phase, isHost]);
-
-  useEffect(() => {
-    if (phase === 'leaderboard' && gameCode) {
-      const fetchPlayers = async () => {
-        try {
-          console.log('Fetching players for leaderboard display');
-          const { data, error } = await supabase
-            .from('players')
-            .select('*')
-            .eq('game_code', gameCode)
-            .order('score', { ascending: false });
-            
-          if (error) {
-            console.error('Error fetching players:', error);
-            toast({
-              title: "שגיאה בטעינת השחקנים",
-              description: "אירעה שגיאה בטעינת רשימת השחקנים",
-              variant: "destructive"
-            });
-          } else if (data) {
-            console.log('Successfully loaded players for leaderboard:', data.length);
-            setPlayers(data);
-          }
-        } catch (err) {
-          console.error('Exception when fetching players:', err);
-        }
-      };
-      
-      fetchPlayers();
-    }
-  }, [phase, gameCode, toast]);
-
   const nextRound = async () => {
     if (!isHost) return;
     await resetPlayersAnsweredStatus();
@@ -671,11 +829,6 @@ const GamePlay: React.FC = () => {
         return <div className="flex flex-col items-center justify-center py-8">
             <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
             
-            {isHost && currentRound && <AppButton variant="secondary" size="lg" onClick={playFullSong} className="max-w-xs mb-6">
-                השמע את השיר האחרון
-                <Youtube className="mr-2" />
-            </AppButton>}
-            
             <div className="w-full max-w-md">
               <Table>
                 <TableHeader>
@@ -701,12 +854,20 @@ const GamePlay: React.FC = () => {
               </Table>
             </div>
             
+            <div className="w-full max-w-md my-6">
+              <AdSenseAd
+                format="fluid"
+                layout="in-article"
+                style={{ minHeight: '100px' }}
+              />
+            </div>
+            
             {isHost && <div className="mt-8 flex flex-col gap-4 w-full max-w-xs">
-                <AppButton variant="primary" size="lg" onClick={nextRound} className="mx-0 my-[35px] py-[54px]">
+                <AppButton variant="primary" size="lg" onClick={nextRound}>
                   התחל סיבוב חדש
                   <Play className="mr-2" />
                 </AppButton>
-                <AppButton variant="secondary" onClick={resetAllPlayerScores} className="py-0 mx-0 text-sm px-[7px] my-0">
+                <AppButton variant="secondary" onClick={resetAllPlayerScores}>
                   איפוס ניקוד לכולם
                 </AppButton>
               </div>}
@@ -730,11 +891,12 @@ const GamePlay: React.FC = () => {
       
       {renderPhase()}
       
-      <div className="fixed bottom-0 right-0 left-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border">
-        <AdSenseAd 
-          className="py-2 px-4 mx-auto max-w-5xl"
-          adSlot="1234567890"
-          adFormat="300x250"
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm shadow-lg">
+        <AdSenseAd
+          className="py-2"
+          format="fluid"
+          layout="in-article"
+          style={{ minHeight: '60px' }}
         />
       </div>
     </div>
