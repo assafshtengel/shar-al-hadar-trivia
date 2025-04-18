@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
 import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import MusicNote from './MusicNote';
 import AppButton from './AppButton';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SongPlayerProps {
   song: Song | null;
@@ -25,7 +27,9 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [popupWindow, setPopupWindow] = useState<Window | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMobile = useIsMobile();
 
   // Detect iOS devices
   useEffect(() => {
@@ -47,6 +51,28 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       }
     };
   }, [popupWindow]);
+
+  // Handle playback for non-iOS devices using iframe
+  useEffect(() => {
+    if (!isIOS && isPlaying && song?.embedUrl) {
+      console.log('Starting song playback (non-iOS):', song.title);
+      
+      // Set up timer to end playback
+      timeoutRef.current = setTimeout(() => {
+        console.log('Song playback ended (non-iOS):', song.title);
+        if (onPlaybackEnded) {
+          onPlaybackEnded();
+        }
+      }, duration);
+      
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+      };
+    }
+  }, [isIOS, isPlaying, song, duration, onPlaybackEnded]);
 
   const getYoutubeVideoId = (url: string): string | null => {
     const regExp = /^.*(youtu.be\/|v\/|e\/|u\/\w+\/|embed\/|v=)([^#\&\?]*).*/;
@@ -71,8 +97,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       onPlaybackStarted();
     }
 
-    if (isIOS) {
-      // For iOS, open in a new window
+    // For iOS or mobile devices, open in a new window
+    if (isIOS || isMobile) {
       const youtubeUrl = createYoutubeDirectUrl(song.embedUrl);
       const newWindow = window.open(youtubeUrl, '_blank');
       setPopupWindow(newWindow);
@@ -88,19 +114,14 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
 
       toast.success('השיר מתנגן בחלון חדש');
     } else {
-      // For non-iOS, use existing iframe method
-      console.log('Starting song playback:', song.title);
-        
-        // For non-iOS, proceed as normal with YouTube embed
-        if (onPlaybackStarted) {
-          onPlaybackStarted();
-        }
-        
-        // Set up timer to end playback
-        timeoutRef.current = setTimeout(() => {
-          console.log('Song playback ended:', song.title);
-          onPlaybackEnded();
-        }, duration);
+      // For desktop non-iOS, use iframe
+      console.log('Starting song playback in iframe:', song.title);
+      
+      // Set up timer to end playback
+      timeoutRef.current = setTimeout(() => {
+        console.log('Song playback ended:', song.title);
+        onPlaybackEnded();
+      }, duration);
     }
   };
 
@@ -119,7 +140,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     <div className="relative w-full h-40 bg-black/5 rounded-lg overflow-hidden">
       {song && isPlaying && (
         <div className="absolute inset-0 flex items-center justify-center">
-          {isIOS ? (
+          {(isIOS || isMobile) ? (
             <div 
               className="flex flex-col items-center justify-center cursor-pointer space-y-4"
               onClick={handlePlayback}
@@ -141,15 +162,40 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center">
-              <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
-              <MusicNote type="note2" className="absolute top-10 left-0 text-secondary animate-float-alt" size={28} />
-              <MusicNote type="note3" className="absolute bottom-10 right-10 text-accent animate-float" size={36} />
-              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
-                <Music className="w-10 h-10 text-primary" />
+            <>
+              <div className="flex items-center justify-center">
+                <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
+                <MusicNote type="note2" className="absolute top-10 left-0 text-secondary animate-float-alt" size={28} />
+                <MusicNote type="note3" className="absolute bottom-10 right-10 text-accent animate-float" size={36} />
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
+                  <Music className="w-10 h-10 text-primary" />
+                </div>
               </div>
-            </div>
+              
+              {/* Hidden iframe for non-iOS desktop playback */}
+              {!isIOS && isPlaying && song.embedUrl && (
+                <iframe
+                  ref={iframeRef}
+                  src={song.embedUrl}
+                  allow="autoplay; encrypted-media"
+                  className="absolute top-0 left-0 w-0 h-0 opacity-0"
+                  title="YouTube video player"
+                  frameBorder="0"
+                />
+              )}
+            </>
           )}
+        </div>
+      )}
+      
+      {song && !isPlaying && (
+        <div 
+          className="absolute inset-0 flex items-center justify-center cursor-pointer"
+          onClick={handlePlayback}
+        >
+          <div className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center">
+            <Play className="w-8 h-8 text-white" />
+          </div>
         </div>
       )}
     </div>
