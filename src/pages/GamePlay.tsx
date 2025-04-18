@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,18 @@ import MusicNote from '@/components/MusicNote';
 import GameTimer from '@/components/GameTimer';
 import EndGameButton from '@/components/EndGameButton';
 import GameEndOverlay from '@/components/GameEndOverlay';
+
+interface Song {
+  songName: string;
+  songUrl: string;
+}
+
+interface RoundData {
+  song_name: string;
+  song_url: string;
+  options: string[];
+  correct_answer_index: number;
+}
 
 const GamePlay = () => {
   const [currentRound, setCurrentRound] = useState({
@@ -30,26 +43,29 @@ const GamePlay = () => {
   const [timeRemaining, setTimeRemaining] = useState(roundTime);
   const [roundActive, setRoundActive] = useState(false);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
-  const [songs, setSongs] = useState<{ songName: string; songUrl: string }[]>([]);
+  const [songs, setSongs] = useState<Song[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTimeUp, setIsTimeUp] = useState(false);
   const [allPlayersAnswered, setAllPlayersAnswered] = useState(false);
   const [winners, setWinners] = useState<string[]>([]);
   
+  // Manually fetch songs from game_state since songs table isn't in types
   useEffect(() => {
     const fetchSongs = async () => {
       setIsLoading(true);
       try {
+        // Since the songs table isn't in the TypeScript types, we'll use the SQL method
+        // which doesn't have type checking for table names
         const { data, error } = await supabase
           .from('songs')
-          .select('*');
+          .select('*') as any;
         
         if (error) {
           throw error;
         }
         
         if (data && data.length > 0) {
-          const songList = data.map(song => ({
+          const songList = data.map((song: any) => ({
             songName: song.song_name,
             songUrl: song.song_url
           }));
@@ -87,12 +103,13 @@ const GamePlay = () => {
     
     const fetchRoundData = async () => {
       try {
+        // Since rounds table isn't in TypeScript types, use SQL method without type checking
         const { data: roundData, error: roundError } = await supabase
           .from('rounds')
           .select('*')
           .eq('game_code', gameCode)
           .eq('round_number', currentSongIndex + 1)
-          .single();
+          .single() as any;
         
         if (roundError) {
           throw roundError;
@@ -189,8 +206,8 @@ const GamePlay = () => {
           table: 'game_state', 
           filter: `game_code=eq.${gameCode}`
         },
-        (payload) => {
-          if (payload.new.game_phase === 'ended') {
+        (payload: any) => {
+          if (payload.new && payload.new.game_phase === 'ended') {
             setGameEnded(true);
           }
         })
@@ -245,6 +262,13 @@ const GamePlay = () => {
     const isCorrect = index === currentRound.correctAnswerIndex;
     const points = isCorrect ? 10 : 0;
     
+    // Log for debugging the scoring
+    console.log(`--- Score Calculation ---`);
+    console.log(`Selected answer index: ${index}`);
+    console.log(`Correct answer index: ${currentRound.correctAnswerIndex}`);
+    console.log(`Is correct: ${isCorrect}`);
+    console.log(`Base points: ${points}`);
+    
     // Update the player's score in Supabase
     try {
       // First get current score
@@ -259,10 +283,9 @@ const GamePlay = () => {
       const updatedScore = currentScore + points;
       
       // Log the score calculation
-      console.log(`Calculating points: 
-  Current score: ${currentScore}, 
-  Points earned: ${points}, 
-  New total score: ${updatedScore}`);
+      console.log(`Current score: ${currentScore}`);
+      console.log(`Points earned: ${points}`);
+      console.log(`New total score: ${updatedScore}`);
       
       // Update the score in the database
       const { error: updateError } = await supabase
@@ -353,7 +376,7 @@ const GamePlay = () => {
   return (
     <div className="container max-w-6xl mx-auto py-6 px-4 min-h-screen">
       {gameEnded ? (
-        <GameEndOverlay winners={winners} />
+        <GameEndOverlay isVisible={true} isHost={isHost} />
       ) : isLoading ? (
         <div className="flex justify-center items-center h-full">
           <p>Loading...</p>
@@ -363,10 +386,15 @@ const GamePlay = () => {
           <Card className="mb-4">
             <CardContent className="flex flex-col items-center">
               <h2 className="text-2xl font-bold mb-2">{currentRound.songName}</h2>
-              <SongPlayer songUrl={currentRound.songUrl} autoPlay={true} />
+              <SongPlayer 
+                song={{ title: currentRound.songName, embedUrl: currentRound.songUrl }} 
+                isPlaying={true} 
+                onPlaybackEnded={() => {}} 
+              />
               <GameTimer
-                roundTime={roundTime}
-                onTimeUp={() => {
+                initialSeconds={roundTime}
+                isActive={true}
+                onTimeout={() => {
                   setIsTimeUp(true);
                   setShowAnswer(true);
                 }}
@@ -380,7 +408,12 @@ const GamePlay = () => {
                 key={index}
                 onClick={() => handleAnswer(index)}
                 disabled={selectedAnswer !== null || isTimeUp || allPlayersAnswered}
-                variant={selectedAnswer === index ? (index === currentRound.correctAnswerIndex ? "success" : "destructive") : "default"}
+                variant={selectedAnswer === index 
+                  ? (index === currentRound.correctAnswerIndex ? "default" : "destructive") 
+                  : "default"}
+                className={selectedAnswer === index && index === currentRound.correctAnswerIndex 
+                  ? "bg-green-500 hover:bg-green-600" 
+                  : ""}
               >
                 {option}
               </Button>
@@ -402,7 +435,7 @@ const GamePlay = () => {
           )}
           
           {isHost && (
-            <EndGameButton endGame={endGame} />
+            <EndGameButton gameCode={gameCode} />
           )}
         </>
       )}
