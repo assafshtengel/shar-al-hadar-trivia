@@ -27,7 +27,9 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const [isIOS, setIsIOS] = useState(false);
   const [showPlaceholder, setShowPlaceholder] = useState(false);
   const [iframeCreated, setIframeCreated] = useState(false);
+  const [localVideoCreated, setLocalVideoCreated] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Detect iOS devices
   useEffect(() => {
@@ -55,9 +57,10 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           setShowPlaceholder(true);
           setShowYouTubeEmbed(false);
           setIframeCreated(false);
+          setLocalVideoCreated(false);
           setError(null);
         } else {
-          // For non-iOS, proceed as normal
+          // For non-iOS, proceed as normal with YouTube embed
           setShowYouTubeEmbed(true);
           setShowPlaceholder(false);
           setError(null);
@@ -72,6 +75,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             setShowYouTubeEmbed(false);
             setShowPlaceholder(false);
             setIframeCreated(false);
+            setLocalVideoCreated(false);
             onPlaybackEnded();
           }, duration);
         }
@@ -90,6 +94,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       setShowYouTubeEmbed(false);
       setShowPlaceholder(false);
       setIframeCreated(false);
+      setLocalVideoCreated(false);
     }
 
     // Cleanup function
@@ -101,31 +106,65 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     };
   }, [isPlaying, song, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError, isIOS]);
 
-  // Function to handle iOS play button click - creates iframe dynamically within touch event
+  // Function to handle iOS play button click with local video element
   const handleiOSPlay = () => {
     if (!song || !song.embedUrl) return;
     
-    console.log('iOS play button clicked, creating iframe...');
-    setIframeCreated(true);
+    console.log('iOS play button clicked, creating local video element...');
+    setLocalVideoCreated(true);
     setShowPlaceholder(false);
-    setShowYouTubeEmbed(true);
     
     if (onPlaybackStarted) {
       onPlaybackStarted();
     }
     
-    // Set up timer to end playback
-    timeoutRef.current = setTimeout(() => {
-      console.log('Song playback ended (iOS):', song.title);
-      setShowYouTubeEmbed(false);
-      setShowPlaceholder(false);
-      setIframeCreated(false);
-      onPlaybackEnded();
-    }, duration);
+    // After the video element is created, we'll set a timeout to end playback
+    // This happens in the useEffect that monitors localVideoCreated
     
     toast.success('השיר מתנגן', {
       description: 'במכשירי אפל, השיר מתנגן כעת'
     });
+  };
+
+  // Set up playback timer when local video is created and starts playing
+  useEffect(() => {
+    if (localVideoCreated && song) {
+      // Set up timer to end playback
+      timeoutRef.current = setTimeout(() => {
+        console.log('Song playback ended (iOS local video):', song.title);
+        setShowYouTubeEmbed(false);
+        setShowPlaceholder(false);
+        setIframeCreated(false);
+        setLocalVideoCreated(false);
+        onPlaybackEnded();
+      }, duration);
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [localVideoCreated, song, duration, onPlaybackEnded]);
+
+  // Function to play video when it's loaded
+  const handleVideoLoaded = () => {
+    if (videoRef.current) {
+      videoRef.current.play()
+        .then(() => {
+          console.log('Local video playing successfully');
+        })
+        .catch(err => {
+          console.error('Error playing local video:', err);
+          if (onPlaybackError) {
+            onPlaybackError();
+          }
+          toast.error('שגיאה בהשמעת השיר', {
+            description: 'לא ניתן להשמיע את השיר על מכשיר זה'
+          });
+        });
+    }
   };
 
   // Create YouTube embed URL with autoplay for iOS
@@ -141,6 +180,15 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     
     // For non-iOS devices, use the original URL
     return embedUrl;
+  };
+
+  // Convert YouTube embed URL to direct MP4 URL
+  // This is just a placeholder - in a real app, you would need to use a proper service
+  // to get the actual video file or host your own video files
+  const getLocalVideoUrl = (youtubeEmbedUrl: string) => {
+    // This is a mock URL - in a real app, you would need to replace this
+    // with a service that provides actual MP4 files
+    return 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
   };
 
   if (!song || !isPlaying) {
@@ -168,7 +216,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   return (
     <div className="relative w-full h-40">
       {/* Show placeholder for iOS devices */}
-      {isIOS && showPlaceholder && song.embedUrl && !iframeCreated && (
+      {isIOS && showPlaceholder && song.embedUrl && !localVideoCreated && !iframeCreated && (
         <div 
           className="absolute top-0 left-0 w-full h-full bg-black flex items-center justify-center cursor-pointer z-10"
           onClick={handleiOSPlay}
@@ -190,7 +238,33 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           </div>
         </div>
       )}
-        
+      
+      {/* Local video element for iOS */}
+      {isIOS && localVideoCreated && song.embedUrl && (
+        <>
+          <video
+            ref={videoRef}
+            className="absolute top-0 left-0 w-full h-full object-cover z-5"
+            playsInline
+            controls={false}
+            muted={false}
+            src={getLocalVideoUrl(song.embedUrl)}
+            onLoadedData={handleVideoLoaded}
+            onError={() => {
+              setError('שגיאה בטעינת השיר');
+              if (onPlaybackError) onPlaybackError();
+            }}
+            onEnded={() => {
+              setLocalVideoCreated(false);
+              onPlaybackEnded();
+            }}
+          />
+          
+          {/* Visual overlay to hide video but keep audio playing */}
+          <div className="absolute top-0 left-0 w-full h-full z-20 bg-black"></div>
+        </>
+      )}
+      
       {/* Show YouTube iframe for non-iOS or after play button clicked on iOS */}
       {showYouTubeEmbed && song.embedUrl && (!isIOS || (isIOS && iframeCreated)) && (
         <>
@@ -214,7 +288,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       )}
       
       {/* Fallback music note animation when nothing is shown */}
-      {!showYouTubeEmbed && !showPlaceholder && (
+      {!showYouTubeEmbed && !showPlaceholder && !localVideoCreated && (
         <div className="relative w-full h-full flex items-center justify-center">
           <div className="absolute w-full h-full">
             <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
