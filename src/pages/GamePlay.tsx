@@ -446,7 +446,7 @@ const GamePlay: React.FC = () => {
       for (const update of updates) {
         const { data: playerData, error: fetchError } = await supabase
           .from('players')
-          .select('score')
+          .select('score, hasAnswered')
           .eq('game_code', gameCode)
           .eq('name', update.player_name)
           .maybeSingle();
@@ -461,27 +461,34 @@ const GamePlay: React.FC = () => {
           continue;
         }
 
+        const alreadyAnswered = playerData.hasAnswered;
         const currentScore = playerData.score || 0;
+        
         const { newScore } = calculateScore({
           isCorrect: update.is_correct,
-          currentScore
+          currentScore,
+          alreadyUpdated: alreadyAnswered
         });
 
-        console.log(`Player ${update.player_name}: Current score=${currentScore}, adding ${update.points}, new score=${newScore}`);
+        console.log(`Player ${update.player_name}: Current score=${currentScore}, already answered=${alreadyAnswered}, adding ${update.points}, new score=${newScore}`);
         
-        const { error: updateError } = await supabase
-          .from('players')
-          .update({
-            score: newScore,
-            hasAnswered: true
-          })
-          .eq('game_code', gameCode)
-          .eq('name', update.player_name);
-          
-        if (updateError) {
-          console.error(`Error updating player ${update.player_name}:`, updateError);
+        if (!alreadyAnswered) {
+          const { error: updateError } = await supabase
+            .from('players')
+            .update({
+              score: newScore,
+              hasAnswered: true
+            })
+            .eq('game_code', gameCode)
+            .eq('name', update.player_name);
+            
+          if (updateError) {
+            console.error(`Error updating player ${update.player_name}:`, updateError);
+          } else {
+            console.log(`Successfully updated player ${update.player_name} score to ${newScore}`);
+          }
         } else {
-          console.log(`Successfully updated player ${update.player_name} score to ${newScore}`);
+          console.log(`Skipping score update for ${update.player_name} - already answered`);
         }
       }
     } catch (error) {
@@ -505,22 +512,31 @@ const GamePlay: React.FC = () => {
     const isCorrect = index === currentRound.correctAnswerIndex;
     
     let currentScore = 0;
+    let alreadyAnswered = false;
+    
     if (gameCode && playerName) {
       try {
         const { data } = await supabase
           .from('players')
-          .select('score')
+          .select('score, hasAnswered')
           .eq('game_code', gameCode)
           .eq('name', playerName)
           .maybeSingle();
+        
         currentScore = data?.score || 0;
+        alreadyAnswered = data?.hasAnswered || false;
       } catch (err) {
         console.error('Error getting current player score:', err);
       }
     }
 
-    const { points, newScore } = calculateScore({ isCorrect, currentScore });
-    console.log(`Calculating new score: ${currentScore} + ${points} = ${newScore}`);
+    const { points, newScore } = calculateScore({ 
+      isCorrect, 
+      currentScore,
+      alreadyUpdated: alreadyAnswered
+    });
+    
+    console.log(`Calculating new score: ${currentScore} + ${points} = ${newScore} (already answered: ${alreadyAnswered})`);
 
     setCurrentPlayer(prev => ({
       ...prev,
