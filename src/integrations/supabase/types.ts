@@ -15,6 +15,7 @@ export type Database = {
           current_song_name: string | null
           current_song_url: string | null
           game_code: string
+          game_mode: string
           game_phase: string
           host_ready: boolean
           round_started_at: string | null
@@ -24,6 +25,7 @@ export type Database = {
           current_song_name?: string | null
           current_song_url?: string | null
           game_code: string
+          game_mode?: string
           game_phase: string
           host_ready?: boolean
           round_started_at?: string | null
@@ -33,6 +35,7 @@ export type Database = {
           current_song_name?: string | null
           current_song_url?: string | null
           game_code?: string
+          game_mode?: string
           game_phase?: string
           host_ready?: boolean
           round_started_at?: string | null
