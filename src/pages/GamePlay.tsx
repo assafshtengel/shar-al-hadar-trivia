@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
@@ -108,6 +109,7 @@ const GamePlay: React.FC = () => {
   const [playerReady, setPlayerReady] = useState(false);
   const [showAnswerConfirmation, setShowAnswerConfirmation] = useState(false);
   const [pendingAnswers, setPendingAnswers] = useState<PendingAnswerUpdate[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [players, setPlayers] = useState<SupabasePlayer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -152,10 +154,28 @@ const GamePlay: React.FC = () => {
     }
   }, [gameCode, navigate]);
 
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        console.log('Cleaning up timer on component unmount');
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (!serverGamePhase) return;
 
     console.log('Server game phase changed:', serverGamePhase);
+    
+    // Stop any existing timer when phase changes
+    if (timerRef.current) {
+      console.log('Stopping timer due to phase change');
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     
     switch (serverGamePhase) {
       case 'playing':
@@ -175,6 +195,7 @@ const GamePlay: React.FC = () => {
         setPhase('answerOptions');
         setSelectedAnswer(null);
         if (!isHost) {
+          console.log('Starting timer for non-host in answering phase');
           startTimer();
         }
         break;
@@ -395,8 +416,10 @@ const GamePlay: React.FC = () => {
         }
         
         setPhase('answerOptions');
-        startTimer();
-        setTimerActive(true);
+        if (!isHost) {
+          console.log('Starting timer after YouTube embed finishes (non-host)');
+          startTimer();
+        }
       }, 8000);
       
       return () => clearTimeout(timer);
@@ -451,14 +474,26 @@ const GamePlay: React.FC = () => {
       return;
     }
     
-    console.log('Starting new timer');
+    // Clean up existing timer just in case
+    if (timerRef.current) {
+      console.log('Cleaning up existing timer before starting a new one');
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    console.log('Starting new timer for answer phase');
     setTimeLeft(21);
     setTimerActive(true);
     
-    const timer = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
+        console.log(`Timer tick: ${prev - 1} seconds left`);
         if (prev <= 1) {
-          clearInterval(timer);
+          console.log('Timer reached zero, cleaning up');
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
           setTimerActive(false);
           
           if (selectedAnswer === null && !currentPlayer.hasAnswered) {
@@ -469,11 +504,6 @@ const GamePlay: React.FC = () => {
         return prev - 1;
       });
     }, 1000);
-
-    return () => {
-      console.log('Clearing timer in cleanup function');
-      clearInterval(timer);
-    };
   };
 
   const submitAllAnswers = async () => {
@@ -785,6 +815,13 @@ const GamePlay: React.FC = () => {
     setTimerActive(false);
     setPlayerReady(false);
     
+    // Clear any existing timer
+    if (timerRef.current) {
+      console.log('Clearing timer before starting next round');
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: false,
@@ -974,7 +1011,7 @@ const GamePlay: React.FC = () => {
                 
                 {!currentPlayer.lastAnswerCorrect && currentRound && (
                   <div className="text-lg font-semibold text-green-500">
-                    תשובה נכונ��: {currentRound.correctSong.name}
+                    תשובה נכונה: {currentRound.correctSong.name}
                   </div>
                 )}
               </>
@@ -987,7 +1024,7 @@ const GamePlay: React.FC = () => {
                 <div className="flex items-center justify-center gap-2 text-xl">
                   <span>קיבלת</span>
                   <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
-                  <span>נקו��ות</span>
+                  <span>נקודות</span>
                 </div>
                 
                 {currentRound && (
