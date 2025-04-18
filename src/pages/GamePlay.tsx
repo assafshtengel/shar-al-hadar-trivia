@@ -74,6 +74,7 @@ const GamePlay: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [players, setPlayers] = useState<SupabasePlayer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [scoreUpdateInProgress, setScoreUpdateInProgress] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState<Player>({
     name: playerName || "שחקן נוכחי",
     score: 0,
@@ -125,6 +126,7 @@ const GamePlay: React.FC = () => {
       case 'playing':
         setPhase('songPlayback');
         setSelectedAnswer(null);
+        setScoreUpdateInProgress(false);
         setCurrentPlayer(prev => ({
           ...prev,
           hasAnswered: false,
@@ -161,7 +163,7 @@ const GamePlay: React.FC = () => {
           updateGameState('results');
         }
       }
-    }, 2000); // Check every 2 seconds
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [gameCode, phase, timerActive, checkAllPlayersAnswered, isHost]);
@@ -345,6 +347,7 @@ const GamePlay: React.FC = () => {
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     setAllPlayersAnswered(false);
+    setScoreUpdateInProgress(false);
     const roundDataString = JSON.stringify(gameRound);
     const {
       error
@@ -406,6 +409,13 @@ const GamePlay: React.FC = () => {
       console.error('Missing current round data or game code');
       return;
     }
+    
+    if (scoreUpdateInProgress) {
+      console.log('Score update already in progress, skipping');
+      return;
+    }
+    setScoreUpdateInProgress(true);
+    
     const pendingUpdates: PendingAnswerUpdate[] = [];
     if (playerName && selectedAnswer !== null) {
       const isCorrect = selectedAnswer === currentRound.correctAnswerIndex;
@@ -446,24 +456,38 @@ const GamePlay: React.FC = () => {
         const {
           data: playerData,
           error: fetchError
-        } = await supabase.from('players').select('score').eq('game_code', gameCode).eq('name', update.player_name).maybeSingle();
+        } = await supabase.from('players')
+          .select('score, hasAnswered')
+          .eq('game_code', gameCode)
+          .eq('name', update.player_name)
+          .maybeSingle();
+        
         if (fetchError) {
           console.error(`Error fetching player ${update.player_name}:`, fetchError);
           continue;
         }
+        
         if (!playerData) {
           console.error(`Player ${update.player_name} not found`);
           continue;
         }
+        
+        if (playerData.hasAnswered) {
+          console.log(`Player ${update.player_name} has already answered this round, skipping score update`);
+          continue;
+        }
+        
         const currentScore = playerData.score || 0;
         const newScore = currentScore + update.points;
         console.log(`Player ${update.player_name}: Current score=${currentScore}, adding ${update.points}, new score=${newScore}`);
+        
         const {
           error: updateError
         } = await supabase.from('players').update({
           score: newScore,
           hasAnswered: true
         }).eq('game_code', gameCode).eq('name', update.player_name);
+        
         if (updateError) {
           console.error(`Error updating player ${update.player_name}:`, updateError);
         } else {
@@ -480,28 +504,66 @@ const GamePlay: React.FC = () => {
     }
   };
 
+  const calculatePointsForAnswer = (index: number | null): number => {
+    if (index === null || !currentRound) return 0;
+    
+    if (index === currentRound.correctAnswerIndex) {
+      return 10;
+    } 
+    else if (index === -1) {
+      return 3;
+    }
+    else {
+      return 0;
+    }
+  };
+
   const handleAnswer = async (index: number) => {
     if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound) {
       console.log("Already answered or missing round data - ignoring selection");
       return;
     }
+    
+    if (scoreUpdateInProgress) {
+      console.log('Score update already in progress, skipping');
+      return;
+    }
+    setScoreUpdateInProgress(true);
+    
     console.log(`Player ${playerName} selected answer: ${index}`);
     setSelectedAnswer(index);
+    
     const isCorrect = index === currentRound.correctAnswerIndex;
-    const points = isCorrect ? 10 : 0;
+    const points = calculatePointsForAnswer(index);
+    
     let currentScore = 0;
     if (gameCode && playerName) {
       try {
         const {
           data
-        } = await supabase.from('players').select('score').eq('game_code', gameCode).eq('name', playerName).maybeSingle();
-        currentScore = data?.score || 0;
+        } = await supabase.from('players')
+          .select('score, hasAnswered')
+          .eq('game_code', gameCode)
+          .eq('name', playerName)
+          .maybeSingle();
+          
+        if (data) {
+          currentScore = data.score || 0;
+          
+          if (data.hasAnswered) {
+            console.log(`Player ${playerName} has already answered this round, not updating score`);
+            setScoreUpdateInProgress(false);
+            return;
+          }
+        }
       } catch (err) {
         console.error('Error getting current player score:', err);
       }
     }
+    
     const updatedScore = currentScore + points;
     console.log(`Calculating new score: ${currentScore} + ${points} = ${updatedScore}`);
+    
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
@@ -511,7 +573,9 @@ const GamePlay: React.FC = () => {
       pendingAnswer: index,
       score: updatedScore
     }));
+    
     setShowAnswerConfirmation(true);
+    
     if (gameCode && playerName) {
       try {
         console.log(`Updating hasAnswered status and storing answer for player ${playerName}`);
@@ -521,6 +585,7 @@ const GamePlay: React.FC = () => {
           hasAnswered: true,
           score: updatedScore
         }).eq('game_code', gameCode).eq('name', playerName);
+        
         if (error) {
           console.error('Error updating player answer status:', error);
         } else {
@@ -530,13 +595,16 @@ const GamePlay: React.FC = () => {
         console.error('Exception when updating player answer status:', err);
       }
     }
+    
     setTimeout(() => {
       setShowAnswerConfirmation(false);
     }, 2000);
+    
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
       description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
+    
     if (timeLeft <= 0) {
       submitAllAnswers();
     }
@@ -544,14 +612,73 @@ const GamePlay: React.FC = () => {
 
   const handleSkip = async () => {
     if (selectedAnswer !== null || currentPlayer.skipsLeft <= 0 || !currentRound) return;
-    setSelectedAnswer(null);
+    
+    if (scoreUpdateInProgress) {
+      console.log('Score update already in progress, skipping');
+      return;
+    }
+    setScoreUpdateInProgress(true);
+    
+    const skipPoints = 3;
+    let currentScore = 0;
+    
+    if (gameCode && playerName) {
+      try {
+        const {
+          data
+        } = await supabase.from('players')
+          .select('score, hasAnswered')
+          .eq('game_code', gameCode)
+          .eq('name', playerName)
+          .maybeSingle();
+          
+        if (data) {
+          currentScore = data.score || 0;
+          
+          if (data.hasAnswered) {
+            console.log(`Player ${playerName} has already answered this round, not updating score`);
+            setScoreUpdateInProgress(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error getting current player score:', err);
+      }
+    }
+    
+    const updatedScore = currentScore + skipPoints;
+    
+    setSelectedAnswer(-1);
     setCurrentPlayer(prev => ({
       ...prev,
-      skipsLeft: prev.skipsLeft - 1
+      skipsLeft: prev.skipsLeft - 1,
+      hasAnswered: true,
+      lastScore: skipPoints,
+      score: updatedScore
     }));
+    
+    if (gameCode && playerName) {
+      try {
+        const {
+          error
+        } = await supabase.from('players').update({
+          hasAnswered: true,
+          score: updatedScore
+        }).eq('game_code', gameCode).eq('name', playerName);
+        
+        if (error) {
+          console.error('Error updating player skip status:', error);
+        } else {
+          console.log(`Successfully marked ${playerName} as having skipped and updated score to ${updatedScore}`);
+        }
+      } catch (err) {
+        console.error('Exception when updating player skip status:', err);
+      }
+    }
+    
     toast({
       title: "דילגת על השאלה",
-      description: `נותרו ${currentPlayer.skipsLeft - 1} דילוגים`
+      description: `קיבלת ${skipPoints} נקודות. נותרו ${currentPlayer.skipsLeft - 1} דילוגים`
     });
   };
 
@@ -561,6 +688,13 @@ const GamePlay: React.FC = () => {
       console.log('Player already answered, skipping timeout handler');
       return;
     }
+    
+    if (scoreUpdateInProgress) {
+      console.log('Score update already in progress, skipping');
+      return;
+    }
+    setScoreUpdateInProgress(true);
+    
     if (playerName) {
       if (gameCode) {
         const {
@@ -568,6 +702,7 @@ const GamePlay: React.FC = () => {
         } = await supabase.from('players').select('hasAnswered').eq('game_code', gameCode).eq('name', playerName).maybeSingle();
         if (data && data.hasAnswered) {
           console.log(`Player ${playerName} already marked as answered, skipping timeout update`);
+          setScoreUpdateInProgress(false);
           return;
         }
       }
@@ -691,6 +826,7 @@ const GamePlay: React.FC = () => {
     setSelectedAnswer(null);
     setTimerActive(false);
     setPlayerReady(false);
+    setScoreUpdateInProgress(false);
     if (timerRef.current) {
       console.log('Clearing timer before starting next round');
       clearInterval(timerRef.current);
