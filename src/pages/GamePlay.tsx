@@ -17,6 +17,7 @@ import { useGameState } from '@/contexts/GameStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import EndGameButton from '@/components/EndGameButton';
 import ExitGameButton from '@/components/ExitGameButton';
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Player {
   id: string;
@@ -32,8 +33,13 @@ interface Song {
   id: string;
   title: string;
   artist: string;
-  youtube_link: string;
-  order: number;
+  embedUrl: string;
+}
+
+interface RoundData {
+  roundNumber: number;
+  correctSong: Song;
+  options: Song[];
 }
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
@@ -43,7 +49,8 @@ const GamePlay: React.FC = () => {
   
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
-  const [answerOptions, setAnswerOptions] = useState<string[]>([]);
+  const [currentRound, setCurrentRound] = useState<RoundData | null>(null);
+  const [answerOptions, setAnswerOptions] = useState<Song[]>([]);
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(30);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -60,10 +67,54 @@ const GamePlay: React.FC = () => {
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState<boolean>(false);
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const { toast } = useToast();
   const navigate = useNavigate();
   const { gameCode, playerName, isHost } = useGameState();
+
+  const fetchGameRoundData = useCallback(async () => {
+    if (!gameCode) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('game_state')
+        .select('current_song_name, current_song_url')
+        .eq('game_code', gameCode)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching game round data:', error);
+        return;
+      }
+
+      if (data && data.current_song_name) {
+        try {
+          const roundData = JSON.parse(data.current_song_name);
+          setCurrentRound(roundData);
+          setCurrentSong(roundData.correctSong);
+          setYoutubeVideoId(extractVideoId(roundData.correctSong.embedUrl));
+          
+          if (roundData.options) {
+            setAnswerOptions(roundData.options);
+            setCorrectAnswer(roundData.correctSong.title);
+          }
+          
+          if (roundData.roundNumber) {
+            setRound(roundData.roundNumber);
+          }
+        } catch (parseError) {
+          console.error('Error parsing round data:', parseError);
+        }
+      }
+    } catch (err) {
+      console.error('Exception when fetching game round data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [gameCode]);
 
   const handleAnswerSubmit = useCallback(async (selectedAnswer: string | null) => {
     if (!gameCode || !playerName || isAnswerSubmitted) return;
@@ -138,7 +189,7 @@ const GamePlay: React.FC = () => {
         variant: "destructive"
       });
     }
-  }, [gameCode, playerName, isAnswerSubmitted, timeRemaining, correctAnswer, currentPlayer, round, totalRounds, toast]);
+  }, [gameCode, playerName, isAnswerSubmitted, timeRemaining, correctAnswer, currentPlayer, round, totalRounds, toast, endGame]);
 
   const fetchCurrentPlayer = useCallback(async () => {
     if (!gameCode || !playerName) return;
@@ -164,29 +215,6 @@ const GamePlay: React.FC = () => {
     }
   }, [gameCode, playerName]);
 
-  const fetchCurrentSong = useCallback(async () => {
-    if (!gameCode) return;
-
-    try {
-      const { data: song, error } = await supabase
-        .from('game_state')
-        .select('*')
-        .eq('game_code', gameCode)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching current song:', error);
-        return;
-      }
-
-      if (song && song.current_song_name) {
-        setYoutubeVideoId(extractVideoId(song.current_song_url));
-      }
-    } catch (err) {
-      console.error('Exception when fetching current song:', err);
-    }
-  }, [gameCode]);
-
   const fetchPlayers = useCallback(async () => {
     if (!gameCode) return;
 
@@ -208,17 +236,6 @@ const GamePlay: React.FC = () => {
       }
     } catch (err) {
       console.error('Exception when fetching players:', err);
-    }
-  }, [gameCode]);
-
-  const generateAnswerOptions = useCallback(async (correctTitle: string) => {
-    if (!gameCode) return;
-
-    try {
-      const options = [correctTitle, 'Alternative Song 1', 'Alternative Song 2'].sort(() => Math.random() - 0.5);
-      setAnswerOptions(options);
-    } catch (err) {
-      console.error('Exception when generating answer options:', err);
     }
   }, [gameCode]);
 
@@ -277,19 +294,12 @@ const GamePlay: React.FC = () => {
   }, [fetchCurrentPlayer]);
 
   useEffect(() => {
-    fetchCurrentSong();
-  }, [fetchCurrentSong]);
+    fetchGameRoundData();
+  }, [fetchGameRoundData]);
 
   useEffect(() => {
     fetchPlayers();
   }, [fetchPlayers]);
-
-  useEffect(() => {
-    if (currentSong) {
-      setCorrectAnswer(currentSong.title);
-      generateAnswerOptions(currentSong.title);
-    }
-  }, [currentSong, generateAnswerOptions]);
 
   useEffect(() => {
     if (phase === 'answerOptions') {
@@ -326,27 +336,38 @@ const GamePlay: React.FC = () => {
         return (
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
             <h2 className="text-2xl font-bold text-primary">
-              {currentSong ? `Round ${round}: Guess the song!` : 'Loading...'}
+              {currentRound ? `סיבוב ${currentRound.roundNumber}: נחש את השיר!` : 'טוען...'}
             </h2>
-            {youtubeVideoId && (
-              <div className="aspect-w-16 aspect-h-9">
+            
+            {isLoading ? (
+              <div className="w-full aspect-w-16 aspect-h-9">
+                <Skeleton className="w-full h-full" />
+                <div className="text-center py-4">טוען...</div>
+              </div>
+            ) : youtubeVideoId ? (
+              <div className="aspect-w-16 aspect-h-9 w-full max-w-xl">
                 <iframe
                   src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=${isMuted ? 1 : 0}`}
                   title="YouTube video player"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
+                  className="w-full h-full"
                 ></iframe>
               </div>
+            ) : (
+              <div className="text-center py-4">אין סרטון זמין</div>
             )}
-            <AppButton onClick={() => setPhase('answerOptions')} disabled={!currentSong}>
-              {currentSong ? 'I know this song!' : 'Loading...'}
+            
+            <AppButton onClick={() => setPhase('answerOptions')} disabled={isLoading || !currentSong}>
+              {isLoading ? 'טוען...' : 'אני מכיר את השיר!'}
             </AppButton>
+            
             <button
               onClick={() => setIsMuted(!isMuted)}
               className="text-sm text-gray-600 hover:text-gray-800"
             >
-              {isMuted ? 'Unmute' : 'Mute'}
+              {isMuted ? 'הפעל שמע' : 'השתק'}
             </button>
           </div>
         );
@@ -357,8 +378,8 @@ const GamePlay: React.FC = () => {
             <h2 className="text-2xl font-bold text-primary">What's the song?</h2>
             <div className="grid grid-cols-2 gap-4">
               {answerOptions.map((option, index) => (
-                <AppButton key={index} onClick={() => handleAnswerSubmit(option)}>
-                  {option}
+                <AppButton key={index} onClick={() => handleAnswerSubmit(option.title)}>
+                  {option.title}
                 </AppButton>
               ))}
             </div>
