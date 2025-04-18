@@ -110,26 +110,32 @@ const GamePlay: React.FC = () => {
     }
   };
 
+  const handleSongPlayback = useCallback(async () => {
+    if (!gameCode) return;
+
+    const channel = supabase.channel(`game-playback-${gameCode}`)
+      .on('broadcast', { event: 'playback-started' }, (payload) => {
+        if (payload.payload.song) {
+          setCurrentSong(payload.payload.song);
+          setIsPlaying(true);
+          setShowYouTubeEmbed(true);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gameCode]);
+
   useEffect(() => {
-    if (showYouTubeEmbed) {
-      const timer = setTimeout(() => {
-        setShowYouTubeEmbed(false);
-        setIsPlaying(false);
-        if (isHost) {
-          updateGameState('answering');
-        }
-        setPhase('answerOptions');
-        if (!isHost) {
-          console.log('Setting timer active after YouTube embed finishes (non-host)');
-          setTimerActive(true);
-        }
-      }, 8000);
-      return () => clearTimeout(timer);
-    }
-  }, [showYouTubeEmbed, isHost]);
+    const cleanup = handleSongPlayback();
+    return () => cleanup?.then(fn => fn?.());
+  }, [handleSongPlayback]);
 
   const playSong = async () => {
     if (!isHost) return;
+    
     await resetPlayersReadyStatus();
     await resetPlayersAnsweredStatus();
     const gameRound = createGameRound();
@@ -139,16 +145,20 @@ const GamePlay: React.FC = () => {
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     setAllPlayersAnswered(false);
+    
     const roundDataString = JSON.stringify(gameRound);
-    const {
-      error
-    } = await supabase.from('game_state').update({
-      current_song_name: roundDataString,
-      current_song_url: gameRound.correctSong.embedUrl,
-      game_phase: 'playing'
-    }).eq('game_code', gameCode);
-    if (error) {
-      console.error('Error storing game round data:', error);
+    
+    const { error: stateError } = await supabase
+      .from('game_state')
+      .update({
+        current_song_name: roundDataString,
+        current_song_url: gameRound.correctSong.embedUrl,
+        game_phase: 'playing'
+      })
+      .eq('game_code', gameCode);
+
+    if (stateError) {
+      console.error('Error storing game round data:', stateError);
       toast({
         title: "שגיאה בשמירת נתוני הסיבוב",
         description: "אירעה שגיאה בשמירת נתוני הסיבוב",
@@ -156,6 +166,14 @@ const GamePlay: React.FC = () => {
       });
       return;
     }
+
+    const channel = supabase.channel(`game-playback-${gameCode}`);
+    await channel.send({
+      type: 'broadcast',
+      event: 'playback-started',
+      payload: { song: gameRound.correctSong }
+    });
+
     toast({
       title: "משמיע שיר...",
       description: "מנגן כעת, האזן בקשב"
