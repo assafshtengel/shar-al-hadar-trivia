@@ -99,7 +99,7 @@ const GamePlay: React.FC = () => {
         console.error('Error updating game state:', error);
         toast({
           title: "שגיאה בעדכון מצב המשחק",
-          description: "אירעה שגיאה בעדכון מצב המשחק",
+          description: "אירעה שגי������ בעדכון מצב המשחק",
           variant: "destructive"
         });
       } else {
@@ -575,32 +575,12 @@ const GamePlay: React.FC = () => {
         return <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
-            <SongPlayer 
-              song={currentSong} 
-              isPlaying={isPlaying && showYouTubeEmbed} 
-              onPlaybackEnded={handleSongPlaybackEnded} 
-              onPlaybackError={handleSongPlaybackError} 
-            />
+            <SongPlayer song={currentSong} isPlaying={isPlaying && showYouTubeEmbed} onPlaybackEnded={handleSongPlaybackEnded} onPlaybackError={handleSongPlaybackError} />
             
-            {isHost && <AppButton variant="primary" size="lg" onClick={playSong} className="max-w-xs" disabled={isPlaying}>
+            <AppButton variant="primary" size="lg" onClick={playSong} className="max-w-xs" disabled={!isHost || isPlaying}>
               {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
               <Play className="mr-2" />
-            </AppButton>}
-            
-            {!isHost && <div>
-              {currentRound && currentSong && !isPlaying && 
-                <SongPlayer 
-                  song={currentSong}
-                  isPlaying={serverGamePhase === 'playing'} 
-                  onPlaybackEnded={handleSongPlaybackEnded}
-                  onPlaybackError={handleSongPlaybackError}
-                />
-              }
-              
-              {!isPlaying && <div className="text-lg text-gray-600 text-center">
-                המתן למנהל המשחק להשמיע את השיר הבא
-              </div>}
-            </div>}
+            </AppButton>
             
             {isPlaying && !showYouTubeEmbed && <div className="relative w-40 h-40 flex items-center justify-center">
                 <div className="absolute w-full h-full">
@@ -611,6 +591,10 @@ const GamePlay: React.FC = () => {
                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
                   <Music className="w-10 h-10 text-primary" />
                 </div>
+              </div>}
+            
+            {!isHost && !isPlaying && <div className="text-lg text-gray-600 text-center">
+                המתן למנהל המשחק להשמיע את השיר הבא
               </div>}
           </div>;
       case 'answerOptions':
@@ -678,9 +662,14 @@ const GamePlay: React.FC = () => {
                 </div>
               </>}
             
+            {isHost && currentRound && <AppButton variant="secondary" size="lg" onClick={playFullSong} className="max-w-xs mt-4">
+                השמע את השיר המלא
+                <Youtube className="mr-2" />
+              </AppButton>}
+            
             <AppButton 
               variant="secondary" 
-              className="mt-4 max-w-xs w-full mx-4 sm:mx-auto"
+              className="mt-4 max-w-xs cursor-default" 
               disabled 
             >
               מיד תועבר לצפייה בטבלת המובילים
@@ -744,7 +733,8 @@ const GamePlay: React.FC = () => {
       <div className="text-right mb-4">
         <div className="flex flex-col md:flex-row justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-primary">משחק ניחוש שירים</h1>
-          <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="flex items-center gap-4">
+            
             {isHost && <EndGameButton gameCode={gameCode} />}
           </div>
         </div>
