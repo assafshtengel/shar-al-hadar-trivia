@@ -1066,7 +1066,8 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  return <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
       <div className="container mx-auto px-4 py-6 relative z-10">
         <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6 bg-white/50 backdrop-blur-sm p-4 rounded-lg shadow-sm">
           <div className="flex items-center gap-2 order-1 md:order-none">
@@ -1112,7 +1113,17 @@ const GamePlay: React.FC = () => {
         
         {renderPhase()}
       </div>
-    </div>;
+      
+      <div className="w-full max-w-4xl mx-auto p-4 mb-8">
+        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-6 border border-primary/20 relative overflow-hidden hover:shadow-xl transition-shadow duration-300">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 opacity-50"></div>
+          <div className="relative z-10 min-h-[100px] flex items-center justify-center">
+            <div className="text-center text-gray-500">מקום לפרסומת</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default GamePlay;
