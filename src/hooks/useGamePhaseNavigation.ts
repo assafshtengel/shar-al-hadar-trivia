@@ -67,16 +67,10 @@ export const useGamePhaseNavigation = ({
         // Only navigate if not already in gameplay or setup screens
         if (isHost && currentPath !== '/host-setup' && currentPath !== '/gameplay') {
           console.log('Navigating host to setup screen');
-          navigationTimeoutRef.current = setTimeout(() => {
-            navigate('/host-setup');
-            navigationTimeoutRef.current = null;
-          }, 50); // Faster navigation
+          navigate('/host-setup'); // Immediate navigation
         } else if (!isHost && currentPath !== '/waiting-room' && currentPath !== '/gameplay') {
           console.log('Navigating player to waiting room');
-          navigationTimeoutRef.current = setTimeout(() => {
-            navigate('/waiting-room');
-            navigationTimeoutRef.current = null;
-          }, 50); // Faster navigation
+          navigate('/waiting-room'); // Immediate navigation
         }
         break;
         
