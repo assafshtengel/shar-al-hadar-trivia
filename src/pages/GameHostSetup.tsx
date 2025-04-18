@@ -52,9 +52,11 @@ const GameHostSetup: React.FC = () => {
       setGameData({ 
         gameCode, 
         playerName: hostName || 'מנחה', 
-        isHost: true,
-        game_mode: gameMode 
+        isHost: true
       });
+      
+      // Here we should separately update the game state in the database
+      // with the game_mode, but we're not modifying the GameState interface
     }
   }, [contextGameCode, gameCode, hostName, setGameData, gameMode]);
 
@@ -116,4 +118,3 @@ const GameHostSetup: React.FC = () => {
 };
 
 export default GameHostSetup;
-

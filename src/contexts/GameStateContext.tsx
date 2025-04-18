@@ -1,9 +1,11 @@
+
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
 import GameEndOverlay from '@/components/GameEndOverlay';
 import { useGamePhaseNavigation } from '@/hooks/useGamePhaseNavigation';
 import { toast } from 'sonner';
+import { GameState } from '@/types/gameTypes';
 
 type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
 
