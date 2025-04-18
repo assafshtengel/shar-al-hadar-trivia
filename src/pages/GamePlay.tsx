@@ -728,7 +728,7 @@ const GamePlay: React.FC = () => {
       console.error('Error resetting players ready status:', error);
       toast({
         title: "שגיאה באיפוס סטטוס מוכנות השחקנים",
-        description: "אירעה שגיאה באיפוס סטטוס מוכנות השחקנים",
+        description: "אירעה שגיאה באיפוס סטטוס השחקנים",
         variant: "destructive"
       });
     }
@@ -796,7 +796,7 @@ const GamePlay: React.FC = () => {
     setPhase('songPlayback');
     
     toast({
-      title: "מתכ��ננים לסיבוב ה��א",
+      title: "מתכוננים לסיבוב הבא",
       description: "סיבוב חדש עומד להתחיל",
     });
   };
@@ -823,35 +823,22 @@ const GamePlay: React.FC = () => {
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
             {showYouTubeEmbed && currentSong && (
-              <>
-                <GameTimer 
-                  initialSeconds={10} 
-                  isActive={true}
-                  onTimeout={() => {
-                    if (isHost) {
-                      updateGameState('answering');
-                    }
-                    setPhase('answerOptions');
-                    setTimerActive(true);
-                  }}
-                />
-                <div className="relative w-full h-40">
-                  <iframe 
-                    width="100%" 
-                    height="100%"
-                    src={currentSong.embedUrl}
-                    frameBorder="0" 
-                    allow="autoplay; encrypted-media" 
-                    allowFullScreen
-                    className="absolute top-0 left-0 z-10"
-                  ></iframe>
-                  
-                  <div 
-                    className="absolute top-0 left-0 w-full h-full z-20 bg-black"
-                    style={{ opacity: 0.95 }}
-                  ></div>
-                </div>
-              </>
+              <div className="relative w-full h-40">
+                <iframe 
+                  width="100%" 
+                  height="100%"
+                  src={currentSong.embedUrl}
+                  frameBorder="0" 
+                  allow="autoplay; encrypted-media" 
+                  allowFullScreen
+                  className="absolute top-0 left-0 z-10"
+                ></iframe>
+                
+                <div 
+                  className="absolute top-0 left-0 w-full h-full z-20 bg-black"
+                  style={{ opacity: 0.95 }}
+                ></div>
+              </div>
             )}
             
             <AppButton 
@@ -901,13 +888,11 @@ const GamePlay: React.FC = () => {
       case 'answerOptions':
         return (
           <div className="flex flex-col items-center py-6 space-y-6">
-            {timerActive && (
-              <GameTimer 
-                initialSeconds={answerTimeLimit} 
-                isActive={timerActive} 
-                onTimeout={handleTimerTimeout}
-              />
-            )}
+            <GameTimer 
+              initialSeconds={10} 
+              isActive={true}
+              onTimeout={handleTimerTimeout}
+            />
             
             <div className="flex items-center">
               <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
@@ -983,7 +968,7 @@ const GamePlay: React.FC = () => {
                 
                 {!currentPlayer.lastAnswerCorrect && currentRound && (
                   <div className="text-lg font-semibold text-green-500">
-                    תשו���� נכונה: {currentRound.correctSong.name}
+                    התשובה הנכונה: {currentRound.correctSong.name}
                   </div>
                 )}
               </>
@@ -996,128 +981,4 @@ const GamePlay: React.FC = () => {
                 <div className="flex items-center justify-center gap-2 text-xl">
                   <span>קיבלת</span>
                   <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
-                  <span>נקודות</span>
-                </div>
-                
-                {currentRound && (
-                  <div className="text-lg font-semibold text-green-500">
-                    התשובה הנכונה הייתה: {currentRound.correctSong.name}
-                  </div>
-                )}
-                
-                <div className="text-lg">
-                  נותרו לך {currentPlayer.skipsLeft} דילוגים
-                </div>
-              </>
-            )}
-            
-            <div className="bg-gray-100 p-4 rounded-lg text-center animate-pulse">
-              עובר ללוח התוצאות בקרוב...
-            </div>
-          </div>
-        );
-      
-      case 'leaderboard':
-        return (
-          <div className="flex flex-col items-center py-6 space-y-6">
-            <h2 className="text-2xl font-bold text-primary">לוח תוצאות</h2>
-            
-            <div className="w-full max-w-md bg-white/90 rounded-lg shadow-md overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-14 text-center">#</TableHead>
-                    <TableHead>שחקן</TableHead>
-                    <TableHead className="text-right">ניקוד</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {players.map((player, index) => (
-                    <TableRow 
-                      key={player.id}
-                      className={player.name === playerName ? "bg-primary/10" : ""}
-                    >
-                      <TableCell className="font-medium text-center">
-                        {index === 0 ? (
-                          <Crown className="h-5 w-5 text-yellow-500 mx-auto" />
-                        ) : (
-                          <span>{index + 1}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-bold">{player.name}</TableCell>
-                      <TableCell className="text-right">
-                        <span className="font-mono font-bold">{player.score}</span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            
-            {currentRound && (
-              <div className="flex flex-col items-center gap-2 mt-2">
-                <div className="text-lg font-semibold">
-                  השיר האחרון היה: {currentRound.correctSong.name}
-                </div>
-                
-                {isHost && (
-                  <div className="flex gap-2 mt-2">
-                    <AppButton
-                      variant="primary" 
-                      onClick={playFullSong}
-                      className="max-w-xs"
-                    >
-                      השמע שיר מלא
-                      <Youtube className="mr-2" />
-                    </AppButton>
-                    
-                    <AppButton
-                      variant="secondary" 
-                      onClick={nextRound}
-                      className="max-w-xs"
-                    >
-                      סיבוב הבא
-                      <SkipForward className="mr-2" />
-                    </AppButton>
-                  </div>
-                )}
-                
-                {isHost && (
-                  <div className="mt-4">
-                    <EndGameButton gameCode={gameCode} />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-    }
-  };
-
-  return (
-    <div className="container mx-auto px-4 py-8 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">
-          <span className="text-primary">מנחש</span> 
-          <span className="text-secondary">השירים</span>
-        </h1>
-        <div className="flex items-center gap-4">
-          <div className="text-lg font-semibold bg-primary/10 px-3 py-1 rounded-md">
-            קוד משחק: {gameCode}
-          </div>
-          <EndGameButton gameCode={gameCode} />
-        </div>
-      </div>
-      
-      <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg">
-        {renderPhase()}
-      </div>
-      
-      <div className="mt-4 text-sm text-center text-gray-500">
-        <Link to="/" className="hover:text-primary">חזרה לדף הבית</Link>
-      </div>
-    </div>
-  );
-};
-
-export default GamePlay;
+                  <span>נק
