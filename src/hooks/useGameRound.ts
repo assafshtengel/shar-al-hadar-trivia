@@ -2,18 +2,18 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface Song {
-  id: string;
-  title: string;
-  artist: string;
+  id?: string;
+  title?: string;
+  name?: string;
+  artist?: string;
   embedUrl: string;
-  order: number;
+  order?: number;
 }
 
 interface RoundData {
-  round: number;
+  round?: number;
   correctSong: Song;
   options: string[];
 }
@@ -39,30 +39,32 @@ export const useGameRound = (gameCode: string | null, isHost: boolean) => {
     const dummySong = {
       id: '1',
       title: songName || 'שיר לא ידוע',
+      name: songName || 'שיר לא ידוע',
       artist: 'אמן לא ידוע',
       embedUrl: songUrl || '',
       order: 1
     };
     
     setCurrentSong(dummySong);
-    setCorrectAnswer(dummySong.title);
+    setCorrectAnswer(dummySong.title || dummySong.name);
     setYoutubeVideoId(extractVideoId(dummySong.embedUrl));
-    setAnswerOptions([dummySong.title, 'שיר אחר 1', 'שיר אחר 2'].sort(() => Math.random() - 0.5));
+    setAnswerOptions([dummySong.title || dummySong.name, 'שיר אחר 1', 'שיר אחר 2'].sort(() => Math.random() - 0.5));
   };
 
   const createHostDemoSongData = () => {
     const demoSong = {
       id: 'demo1',
       title: 'שיר דוגמה למארח',
+      name: 'שיר דוגמה למארח',
       artist: 'אמן דוגמה',
       embedUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       order: 1
     };
     
     setCurrentSong(demoSong);
-    setCorrectAnswer(demoSong.title);
+    setCorrectAnswer(demoSong.title || demoSong.name);
     setYoutubeVideoId(extractVideoId(demoSong.embedUrl));
-    setAnswerOptions([demoSong.title, 'שיר אחר 1', 'שיר אחר 2'].sort(() => Math.random() - 0.5));
+    setAnswerOptions([demoSong.title || demoSong.name, 'שיר אחר 1', 'שיר אחר 2'].sort(() => Math.random() - 0.5));
   };
 
   const fetchGameRoundData = useCallback(async () => {
@@ -98,23 +100,30 @@ export const useGameRound = (gameCode: string | null, isHost: boolean) => {
             console.log('Parsed round data:', roundData);
             
             if (roundData && roundData.correctSong) {
+              // Handle both title and name field formats
               if (roundData.correctSong.name && !roundData.correctSong.title) {
                 console.log('Converting name field to title field');
                 roundData.correctSong.title = roundData.correctSong.name;
+              } else if (roundData.correctSong.title && !roundData.correctSong.name) {
+                roundData.correctSong.name = roundData.correctSong.title;
               }
               
               setCurrentRound(roundData);
               setCurrentSong(roundData.correctSong);
               setAnswerOptions(roundData.options || []);
               
+              // Set correct answer based on available field
               if (roundData.correctSong.title) {
                 setCorrectAnswer(roundData.correctSong.title);
+              } else if (roundData.correctSong.name) {
+                setCorrectAnswer(roundData.correctSong.name);
               } else {
-                console.warn('No title field found in correctSong');
+                console.warn('No title/name field found in correctSong');
                 setCorrectAnswer('Unknown Song');
               }
               
-              setYoutubeVideoId(extractVideoId(roundData.correctSong.embedUrl));
+              // Handle embedUrl properly
+              setYoutubeVideoId(extractVideoId(roundData.correctSong.embedUrl || data.current_song_url));
             } else {
               console.log('No valid song data in round data');
               createFallbackSongData(data.current_song_url);

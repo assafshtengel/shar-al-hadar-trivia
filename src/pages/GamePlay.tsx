@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useGameState } from '@/contexts/GameStateContext';
 import { useGameRound } from '@/hooks/useGameRound';
 import { useGameAnswer } from '@/hooks/useGameAnswer';
+import { supabase } from '@/integrations/supabase/client';
 import SongPlayback from '@/components/game/SongPlayback';
 import AnswerOptions from '@/components/game/AnswerOptions';
 import ScoringFeedback from '@/components/game/ScoringFeedback';
@@ -12,6 +13,17 @@ import ExitGameButton from '@/components/ExitGameButton';
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 
+interface Song {
+  name: string;
+  embedUrl: string;
+}
+
+interface GameRound {
+  correctSong: Song;
+  options: Song[];
+  correctAnswerIndex: number;
+}
+
 interface Player {
   id: string;
   name: string;
@@ -20,6 +32,31 @@ interface Player {
   hasAnswered: boolean;
   lastAnswerCorrect?: boolean;
   lastScore?: number;
+}
+
+// Restore static song list
+const songs: Song[] = [
+  { name: "עתיד מתוק - משינה", embedUrl: "https://www.youtube.com/embed/_3OOrrGxJ1M?autoplay=1&controls=0&modestbranding=1&rel=0" },
+  { name: "ריקוד המכונה - משינה", embedUrl: "https://www.youtube.com/embed/U0THoV7yTeA?autoplay=1&controls=0&modestbranding=1&rel=0" },
+  { name: "שוב היא כאן - יוני רכטר", embedUrl: "https://www.youtube.com/embed/RBwWNIzzXEQ?autoplay=1&controls=0&modestbranding=1&rel=0" },
+  { name: "תיק קטן - סטילה ונס", embedUrl: "https://www.youtube.com/embed/U6eXRzDkifw?autoplay=1&controls=0&modestbranding=1&rel=0" },
+  { name: "מה שעובר עליי - משינה", embedUrl: "https://www.youtube.com/embed/dkKiw9Wbz-E?autoplay=1&controls=0&modestbranding=1&rel=0" },
+  { name: "תגידי לי את - מרסדס בנד", embedUrl: "https://www.youtube.com/embed/C_3x6vcMWJQ?autoplay=1&controls=0&modestbranding=1&rel=0" },
+  { name: "יש לי חור בלב בצורה שלך - דני רובס", embedUrl: "https://www.youtube.com/embed/FCc08_GQByw?autoplay=1&controls=0&modestbranding=1&rel=0" },
+  { name: "ככה זה - ברי סחרוף", embedUrl: "https://www.youtube.com/embed/adeK7hFr8LM?autoplay=1&controls=0&modestbranding=1&rel=0" }
+];
+
+// Restore original createGameRound function
+function createGameRound(): GameRound {
+  const idx = Math.floor(Math.random() * songs.length);
+  const correctSong = songs[idx];
+  const wrong = songs.filter((_, i) => i !== idx)
+                   .sort(() => Math.random() - 0.5)
+                   .slice(0, 3);
+  const options = [correctSong, ...wrong]
+                  .sort(() => Math.random() - 0.5);
+  const correctIndex = options.findIndex(s => s.name === correctSong.name);
+  return { correctSong, options, correctAnswerIndex: correctIndex };
 }
 
 const GamePlay: React.FC = () => {
@@ -36,13 +73,14 @@ const GamePlay: React.FC = () => {
   });
   const [leaderboard, setLeaderboard] = useState<Player[]>([]);
   const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [currentGameRound, setCurrentGameRound] = useState<GameRound | null>(null);
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null);
 
   const {
     currentSong,
     currentRound,
     answerOptions,
     correctAnswer,
-    youtubeVideoId,
     isLoading,
     round,
     fetchGameRoundData
@@ -69,6 +107,52 @@ const GamePlay: React.FC = () => {
   useEffect(() => {
     fetchGameRoundData();
   }, [fetchGameRoundData]);
+
+  useEffect(() => {
+    if (currentRound && currentRound.correctSong) {
+      if (currentRound.correctSong.embedUrl) {
+        const videoId = extractVideoId(currentRound.correctSong.embedUrl);
+        setYoutubeVideoId(videoId);
+      }
+    }
+  }, [currentRound]);
+
+  const extractVideoId = (url: string): string | null => {
+    if (!url) return null;
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[7].length === 11) ? match[7] : null;
+  };
+
+  const playSong = async () => {
+    if (!isHost) return;
+    
+    const round = createGameRound();
+    setCurrentGameRound(round);
+    
+    const embed = round.correctSong.embedUrl;
+    const videoId = extractVideoId(embed);
+    setYoutubeVideoId(videoId);
+    
+    await supabase
+      .from('game_state')
+      .update({
+        current_song_name: JSON.stringify({
+          round: round.correctAnswerIndex,
+          correctSong: {
+            id: "local",
+            title: round.correctSong.name,
+            artist: "",
+            embedUrl: round.correctSong.embedUrl,
+            order: 1
+          },
+          options: round.options.map(s => s.name)
+        }),
+        current_song_url: embed,
+        game_phase: 'playing'
+      })
+      .eq('game_code', gameCode);
+  };
 
   useEffect(() => {
     if (phase === 'answerOptions') {
@@ -124,19 +208,30 @@ const GamePlay: React.FC = () => {
     switch (phase) {
       case 'songPlayback':
         return (
-          <SongPlayback
-            round={round}
-            currentSong={currentSong}
-            youtubeVideoId={youtubeVideoId}
-            isMuted={isMuted}
-            setIsMuted={setIsMuted}
-            onContinue={() => setPhase('answerOptions')}
-          />
+          <div className="flex flex-col items-center justify-center">
+            {isHost && (
+              <AppButton
+                onClick={playSong}
+                className="mb-6"
+              >
+                השמע שיר
+              </AppButton>
+            )}
+            <SongPlayback
+              round={round}
+              currentSong={currentSong}
+              youtubeVideoId={youtubeVideoId}
+              isMuted={isMuted}
+              setIsMuted={setIsMuted}
+              onContinue={() => setPhase('answerOptions')}
+              isHost={isHost}
+            />
+          </div>
         );
       case 'answerOptions':
         return (
           <AnswerOptions
-            options={answerOptions}
+            options={answerOptions?.length ? answerOptions : currentGameRound?.options.map(s => s.name) || []}
             timeRemaining={timeRemaining}
             onAnswer={handleAnswerOptionSelected}
           />
