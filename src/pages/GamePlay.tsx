@@ -786,7 +786,7 @@ const GamePlay: React.FC = () => {
                       {song.name}
                     </AppButton>
                     {selectedAnswer === index && showAnswerConfirmation && <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 rounded-md animate-fade-in">
-                        ✓ הבחירה שלך נקלטה!
+                        ✓ הבחירה שלך נקלטה!\n
                       </div>}
                   </div>)}
               </div> : <div className="text-lg text-gray-600 animate-pulse">
@@ -813,7 +813,9 @@ const GamePlay: React.FC = () => {
                 
                 <div className="flex items-center justify-center gap-2 text-xl">
                   <span>קיבלת</span>
-                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
+                  <span className="font-bold text-primary text-2xl">
+                    {currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}
+                  </span>
                   <span>נקודות</span>
                 </div>
                 
@@ -826,5 +828,3 @@ const GamePlay: React.FC = () => {
                 {!currentPlayer.lastAnswerCorrect && currentRound && (
                   <div className="text-lg font-semibold text-green-500">
                     התשובה הנכונה: {currentRound.correctSong.name}
-                  </div>
-                )}
