@@ -49,28 +49,27 @@ const GameTimer: React.FC<GameTimerProps> = ({
         lastTickTimeRef.current = now;
         
         setTimeLeft(prev => {
-          // Critical - calculate new time first
+          // Calculate new time first
           const newTime = Math.max(prev - elapsed / 1000, 0);
           
-          // Force immediate timeout when time reaches 0.1 seconds
+          // Force immediate timeout at exactly 0.1 seconds or less
           if (newTime <= 0.1 && !timeoutTriggeredRef.current) {
-            console.log(`Timer reached critical threshold (${newTime}s)!`);
+            console.log(`Timer reached zero threshold (${newTime}s)! Calling onTimeout IMMEDIATELY`);
             timeoutTriggeredRef.current = true;
             
             if (timerRef.current) {
-              console.log('Clearing timer interval before timeout');
+              console.log('Clearing timer interval before calling timeout handler');
               clearInterval(timerRef.current);
               timerRef.current = null;
             }
             
-            // Execute onTimeout synchronously - no delay
-            console.log('Executing onTimeout callback IMMEDIATELY');
+            // Execute onTimeout synchronously with no delays
             onTimeout();
             return 0;
           }
           return newTime;
         });
-      }, 30); // Update even more frequently (30ms) for more precise timing
+      }, 20); // Update even more frequently (20ms) for more precise timing
     }
 
     return () => {

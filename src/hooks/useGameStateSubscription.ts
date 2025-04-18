@@ -145,14 +145,13 @@ export const useGameStateSubscription = ({
               const newPhase = payload.new.game_phase as GamePhase;
               const currentTime = Date.now();
               
-              // Always process the update regardless of whether we've seen this phase before
-              // This ensures that all players transition to the correct state
+              // Process phase updates immediately regardless of previous state
               console.log(`Game phase update: ${newPhase}, isHost: ${isHost}, last phase: ${lastGamePhaseRef.current}`);
               
               lastGamePhaseRef.current = newPhase;
               phaseUpdateTimeRef.current = currentTime;
               
-              // Always set the game phase, regardless of the player rank
+              // Set game phase immediately to ensure UI updates
               setGamePhase(newPhase);
               
               if ('host_ready' in payload.new) {
@@ -205,6 +204,7 @@ export const useGameStateSubscription = ({
           lastGamePhaseRef.current = currentPhase;
           phaseUpdateTimeRef.current = Date.now();
           
+          // Set game phase immediately to ensure UI updates
           setGamePhase(currentPhase);
           
           if ('host_ready' in data) {
