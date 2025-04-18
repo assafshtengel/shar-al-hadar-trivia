@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
-import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
+import { Youtube, AlertTriangle, Music, Play, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import MusicNote from './MusicNote';
 import AppButton from './AppButton';
@@ -30,10 +31,12 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const [manualPlayClicked, setManualPlayClicked] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [audioLoadFailed, setAudioLoadFailed] = useState(false);
+  const [directLinkShown, setDirectLinkShown] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isMobile = useIsMobile();
+  const audioAttemptsRef = useRef(0);
 
   // Detect iOS devices
   useEffect(() => {
@@ -46,12 +49,36 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     console.log("Device is iOS:", checkIsIOS());
   }, []);
 
-  useEffect(() => {
-    // Clean up any existing timeout
+  // Clean up function to handle all resources
+  const cleanupResources = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+    
+    if (audioRef.current) {
+      try {
+        const audio = audioRef.current;
+        
+        // Remove all event listeners to prevent memory leaks
+        audio.oncanplay = null;
+        audio.onplaying = null;
+        audio.onended = null;
+        audio.onerror = null;
+        audio.onpause = null;
+        
+        audio.pause();
+        audio.src = '';
+        audio.load();
+      } catch (error) {
+        console.error("Error cleaning up audio element:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    // Clean up any existing timeout
+    cleanupResources();
 
     if (isPlaying && song) {
       if (song.embedUrl) {
@@ -63,6 +90,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           setShowYouTubeEmbed(true);
           setError(null);
           setAudioLoadFailed(false);
+          setDirectLinkShown(false);
+          audioAttemptsRef.current = 0;
           
           // Create an audio element for iOS as a fallback
           if (!audioRef.current && song.fullUrl) {
@@ -80,26 +109,51 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
               audio.onplaying = () => {
                 console.log("Audio is now playing");
                 setAudioPlaying(true);
+                if (onPlaybackStarted) {
+                  onPlaybackStarted();
+                }
+                
+                // Set timer for ending playback automatically
+                timeoutRef.current = setTimeout(() => {
+                  console.log('Song playback ended (audio timer):', song.title);
+                  cleanupResources();
+                  onPlaybackEnded();
+                  setShowYouTubeEmbed(false);
+                  setAudioPlaying(false);
+                }, duration);
               };
               
               audio.onended = () => {
                 console.log("Audio playback ended naturally");
                 setAudioPlaying(false);
-                if (timeoutRef.current) {
-                  clearTimeout(timeoutRef.current);
-                }
+                cleanupResources();
                 onPlaybackEnded();
               };
               
               audio.onerror = (e) => {
                 console.error("Audio error:", e);
-                setAudioLoadFailed(true);
-                if (onPlaybackError) {
-                  onPlaybackError();
+                audioAttemptsRef.current += 1;
+                
+                if (audioAttemptsRef.current >= 2) {
+                  setAudioLoadFailed(true);
+                  setDirectLinkShown(true);
+                  
+                  toast.error("שגיאה בהשמעת השיר", {
+                    description: "לא ניתן להשמיע את השיר באופן אוטומטי, נסה ללחוץ על הקישור הישיר"
+                  });
+                  
+                  if (onPlaybackError) {
+                    onPlaybackError();
+                  }
+                } else {
+                  // Try one more time with a short delay
+                  setTimeout(() => {
+                    if (audioRef.current) {
+                      console.log("Retrying audio play...");
+                      audioRef.current.load();
+                    }
+                  }, 500);
                 }
-                toast.error("שגיאה בהשמעת השיר", {
-                  description: "לא ניתן להשמיע את השיר דרך נגן השמע"
-                });
               };
               
               // Attempt to preload
@@ -107,6 +161,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             } catch (error) {
               console.error("Error setting up audio element:", error);
               setAudioLoadFailed(true);
+              setDirectLinkShown(true);
             }
           }
         } else {
@@ -141,36 +196,14 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       setManualPlayNeeded(false);
       setManualPlayClicked(false);
       setAudioPlaying(false);
+      setDirectLinkShown(false);
       
-      // Clean up audio element
-      if (audioRef.current) {
-        try {
-          audioRef.current.pause();
-          audioRef.current.src = '';
-        } catch (error) {
-          console.error("Error cleaning up audio element:", error);
-        }
-      }
+      // Remove audio element reference
+      audioRef.current = null;
     }
 
     // Cleanup function
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-      
-      // Clean up audio element
-      if (audioRef.current) {
-        try {
-          audioRef.current.pause();
-          audioRef.current.src = '';
-          audioRef.current = null;
-        } catch (error) {
-          console.error("Error cleaning up audio element on unmount:", error);
-        }
-      }
-    };
+    return cleanupResources;
   }, [isPlaying, song, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError, isIOS]);
 
   const handleManualPlay = () => {
@@ -227,17 +260,16 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
                 onPlaybackEnded();
                 
                 // Stop audio if it's playing
-                if (audioRef.current) {
-                  audioRef.current.pause();
-                }
+                cleanupResources();
               }, duration);
             })
             .catch(error => {
               console.error('Audio playback failed:', error);
               setAudioLoadFailed(true);
+              setDirectLinkShown(true);
               
               toast.error('השמעת השיר נכשלה', {
-                description: 'יש לנסות שוב או להשתמש במכשיר אחר'
+                description: 'אנא נסה ללחוץ על הקישור הישיר להשמעת השיר'
               });
               
               if (onPlaybackError) {
@@ -248,6 +280,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       } catch (error) {
         console.error("Exception during audio play attempt:", error);
         setAudioLoadFailed(true);
+        setDirectLinkShown(true);
         
         if (onPlaybackError) {
           onPlaybackError();
@@ -255,8 +288,9 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       }
     } else {
       console.error("Cannot play audio: audioRef or song.fullUrl is missing");
+      setDirectLinkShown(true);
       toast.error('השמעת השיר נכשלה', {
-        description: 'קישור השיר חסר או לא תקין'
+        description: 'אנא נסה ללחוץ על הקישור הישיר להשמעת השיר'
       });
       
       if (onPlaybackError) {
@@ -265,8 +299,34 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     }
     
     toast.success('מנסה להשמיע את השיר', {
-      description: 'במכשירי אפל, יש צורך בלחיצה ידנית להפעלת השיר'
+      description: 'במכשירי אפל, יתכן שתצטרך להשתמש בקישור הישיר'
     });
+  };
+
+  const openDirectLink = () => {
+    if (song?.fullUrl) {
+      // Open in a new tab and focus on it
+      const newWindow = window.open(song.fullUrl, '_blank');
+      if (newWindow) newWindow.focus();
+      
+      // Set a timer for ending the game round
+      timeoutRef.current = setTimeout(() => {
+        console.log('Song playback ended (external link timer):', song?.title);
+        setShowYouTubeEmbed(false);
+        setAudioPlaying(false);
+        onPlaybackEnded();
+        
+        cleanupResources();
+      }, duration);
+      
+      if (onPlaybackStarted) {
+        onPlaybackStarted();
+      }
+      
+      toast.success('קישור ישיר נפתח', {
+        description: 'השיר יושמע בחלון חדש'
+      });
+    }
   };
 
   if (!song || !isPlaying) {
@@ -299,25 +359,52 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             className="absolute top-0 left-0 z-10"
             onError={() => {
               setError('שגיאה בטעינת השיר');
+              setDirectLinkShown(true);
               if (onPlaybackError) onPlaybackError();
             }}
           />
           
           {/* iOS Manual Play Button */}
           {manualPlayNeeded && !manualPlayClicked && (
-            <div className="absolute top-0 left-0 w-full h-full z-30 flex items-center justify-center bg-black/70">
+            <div className="absolute top-0 left-0 w-full h-full z-30 flex flex-col items-center justify-center bg-black/70">
               <div className="text-center">
                 <AppButton 
                   variant="primary" 
                   size="lg" 
                   onClick={handleManualPlay}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 mb-4"
                 >
                   <Play className="w-5 h-5" />
                   לחץ כאן להפעלת השיר
                 </AppButton>
+                {song.fullUrl && (
+                  <AppButton 
+                    variant="secondary" 
+                    size="sm" 
+                    onClick={openDirectLink}
+                    className="flex items-center gap-2"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    פתח קישור ישיר
+                  </AppButton>
+                )}
                 <p className="text-white mt-2 text-sm">במכשירי אפל נדרשת הפעלה ידנית</p>
               </div>
+            </div>
+          )}
+          
+          {/* Direct link option when automatic playback fails */}
+          {directLinkShown && song.fullUrl && (
+            <div className="absolute top-12 left-0 w-full z-40 flex justify-center">
+              <AppButton 
+                variant="primary" 
+                size="sm" 
+                onClick={openDirectLink}
+                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 animate-pulse"
+              >
+                <ExternalLink className="w-4 h-4" />
+                לחץ כאן לפתיחת השיר בחלון חדש
+              </AppButton>
             </div>
           )}
           
@@ -329,7 +416,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           )}
           
           {/* Audio error indicator */}
-          {audioLoadFailed && (
+          {audioLoadFailed && !directLinkShown && (
             <div className="absolute top-2 left-2 z-40 bg-red-500 text-white px-2 py-1 rounded-md text-sm">
               לא ניתן להשמיע את השיר
             </div>
