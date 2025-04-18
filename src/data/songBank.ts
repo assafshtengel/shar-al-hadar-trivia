@@ -326,6 +326,114 @@ export const defaultSongBank: Song[] = [
     title: "ואת - הראל סקעת",
     embedUrl: "https://www.youtube.com/embed/AcpgsbFvnbM?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=AcpgsbFvnbM"
+  },
+  {
+    id: 83,
+    title: "הכל או כלום - ברי סחרוף",
+    embedUrl: "https://www.youtube.com/embed/0HEmJzYrsR0?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=0HEmJzYrsR0"
+  },
+  {
+    id: 84,
+    title: "חלליות - ברי סחרוף",
+    embedUrl: "https://www.youtube.com/embed/m87iJUQme6w?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=m87iJUQme6w"
+  },
+  {
+    id: 85,
+    title: "עיר מקלט - ברי סחרוף",
+    embedUrl: "https://www.youtube.com/embed/RepkQVYTH-k?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=RepkQVYTH-k"
+  },
+  {
+    id: 86,
+    title: "לב שלם - ברי סחרוף",
+    embedUrl: "https://www.youtube.com/embed/bErZt-l8qRM?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=bErZt-l8qRM"
+  },
+  {
+    id: 87,
+    title: "נכנע לך - ברי סחרוף",
+    embedUrl: "https://www.youtube.com/embed/JqcVZkUsdcE?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=JqcVZkUsdcE"
+  },
+  {
+    id: 88,
+    title: "מי אוהב אותך יותר ממני - ארקדי דוכין",
+    embedUrl: "https://www.youtube.com/embed/l0WYMRSs9C4?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=l0WYMRSs9C4"
+  },
+  {
+    id: 89,
+    title: "מרוב אהבתי - ארקדי דוכין",
+    embedUrl: "https://www.youtube.com/embed/EuYPBIoiNn4?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=EuYPBIoiNn4"
+  },
+  {
+    id: 90,
+    title: "אם את לבדך - ארקדי דוכין",
+    embedUrl: "https://www.youtube.com/embed/BCXyAolCVL8?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=BCXyAolCVL8"
+  },
+  {
+    id: 91,
+    title: "חכי לי אהובה - ארקדי דוכין",
+    embedUrl: "https://www.youtube.com/embed/Cdnrde4WFC8?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=Cdnrde4WFC8"
+  },
+  {
+    id: 92,
+    title: "רשימת קניות - נס וסטילה",
+    embedUrl: "https://www.youtube.com/embed/kYntjh4XEto?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=kYntjh4XEto"
+  },
+  {
+    id: 93,
+    title: "מגדלים - נס וסטילה",
+    embedUrl: "https://www.youtube.com/embed/bWz97rgzxLE?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=bWz97rgzxLE"
+  },
+  {
+    id: 94,
+    title: "תיק קטן - נס וסטילה",
+    embedUrl: "https://www.youtube.com/embed/pVaeEK1WC2M?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=pVaeEK1WC2M"
+  },
+  {
+    id: 95,
+    title: "באמפרים - נס וסטילה",
+    embedUrl: "https://www.youtube.com/embed/_I56eDHwQr8?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=_I56eDHwQr8"
+  },
+  {
+    id: 96,
+    title: "עד מחר - אביתר בנאי",
+    embedUrl: "https://www.youtube.com/embed/g_gFnDyi2Ho?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=g_gFnDyi2Ho"
+  },
+  {
+    id: 97,
+    title: "כל יום כמו נס - אביתר בנאי",
+    embedUrl: "https://www.youtube.com/embed/8beg1Kj43Cs?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=8beg1Kj43Cs"
+  },
+  {
+    id: 98,
+    title: "לא רואה אותי - אביתר בנאי",
+    embedUrl: "https://www.youtube.com/embed/hVUlJWkT2Jo?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=hVUlJWkT2Jo"
+  },
+  {
+    id: 99,
+    title: "מתי נתנשק - אביתר בנאי",
+    embedUrl: "https://www.youtube.com/embed/mwFjgtidDDA?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=mwFjgtidDDA"
+  },
+  {
+    id: 100,
+    title: "לשונות של אש - אביתר בנאי",
+    embedUrl: "https://www.youtube.com/embed/cTsJuLlmySs?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=cTsJuLlmySs"
   }
 ];
 
