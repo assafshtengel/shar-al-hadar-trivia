@@ -23,14 +23,18 @@ export const useGameStateSubscription = ({
   navigate
 }: UseGameStateSubscriptionProps) => {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const initialCheckDoneRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!gameCode) return;
 
     console.log("Setting up game state monitoring for code:", gameCode);
     let isMounted = true;
+    let isSubscribing = false;
 
     const checkGameState = async () => {
+      if (initialCheckDoneRef.current || isSubscribing) return;
+      
       try {
         const { data, error } = await supabase
           .from('game_state')
@@ -43,6 +47,7 @@ export const useGameStateSubscription = ({
           return;
         }
 
+        // Only create initial state if we're the host and no data exists
         if (!data && isHost && isMounted) {
           console.log("Creating initial game state for host");
           const { error: insertError } = await supabase
@@ -63,8 +68,13 @@ export const useGameStateSubscription = ({
             });
           }
         }
+        
+        // Mark initial check as complete regardless of outcome
+        initialCheckDoneRef.current = true;
       } catch (err) {
         console.error('Exception checking game state:', err);
+        // Mark as done even on error to prevent infinite retries
+        initialCheckDoneRef.current = true;
       }
     };
 
@@ -76,6 +86,9 @@ export const useGameStateSubscription = ({
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
+
+    // Set subscribing flag to prevent concurrent fetch operations
+    isSubscribing = true;
 
     // Create a unique channel ID to avoid conflicts
     const channelId = `game-state-changes-${gameCode}-${Date.now()}`;
@@ -120,12 +133,15 @@ export const useGameStateSubscription = ({
       )
       .subscribe((status) => {
         console.log('Game state subscription status:', status);
+        isSubscribing = false;
       });
 
     // Store the channel reference so we can clean it up properly
     channelRef.current = channel;
 
     const fetchGameState = async () => {
+      if (!isMounted || initialCheckDoneRef.current) return;
+      
       try {
         const { data, error } = await supabase
           .from('game_state')
@@ -149,16 +165,25 @@ export const useGameStateSubscription = ({
             setHostReady(!!data.host_ready);
           }
         }
+        
+        // Mark initial fetch as done to prevent duplicated fetches
+        initialCheckDoneRef.current = true;
       } catch (err) {
         console.error('Exception fetching game state:', err);
+        // Mark as done even on error to prevent infinite retries
+        initialCheckDoneRef.current = true;
       }
     };
 
-    fetchGameState();
+    // Only fetch game state if we haven't done the initial check yet
+    if (!initialCheckDoneRef.current) {
+      fetchGameState();
+    }
 
     return () => {
       console.log('Removing game state channel');
       isMounted = false;
+      isSubscribing = false;
       
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
