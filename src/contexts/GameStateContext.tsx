@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
@@ -14,6 +15,7 @@ interface GameStateContextType {
   isHost: boolean;
   setGameData: (data: { gameCode: string; playerName: string; isHost?: boolean }) => void;
   clearGameData: () => void;
+  answerTimeLimit: number;
 }
 
 const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
@@ -32,6 +34,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   );
   const [hostReady, setHostReady] = useState<boolean>(false);
   const previousGamePhaseRef = useRef<GamePhase | null>(null);
+  const answerTimeLimit = 21; // Set answer time limit in seconds
 
   const setGameData = (data: { gameCode: string; playerName: string; isHost?: boolean }) => {
     setGameCode(data.gameCode);
@@ -92,7 +95,8 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         gamePhase,
         isHost,
         setGameData,
-        clearGameData
+        clearGameData,
+        answerTimeLimit
       }}
     >
       <GameEndOverlay 

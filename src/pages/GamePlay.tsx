@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
+import GameTimer from '@/components/GameTimer';
 import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, CheckCircle2, Youtube } from 'lucide-react';
 import { 
   Table,
@@ -97,9 +97,9 @@ const songs: Song[] = [
 const GamePlay: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { gameCode, playerName, isHost, gamePhase: serverGamePhase } = useGameState();
+  const { gameCode, playerName, isHost, gamePhase: serverGamePhase, answerTimeLimit } = useGameState();
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
-  const [timeLeft, setTimeLeft] = useState(21);
+  const [timeLeft, setTimeLeft] = useState(answerTimeLimit);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
@@ -109,7 +109,6 @@ const GamePlay: React.FC = () => {
   const [playerReady, setPlayerReady] = useState(false);
   const [showAnswerConfirmation, setShowAnswerConfirmation] = useState(false);
   const [pendingAnswers, setPendingAnswers] = useState<PendingAnswerUpdate[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [players, setPlayers] = useState<SupabasePlayer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -154,7 +153,6 @@ const GamePlay: React.FC = () => {
     }
   }, [gameCode, navigate]);
 
-  // Clean up timer on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) {
@@ -170,17 +168,11 @@ const GamePlay: React.FC = () => {
 
     console.log('Server game phase changed:', serverGamePhase);
     
-    // Stop any existing timer when phase changes
-    if (timerRef.current) {
-      console.log('Stopping timer due to phase change');
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    setTimerActive(false);
     
     switch (serverGamePhase) {
       case 'playing':
         setPhase('songPlayback');
-        setTimerActive(false);
         setSelectedAnswer(null);
         setCurrentPlayer(prev => ({
           ...prev,
@@ -191,21 +183,18 @@ const GamePlay: React.FC = () => {
         }));
         break;
       case 'answering':
-        setTimerActive(false);
         setPhase('answerOptions');
         setSelectedAnswer(null);
         if (!isHost) {
-          console.log('Starting timer for non-host in answering phase');
-          startTimer();
+          console.log('Setting timer active for non-host in answering phase');
+          setTimerActive(true);
         }
         break;
       case 'results':
         setPhase('scoringFeedback');
-        setTimerActive(false);
         break;
       case 'end':
         setPhase('leaderboard');
-        setTimerActive(false);
         break;
     }
   }, [serverGamePhase, isHost]);
@@ -417,8 +406,8 @@ const GamePlay: React.FC = () => {
         
         setPhase('answerOptions');
         if (!isHost) {
-          console.log('Starting timer after YouTube embed finishes (non-host)');
-          startTimer();
+          console.log('Setting timer active after YouTube embed finishes (non-host)');
+          setTimerActive(true);
         }
       }, 8000);
       
@@ -468,42 +457,14 @@ const GamePlay: React.FC = () => {
     });
   };
 
-  const startTimer = () => {
-    if (phase !== 'answerOptions' || timerActive) {
-      console.log('Skipping timer start - wrong phase or timer already active');
-      return;
+  const handleTimerTimeout = () => {
+    console.log('Timer timeout handler called');
+    
+    if (selectedAnswer === null && !currentPlayer.hasAnswered) {
+      handleTimeout();
+    } else {
+      submitAllAnswers();
     }
-    
-    // Clean up existing timer just in case
-    if (timerRef.current) {
-      console.log('Cleaning up existing timer before starting a new one');
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    
-    console.log('Starting new timer for answer phase');
-    setTimeLeft(21);
-    setTimerActive(true);
-    
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        console.log(`Timer tick: ${prev - 1} seconds left`);
-        if (prev <= 1) {
-          console.log('Timer reached zero, cleaning up');
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          setTimerActive(false);
-          
-          if (selectedAnswer === null && !currentPlayer.hasAnswered) {
-            handleTimeout();
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
   };
 
   const submitAllAnswers = async () => {
@@ -815,7 +776,6 @@ const GamePlay: React.FC = () => {
     setTimerActive(false);
     setPlayerReady(false);
     
-    // Clear any existing timer
     if (timerRef.current) {
       console.log('Clearing timer before starting next round');
       clearInterval(timerRef.current);
@@ -929,18 +889,18 @@ const GamePlay: React.FC = () => {
       case 'answerOptions':
         return (
           <div className="flex flex-col items-center py-6 space-y-6">
-            <div className="w-full flex items-center justify-between px-2 mb-2">
-              <div className="flex items-center">
-                <Clock className="mr-2 text-primary" />
-                <span className="font-bold">{timeLeft} שניות</span>
-              </div>
-              <div className="flex items-center">
-                <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
-                <SkipForward className="ml-2 text-secondary" />
-              </div>
-            </div>
+            {timerActive && (
+              <GameTimer 
+                initialSeconds={answerTimeLimit} 
+                isActive={timerActive} 
+                onTimeout={handleTimerTimeout}
+              />
+            )}
             
-            <Progress value={(timeLeft / 21) * 100} className="w-full h-2" />
+            <div className="flex items-center">
+              <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
+              <SkipForward className="ml-2 text-secondary" />
+            </div>
             
             <h2 className="text-2xl font-bold text-primary">מה השיר?</h2>
             
@@ -1149,4 +1109,3 @@ const GamePlay: React.FC = () => {
 };
 
 export default GamePlay;
-
