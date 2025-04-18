@@ -45,6 +45,12 @@ export interface BatchPlayerUpdateParams {
   }[];
 }
 
+// Add interface for game mode update
+export interface UpdateGameModeParams {
+  p_game_code: string;
+  p_game_mode: 'local' | 'remote';
+}
+
 // Add function to check if a player exists
 export interface CheckPlayerExistsParams {
   game_code: string;

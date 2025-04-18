@@ -60,7 +60,19 @@ const GameHostSetup: React.FC = () => {
   const handleGameModeChange = async (mode: 'local' | 'remote') => {
     if (hostJoined) {
       try {
-        // Call the RPC function to update the game mode instead of directly updating the table
+        // First check if game_mode column exists in game_state table
+        const { data: tableInfo, error: tableError } = await supabase
+          .from('game_state')
+          .select('*')
+          .eq('game_code', gameCode)
+          .limit(1)
+          .single();
+          
+        if (tableError) {
+          console.error('Error checking game state table:', tableError);
+        }
+        
+        // Call the RPC function to update the game mode
         const { error } = await supabase.rpc('update_game_mode', {
           p_game_code: gameCode,
           p_game_mode: mode
@@ -70,7 +82,7 @@ const GameHostSetup: React.FC = () => {
           console.error('Error updating game mode:', error);
           toast({
             title: "שגיאה בעדכון מצב המשחק",
-            description: "אירעה שגיאה בעדכון סוג המשחק",
+            description: "אירעה שגיאה בעדכון סוג המשחק, נסה שוב",
             variant: "destructive"
           });
           return;
@@ -79,7 +91,7 @@ const GameHostSetup: React.FC = () => {
         console.error('Exception updating game mode:', err);
         toast({
           title: "שגיאה בעדכון מצב המשחק",
-          description: "אירעה שגיאה בעדכון סוג המשחק",
+          description: "אירעה שגיאה בעדכון סוג המשחק, נסה שוב",
           variant: "destructive"
         });
         return;
