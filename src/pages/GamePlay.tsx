@@ -1089,19 +1089,6 @@ const GamePlay: React.FC = () => {
           <span className="text-secondary">השירים</span>
         </h1>
         <div className="flex items-center gap-4">
-          {location.pathname === '/gameplay' && (
-            <GameTimer 
-              initialSeconds={10} 
-              isActive={phase === 'songPlayback'} 
-              onTimeout={() => {
-                if (isHost) {
-                  updateGameState('answering');
-                }
-                setPhase('answerOptions');
-                setTimerActive(true);
-              }}
-            />
-          )}
           <div className="text-lg font-semibold bg-primary/10 px-3 py-1 rounded-md">
             קוד משחק: {gameCode}
           </div>

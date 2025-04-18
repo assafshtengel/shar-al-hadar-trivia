@@ -1,11 +1,14 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Timer } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
+
 interface GameTimerProps {
   initialSeconds: number;
   isActive: boolean;
   onTimeout: () => void;
 }
+
 const GameTimer: React.FC<GameTimerProps> = ({
   initialSeconds,
   isActive,
@@ -69,6 +72,24 @@ const GameTimer: React.FC<GameTimerProps> = ({
   // Calculate percentage for progress bar
   const progressPercentage = timeLeft / initialSeconds * 100;
   const isAlmostTimeUp = timeLeft < initialSeconds * 0.3;
-  return;
+
+  return (
+    <div className="flex items-center space-x-2">
+      <div className="w-32 relative">
+        <Progress value={progressPercentage} className={`h-3 ${isAlmostTimeUp ? 'bg-red-200' : 'bg-primary/20'}`} />
+        <div 
+          className={`absolute inset-0 h-3 rounded-full transition-all duration-100 ${
+            isAlmostTimeUp ? 'bg-red-500' : 'bg-primary'
+          }`}
+          style={{ width: `${progressPercentage}%` }}
+        />
+      </div>
+      <div className="flex items-center space-x-1">
+        <Timer size={16} className={isAlmostTimeUp ? 'text-red-500 animate-pulse' : 'text-primary'} />
+        <span className="text-sm font-medium">{Math.ceil(timeLeft)}s</span>
+      </div>
+    </div>
+  );
 };
+
 export default GameTimer;
