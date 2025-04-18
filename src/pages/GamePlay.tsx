@@ -765,7 +765,8 @@ const GamePlay: React.FC = () => {
               <Play className="mr-2" />
             </AppButton>
             
-            {isPlaying && !showYouTubeEmbed && <div className="relative w-40 h-40 flex items-center justify-center">
+            {isPlaying && !showYouTubeEmbed && (
+              <div className="relative w-40 h-40 flex items-center justify-center">
                 <div className="absolute w-full h-full">
                   <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
                   <MusicNote type="note2" className="absolute top-10 left-0 text-secondary animate-float-alt" size={28} />
@@ -774,11 +775,14 @@ const GamePlay: React.FC = () => {
                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
                   <Music className="w-10 h-10 text-primary" />
                 </div>
-              </div>}
+              </div>
+            )}
             
-            {!isHost && !isPlaying && <div className="text-lg text-gray-600 text-center">
+            {!isHost && !isPlaying && (
+              <div className="text-lg text-gray-600 text-center">
                 המתן למנהל המשחק להשמיע את השיר הבא
-              </div>}
+              </div>
+            )}
           </div>
         );
       
@@ -794,8 +798,10 @@ const GamePlay: React.FC = () => {
             
             <h2 className="text-2xl font-bold text-primary">מה השיר?</h2>
             
-            {currentRound ? <div className="grid grid-cols-1 gap-4 w-full max-w-md">
-                {currentRound.options.map((song, index) => <div key={index} className="relative">
+            {currentRound ? (
+              <div className="grid grid-cols-1 gap-4 w-full max-w-md">
+                {currentRound.options.map((song, index) => (
+                  <div key={index} className="relative">
                     <AppButton 
                       variant={selectedAnswer === index ? "primary" : "secondary"} 
                       className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full`} 
@@ -804,29 +810,38 @@ const GamePlay: React.FC = () => {
                     >
                       {song.title}
                     </AppButton>
-                    {selectedAnswer === index && showAnswerConfirmation && <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 rounded-md animate-fade-in">
+                    {selectedAnswer === index && showAnswerConfirmation && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 rounded-md animate-fade-in">
                         ✓ הבחירה שלך נקלטה!
-                      </div>}
-                  </div>)}
-              </div> : <div className="text-lg text-gray-600 animate-pulse">
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-lg text-gray-600 animate-pulse">
                 טוען אפשרויות...
-              </div>}
+              </div>
+            )}
             
             <AppButton variant="secondary" className="mt-4 max-w-xs" disabled={selectedAnswer !== null || currentPlayer.skipsLeft <= 0} onClick={handleSkip}>
               דלג ({currentPlayer.skipsLeft})
               <SkipForward className="mr-2" />
             </AppButton>
             
-            {selectedAnswer !== null && <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
+            {selectedAnswer !== null && (
+              <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
                 הבחירה שלך נקלטה! ממתין לסיום הזמן...
-              </div>}
+              </div>
+            )}
           </div>
         );
       
       case 'scoringFeedback':
         return (
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
-            {currentPlayer.lastAnswerCorrect !== undefined ? <>
+            {currentPlayer.lastAnswerCorrect !== undefined ? (
+              <>
                 <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text-center`}>
                   {currentPlayer.lastAnswerCorrect ? 'כל הכבוד! ענית נכון!' : 'אוי לא! טעית.'}
                 </div>
@@ -837,14 +852,20 @@ const GamePlay: React.FC = () => {
                   <span>נקודות</span>
                 </div>
                 
-                {currentPlayer.lastAnswer && <div className="text-lg">
+                {currentPlayer.lastAnswer && (
+                  <div className="text-lg">
                     {currentPlayer.lastAnswerCorrect ? 'תשובה נכונה:' : 'בחרת:'} {currentPlayer.lastAnswer}
-                  </div>}
+                  </div>
+                )}
                 
-                {!currentPlayer.lastAnswerCorrect && currentRound && <div className="text-lg font-semibold text-green-500">
+                {!currentPlayer.lastAnswerCorrect && currentRound && (
+                  <div className="text-lg font-semibold text-green-500">
                     התשובה הנכונה: {currentRound.correctSong.title}
-                  </div>}
-              </> : <>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
                 <div className="text-2xl font-bold text-secondary text-center">
                   דילגת על השאלה
                 </div>
@@ -854,12 +875,15 @@ const GamePlay: React.FC = () => {
                   <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
                   <span>נקודות</span>
                 </div>
-              </>}
+              </>
+            )}
             
-            {isHost && currentRound && <AppButton variant="secondary" size="lg" onClick={playFullSong} className="max-w-xs mt-4">
+            {isHost && currentRound && (
+              <AppButton variant="secondary" size="lg" onClick={playFullSong} className="max-w-xs mt-4">
                 השמע את השיר המלא
                 <Youtube className="mr-2" />
-              </AppButton>}
+              </AppButton>
+            )}
           </div>
         );
       
@@ -924,7 +948,7 @@ const GamePlay: React.FC = () => {
               <span className="font-semibold">{playerName}</span>
               <span className="font-bold text-primary">{currentPlayer.score} נק׳</span>
             </div>
-            {isHost && <EndGameButton />}
+            {isHost && <EndGameButton gameCode={gameCode} />}
           </div>
         </div>
       </div>
