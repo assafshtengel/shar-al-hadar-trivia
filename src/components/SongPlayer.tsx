@@ -1,10 +1,20 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
-import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
+import { Youtube, AlertTriangle, Music, Play, Volume2 } from 'lucide-react';
 import { toast } from 'sonner';
 import MusicNote from './MusicNote';
 import AppButton from './AppButton';
+
+// YouTube IFrame API types
+declare global {
+  interface Window {
+    YT: {
+      Player: any;
+      PlayerState: any;
+    };
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
 
 interface SongPlayerProps {
   song: Song | null;
@@ -27,8 +37,12 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [manualPlayNeeded, setManualPlayNeeded] = useState(false);
+  const [youtubeReady, setYoutubeReady] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const playerRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const ytScriptLoaded = useRef(false);
 
   // Detect iOS devices
   useEffect(() => {
@@ -38,6 +52,188 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     };
     
     setIsIOS(checkIsIOS());
+  }, []);
+
+  // Load YouTube API
+  useEffect(() => {
+    if (!ytScriptLoaded.current && isPlaying && song && song.embedUrl) {
+      // Extract video ID from embedUrl
+      const getYouTubeId = (url: string) => {
+        const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        return match ? match[1] : null;
+      };
+      
+      const videoId = getYouTubeId(song.embedUrl);
+      
+      if (!videoId) {
+        console.error('Could not extract YouTube video ID from URL:', song.embedUrl);
+        setError('שגיאה בטעינת השיר - לא ניתן לזהות את מזהה הסרטון');
+        if (onPlaybackError) onPlaybackError();
+        return;
+      }
+
+      // Only load the script once
+      if (!document.getElementById('youtube-api') && !window.YT) {
+        const tag = document.createElement('script');
+        tag.id = 'youtube-api';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+        
+        window.onYouTubeIframeAPIReady = () => {
+          setYoutubeReady(true);
+          ytScriptLoaded.current = true;
+        };
+      } else if (window.YT) {
+        setYoutubeReady(true);
+        ytScriptLoaded.current = true;
+      }
+    }
+  }, [isPlaying, song, onPlaybackError]);
+
+  // Initialize YouTube player when API is ready
+  useEffect(() => {
+    if (!youtubeReady || !song || !isPlaying || !song.embedUrl || !containerRef.current) return;
+
+    // Extract video ID from embedUrl
+    const getYouTubeId = (url: string) => {
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+      return match ? match[1] : null;
+    };
+    
+    const videoId = getYouTubeId(song.embedUrl);
+    
+    if (!videoId) {
+      console.error('Could not extract YouTube video ID from URL:', song.embedUrl);
+      return;
+    }
+
+    try {
+      // Create player div if it doesn't exist
+      if (!document.getElementById('youtube-player')) {
+        const playerDiv = document.createElement('div');
+        playerDiv.id = 'youtube-player';
+        containerRef.current.appendChild(playerDiv);
+      }
+
+      // Initialize YouTube player
+      playerRef.current = new window.YT.Player('youtube-player', {
+        height: '100%',
+        width: '100%',
+        videoId: videoId,
+        playerVars: {
+          autoplay: 1,
+          mute: 1, // Start muted (required for autoplay on iOS)
+          controls: 0,
+          showinfo: 0,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1, // Important for iOS
+          fs: 0
+        },
+        events: {
+          onReady: onPlayerReady,
+          onStateChange: onPlayerStateChange,
+          onError: onPlayerError
+        }
+      });
+
+      setIframeLoaded(true);
+      setManualPlayNeeded(isIOS);
+      
+      if (onPlaybackStarted) {
+        onPlaybackStarted();
+      }
+    } catch (err) {
+      console.error('Error initializing YouTube player:', err);
+      setError('שגיאה בטעינת הנגן');
+      if (onPlaybackError) onPlaybackError();
+    }
+  }, [youtubeReady, song, isPlaying, onPlaybackStarted, onPlaybackError, isIOS]);
+
+  const onPlayerReady = (event: any) => {
+    try {
+      event.target.playVideo();
+      console.log('YouTube player ready');
+      
+      // Set up timer to end playback (even for iOS)
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      timeoutRef.current = setTimeout(() => {
+        console.log('Song playback timed out after duration:', duration);
+        cleanupPlayer();
+        onPlaybackEnded();
+      }, duration);
+    } catch (error) {
+      console.error('Error in onPlayerReady:', error);
+      if (onPlaybackError) onPlaybackError();
+    }
+  };
+
+  const onPlayerStateChange = (event: any) => {
+    // YT.PlayerState.ENDED = 0
+    if (event.data === 0) {
+      console.log('YouTube video ended naturally');
+      cleanupPlayer();
+      onPlaybackEnded();
+    }
+  };
+
+  const onPlayerError = (event: any) => {
+    console.error('YouTube player error:', event);
+    setError('שגיאה בהשמעת השיר');
+    cleanupPlayer();
+    if (onPlaybackError) onPlaybackError();
+  };
+
+  const handleManualPlay = () => {
+    if (playerRef.current) {
+      try {
+        playerRef.current.unMute();
+        playerRef.current.playVideo();
+        setManualPlayNeeded(false);
+        
+        toast.success('השיר מתנגן', {
+          description: 'לחצת בהצלחה על כפתור ההפעלה'
+        });
+      } catch (error) {
+        console.error('Error in handleManualPlay:', error);
+        toast.error('שגיאה בהשמעת השיר', {
+          description: 'נסה לפתוח את הקישור הישיר לשיר'
+        });
+      }
+    }
+  };
+
+  const cleanupPlayer = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
+    // Stop and destroy YouTube player if it exists
+    if (playerRef.current) {
+      try {
+        playerRef.current.stopVideo();
+        playerRef.current.destroy();
+        playerRef.current = null;
+      } catch (error) {
+        console.error('Error cleaning up YouTube player:', error);
+      }
+    }
+    
+    setShowYouTubeEmbed(false);
+    setManualPlayNeeded(false);
+    setIframeLoaded(false);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanupPlayer();
+    };
   }, []);
 
   useEffect(() => {
@@ -50,28 +246,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     if (isPlaying && song) {
       if (song.embedUrl) {
         console.log('Starting song playback:', song.title);
-        
-        if (isIOS) {
-          // For iOS, we need manual user interaction
-          setManualPlayNeeded(true);
-          setShowYouTubeEmbed(true);
-          setError(null);
-        } else {
-          // For non-iOS, proceed as normal
-          setShowYouTubeEmbed(true);
-          setError(null);
-          
-          if (onPlaybackStarted) {
-            onPlaybackStarted();
-          }
-          
-          // Set up timer to end playback
-          timeoutRef.current = setTimeout(() => {
-            console.log('Song playback ended:', song.title);
-            setShowYouTubeEmbed(false);
-            onPlaybackEnded();
-          }, duration);
-        }
+        setShowYouTubeEmbed(true);
+        setError(null);
       } else {
         // Handle case where song doesn't have an embed URL
         console.error('Song has no embed URL:', song);
@@ -84,36 +260,28 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         });
       }
     } else {
-      setShowYouTubeEmbed(false);
-      setManualPlayNeeded(false);
+      cleanupPlayer();
     }
+  }, [isPlaying, song, duration, onPlaybackError]);
 
-    // Cleanup function
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-    };
-  }, [isPlaying, song, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError, isIOS]);
-
-  const handleManualPlay = () => {
-    setManualPlayNeeded(false);
-    
-    if (onPlaybackStarted) {
-      onPlaybackStarted();
+  // Direct link handler
+  const openDirectLink = () => {
+    if (song && song.fullUrl) {
+      window.open(song.fullUrl, '_blank');
+      toast.success('נפתח קישור ישיר לשיר', {
+        description: 'השיר ייפתח בחלון או בלשונית חדשה'
+      });
+    } else if (song && song.embedUrl) {
+      // If no full URL, try to open the embed URL directly
+      window.open(song.embedUrl, '_blank');
+      toast.success('נפתח קישור להשמעת השיר', {
+        description: 'השיר ייפתח בחלון או בלשונית חדשה'
+      });
+    } else {
+      toast.error('אין קישור ישיר זמין', {
+        description: 'לא ניתן למצוא קישור ישיר לשיר זה'
+      });
     }
-    
-    // Set up timer to end playback
-    timeoutRef.current = setTimeout(() => {
-      console.log('Song playback ended (iOS):', song?.title);
-      setShowYouTubeEmbed(false);
-      onPlaybackEnded();
-    }, duration);
-    
-    toast.success('השיר מתנגן', {
-      description: 'במכשירי אפל, יש צורך בלחיצה ידנית להפעלת השיר'
-    });
   };
 
   if (!song || !isPlaying) {
@@ -126,29 +294,27 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         <div className="flex flex-col items-center text-red-500 gap-2">
           <AlertTriangle size={32} />
           <p>{error}</p>
+          {song.fullUrl && (
+            <AppButton 
+              variant="secondary" 
+              size="default" 
+              onClick={openDirectLink}
+              className="mt-2"
+            >
+              פתח קישור ישיר
+              <Youtube className="mr-2" />
+            </AppButton>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-40">
+    <div className="relative w-full h-40" ref={containerRef}>
       {showYouTubeEmbed && song.embedUrl ? (
         <>
-          <iframe 
-            ref={iframeRef}
-            width="100%" 
-            height="100%" 
-            src={song.embedUrl} 
-            frameBorder="0" 
-            allow="autoplay; encrypted-media" 
-            allowFullScreen 
-            className="absolute top-0 left-0 z-10"
-            onError={() => {
-              setError('שגיאה בטעינת השיר');
-              if (onPlaybackError) onPlaybackError();
-            }}
-          />
+          <div className="absolute top-0 left-0 w-full h-full z-10"></div>
           
           {/* iOS Manual Play Button */}
           {manualPlayNeeded && (
@@ -156,14 +322,24 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
               <div className="text-center">
                 <AppButton 
                   variant="primary" 
-                  size="lg" 
+                  size="default" 
                   onClick={handleManualPlay}
                   className="flex items-center gap-2"
                 >
-                  <Play className="w-5 h-5" />
-                  לחץ כאן להפעלת השיר
+                  <Volume2 className="w-5 h-5" />
+                  הפעל סאונד
                 </AppButton>
-                <p className="text-white mt-2 text-sm">במכשירי אפל נדרשת הפעלה ידנית</p>
+                <p className="text-white mt-2 text-sm">במכשירי אפל יש ללחוץ כאן להפעלת השמע</p>
+                
+                <AppButton 
+                  variant="secondary" 
+                  size="default" 
+                  onClick={openDirectLink}
+                  className="mt-4 flex items-center gap-2"
+                >
+                  <Youtube className="w-5 h-5" />
+                  פתח קישור ישיר
+                </AppButton>
               </div>
             </div>
           )}
