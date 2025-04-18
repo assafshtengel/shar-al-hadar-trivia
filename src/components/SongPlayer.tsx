@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
-import { Youtube, AlertTriangle, Music } from 'lucide-react';
+import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import MusicNote from './MusicNote';
+import AppButton from './AppButton';
 
 interface SongPlayerProps {
   song: Song | null;
@@ -23,7 +25,20 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
 }) => {
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isIOS, setIsIOS] = useState(false);
+  const [manualPlayNeeded, setManualPlayNeeded] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Detect iOS devices
+  useEffect(() => {
+    const checkIsIOS = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      return /iphone|ipad|ipod/.test(userAgent);
+    };
+    
+    setIsIOS(checkIsIOS());
+  }, []);
 
   useEffect(() => {
     // Clean up any existing timeout
@@ -35,19 +50,28 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     if (isPlaying && song) {
       if (song.embedUrl) {
         console.log('Starting song playback:', song.title);
-        setShowYouTubeEmbed(true);
-        setError(null);
         
-        if (onPlaybackStarted) {
-          onPlaybackStarted();
+        if (isIOS) {
+          // For iOS, we need manual user interaction
+          setManualPlayNeeded(true);
+          setShowYouTubeEmbed(true);
+          setError(null);
+        } else {
+          // For non-iOS, proceed as normal
+          setShowYouTubeEmbed(true);
+          setError(null);
+          
+          if (onPlaybackStarted) {
+            onPlaybackStarted();
+          }
+          
+          // Set up timer to end playback
+          timeoutRef.current = setTimeout(() => {
+            console.log('Song playback ended:', song.title);
+            setShowYouTubeEmbed(false);
+            onPlaybackEnded();
+          }, duration);
         }
-        
-        // Set up timer to end playback
-        timeoutRef.current = setTimeout(() => {
-          console.log('Song playback ended:', song.title);
-          setShowYouTubeEmbed(false);
-          onPlaybackEnded();
-        }, duration);
       } else {
         // Handle case where song doesn't have an embed URL
         console.error('Song has no embed URL:', song);
@@ -61,6 +85,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       }
     } else {
       setShowYouTubeEmbed(false);
+      setManualPlayNeeded(false);
     }
 
     // Cleanup function
@@ -70,7 +95,26 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         timeoutRef.current = null;
       }
     };
-  }, [isPlaying, song, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError]);
+  }, [isPlaying, song, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError, isIOS]);
+
+  const handleManualPlay = () => {
+    setManualPlayNeeded(false);
+    
+    if (onPlaybackStarted) {
+      onPlaybackStarted();
+    }
+    
+    // Set up timer to end playback
+    timeoutRef.current = setTimeout(() => {
+      console.log('Song playback ended (iOS):', song?.title);
+      setShowYouTubeEmbed(false);
+      onPlaybackEnded();
+    }, duration);
+    
+    toast.success('השיר מתנגן', {
+      description: 'במכשירי אפל, יש צורך בלחיצה ידנית להפעלת השיר'
+    });
+  };
 
   if (!song || !isPlaying) {
     return null;
@@ -92,6 +136,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       {showYouTubeEmbed && song.embedUrl ? (
         <>
           <iframe 
+            ref={iframeRef}
             width="100%" 
             height="100%" 
             src={song.embedUrl} 
@@ -104,6 +149,24 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
               if (onPlaybackError) onPlaybackError();
             }}
           />
+          
+          {/* iOS Manual Play Button */}
+          {manualPlayNeeded && (
+            <div className="absolute top-0 left-0 w-full h-full z-30 flex items-center justify-center bg-black/70">
+              <div className="text-center">
+                <AppButton 
+                  variant="primary" 
+                  size="lg" 
+                  onClick={handleManualPlay}
+                  className="flex items-center gap-2"
+                >
+                  <Play className="w-5 h-5" />
+                  לחץ כאן להפעלת השיר
+                </AppButton>
+                <p className="text-white mt-2 text-sm">במכשירי אפל נדרשת הפעלה ידנית</p>
+              </div>
+            </div>
+          )}
           
           {/* Visual overlay to hide video but keep audio playing */}
           <div className="absolute top-0 left-0 w-full h-full z-20 bg-black"></div>
