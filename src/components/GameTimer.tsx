@@ -1,18 +1,15 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Timer } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
-
 interface GameTimerProps {
   initialSeconds: number;
   isActive: boolean;
   onTimeout: () => void;
 }
-
-const GameTimer: React.FC<GameTimerProps> = ({ 
-  initialSeconds, 
-  isActive, 
-  onTimeout 
+const GameTimer: React.FC<GameTimerProps> = ({
+  initialSeconds,
+  isActive,
+  onTimeout
 }) => {
   const [timeLeft, setTimeLeft] = useState(initialSeconds);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -39,16 +36,14 @@ const GameTimer: React.FC<GameTimerProps> = ({
   useEffect(() => {
     if (isActive && !timerRef.current) {
       console.log('Starting game timer interval');
-      
+
       // Start a new timer
       timerRef.current = setInterval(() => {
         const now = Date.now();
         const elapsed = now - lastTickTimeRef.current;
         lastTickTimeRef.current = now;
-        
         setTimeLeft(prev => {
           const newTime = Math.max(prev - elapsed / 1000, 0);
-          
           if (newTime <= 0) {
             if (timerRef.current) {
               console.log('Timer reached zero, cleaning up');
@@ -58,12 +53,10 @@ const GameTimer: React.FC<GameTimerProps> = ({
             }
             return 0;
           }
-          
           return newTime;
         });
       }, 100); // Update more frequently for smoother countdown
     }
-    
     return () => {
       if (timerRef.current) {
         console.log('Cleaning up timer on effect cleanup');
@@ -74,21 +67,8 @@ const GameTimer: React.FC<GameTimerProps> = ({
   }, [isActive, onTimeout]);
 
   // Calculate percentage for progress bar
-  const progressPercentage = (timeLeft / initialSeconds) * 100;
+  const progressPercentage = timeLeft / initialSeconds * 100;
   const isAlmostTimeUp = timeLeft < initialSeconds * 0.3;
-
-  return (
-    <div className="flex items-center gap-2 bg-slate-100 rounded-md px-3 py-1">
-      <Timer className={isAlmostTimeUp ? 'text-red-500 animate-pulse' : 'text-primary'} size={20} />
-      <span className={`font-bold ${isAlmostTimeUp ? 'text-red-500' : ''}`}>
-        {Math.ceil(timeLeft)}s
-      </span>
-      <Progress 
-        value={progressPercentage} 
-        className={`w-20 h-2 ${isAlmostTimeUp ? 'bg-red-200' : ''}`}
-      />
-    </div>
-  );
+  return;
 };
-
 export default GameTimer;
