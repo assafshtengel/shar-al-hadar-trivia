@@ -86,11 +86,13 @@ export const useGamePhaseNavigation = ({
       case 'answering':
       case 'results':
       case 'end':
-        // Make sure players stay in the gameplay page, but don't force navigation if already there
+        // Make sure ALL players stay in the gameplay page
         if (currentPath !== '/gameplay') {
-          console.log('Navigating to gameplay screen for game phase:', gamePhase);
+          console.log(`Navigating to gameplay screen for game phase: ${gamePhase}`);
+          setIsRedirecting(true);
           navigationTimeoutRef.current = setTimeout(() => {
             navigate('/gameplay');
+            setIsRedirecting(false);
             navigationTimeoutRef.current = null;
           }, 100); // Small delay to prevent navigation race conditions
         }

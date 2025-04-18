@@ -101,7 +101,8 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
     };
   }, [showOverlay, isHost, navigate, clearGameData]);
   
-  if (!showOverlay || isHost) return null;
+  // Make sure to display it for all players, not just host or top players
+  if (!showOverlay) return null;
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -144,10 +145,8 @@ export const useGameStateSubscription = ({
               const newPhase = payload.new.game_phase as GamePhase;
               const currentTime = Date.now();
               
-              // Always process 'end' phase regardless of timing
-              // Otherwise apply debouncing to avoid duplicates
+              // Always process all phases for all players regardless of rank
               if (
-                newPhase === 'end' || 
                 lastGamePhaseRef.current === null || 
                 lastGamePhaseRef.current !== newPhase ||
                 (currentTime - phaseUpdateTimeRef.current) > 500
@@ -157,7 +156,7 @@ export const useGameStateSubscription = ({
                 lastGamePhaseRef.current = newPhase;
                 phaseUpdateTimeRef.current = currentTime;
                 
-                // Always set the game phase, regardless of the player type
+                // Always set the game phase, regardless of the player rank
                 setGamePhase(newPhase);
                 
                 if ('host_ready' in payload.new) {
