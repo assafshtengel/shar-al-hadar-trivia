@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -109,6 +110,7 @@ const GamePlay: React.FC = () => {
   const [playerReady, setPlayerReady] = useState(false);
   const [showAnswerConfirmation, setShowAnswerConfirmation] = useState(false);
   const [pendingAnswers, setPendingAnswers] = useState<PendingAnswerUpdate[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [players, setPlayers] = useState<SupabasePlayer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
