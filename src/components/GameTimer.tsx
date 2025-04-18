@@ -47,6 +47,7 @@ const GameTimer: React.FC<GameTimerProps> = ({
         const now = Date.now();
         const elapsed = now - lastTickTimeRef.current;
         lastTickTimeRef.current = now;
+        
         setTimeLeft(prev => {
           const newTime = Math.max(prev - elapsed / 1000, 0);
           
@@ -73,6 +74,7 @@ const GameTimer: React.FC<GameTimerProps> = ({
         });
       }, 100); // Update more frequently for smoother countdown
     }
+
     return () => {
       if (timerRef.current) {
         console.log('Cleaning up timer on effect cleanup');
