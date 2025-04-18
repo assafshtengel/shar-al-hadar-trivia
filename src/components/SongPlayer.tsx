@@ -5,6 +5,7 @@ import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import MusicNote from './MusicNote';
 import AppButton from './AppButton';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SongPlayerProps {
   song: Song | null;
@@ -27,8 +28,11 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [manualPlayNeeded, setManualPlayNeeded] = useState(false);
+  const [manualPlayClicked, setManualPlayClicked] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isMobile = useIsMobile();
 
   // Detect iOS devices
   useEffect(() => {
@@ -56,6 +60,25 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           setManualPlayNeeded(true);
           setShowYouTubeEmbed(true);
           setError(null);
+          
+          // Create an audio element for iOS as a fallback
+          if (!audioRef.current && song.fullUrl) {
+            const audio = new Audio();
+            audio.src = song.fullUrl;
+            audio.preload = 'auto';
+            audioRef.current = audio;
+            
+            audio.oncanplay = () => {
+              console.log("Audio can be played now");
+            };
+            
+            audio.onerror = (e) => {
+              console.error("Audio error:", e);
+              if (onPlaybackError) {
+                onPlaybackError();
+              }
+            };
+          }
         } else {
           // For non-iOS, proceed as normal
           setShowYouTubeEmbed(true);
@@ -86,6 +109,13 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     } else {
       setShowYouTubeEmbed(false);
       setManualPlayNeeded(false);
+      setManualPlayClicked(false);
+      
+      // Clean up audio element
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
     }
 
     // Cleanup function
@@ -94,11 +124,56 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
+      
+      // Clean up audio element
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current = null;
+      }
     };
   }, [isPlaying, song, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError, isIOS]);
 
   const handleManualPlay = () => {
+    console.log('Manual play button clicked');
     setManualPlayNeeded(false);
+    setManualPlayClicked(true);
+    
+    // Try both YouTube iframe and direct audio playback for iOS
+    if (iframeRef.current) {
+      // Force reload the iframe with autoplay=1
+      const src = iframeRef.current.src;
+      iframeRef.current.src = '';
+      setTimeout(() => {
+        if (iframeRef.current) {
+          // Add or update autoplay parameter
+          const newSrc = src.includes('autoplay=') 
+            ? src.replace('autoplay=0', 'autoplay=1') 
+            : `${src}&autoplay=1`;
+          iframeRef.current.src = newSrc;
+          console.log('Updated iframe src with autoplay:', newSrc);
+        }
+      }, 100);
+    }
+    
+    // Try audio fallback for iOS
+    if (audioRef.current && song?.fullUrl) {
+      console.log('Attempting to play audio directly');
+      const playPromise = audioRef.current.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('Audio playback started successfully');
+          })
+          .catch(error => {
+            console.error('Audio playback failed:', error);
+            toast.error('השמעת השיר נכשלה', {
+              description: 'יש לנסות שוב או להשתמש במכשיר אחר'
+            });
+          });
+      }
+    }
     
     if (onPlaybackStarted) {
       onPlaybackStarted();
@@ -109,6 +184,11 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       console.log('Song playback ended (iOS):', song?.title);
       setShowYouTubeEmbed(false);
       onPlaybackEnded();
+      
+      // Stop audio if it's playing
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
     }, duration);
     
     toast.success('השיר מתנגן', {
@@ -139,7 +219,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             ref={iframeRef}
             width="100%" 
             height="100%" 
-            src={song.embedUrl} 
+            src={`${song.embedUrl}${manualPlayClicked ? '&autoplay=1' : ''}`}
             frameBorder="0" 
             allow="autoplay; encrypted-media" 
             allowFullScreen 
@@ -151,7 +231,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           />
           
           {/* iOS Manual Play Button */}
-          {manualPlayNeeded && (
+          {manualPlayNeeded && !manualPlayClicked && (
             <div className="absolute top-0 left-0 w-full h-full z-30 flex items-center justify-center bg-black/70">
               <div className="text-center">
                 <AppButton 
@@ -168,6 +248,13 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             </div>
           )}
           
+          {/* iOS playback indicator */}
+          {isIOS && manualPlayClicked && (
+            <div className="absolute top-2 right-2 z-40 bg-green-500 text-white px-2 py-1 rounded-md text-sm animate-pulse">
+              השיר מתנגן...
+            </div>
+          )}
+          
           {/* Visual overlay to hide video but keep audio playing */}
           <div className="absolute top-0 left-0 w-full h-full z-20 bg-black"></div>
         </>
@@ -181,6 +268,17 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
             <Music className="w-10 h-10 text-primary" />
           </div>
+        </div>
+      )}
+      
+      {/* Hidden audio element for iOS fallback */}
+      {isIOS && song.fullUrl && (
+        <div className="hidden">
+          <audio 
+            ref={(el) => { audioRef.current = el; }}
+            src={song.fullUrl} 
+            preload="auto"
+          />
         </div>
       )}
     </div>
