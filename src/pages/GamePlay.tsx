@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/components/ui/use-toast';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 import EndGameButton from '@/components/EndGameButton';
 import { useGameState } from '@/contexts/GameStateContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,16 +11,43 @@ import AnswerOptions from '@/components/GamePlay/AnswerOptions';
 import ScoringFeedback from '@/components/GamePlay/ScoringFeedback';
 import Leaderboard from '@/components/GamePlay/Leaderboard';
 
+type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
+
 interface GameRound {
   correctSong: Song;
   options: Song[];
   correctAnswerIndex: number;
 }
 
+interface Player {
+  name: string;
+  score: number;
+  skipsLeft: number;
+  hasAnswered: boolean;
+  isReady: boolean;
+  pendingAnswer: number | null;
+  lastAnswerCorrect?: boolean;
+  lastScore?: number;
+  lastAnswer?: string;
+}
+
+interface SupabasePlayer {
+  id: string;
+  name: string;
+  score: number;
+  game_code: string;
+  hasAnswered?: boolean;
+  isReady?: boolean;
+}
+
+interface PendingAnswerUpdate {
+  playerName: string;
+  answerIndex: number;
+  timestamp: number;
+}
+
 const GamePlay: React.FC = () => {
-  const {
-    toast
-  } = useToast();
+  const { toast: useToastHook } = { toast: {} };
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -242,6 +269,181 @@ const GamePlay: React.FC = () => {
       supabase.removeChannel(gameStateChannel);
     };
   }, [gameCode]);
+
+  const playSong = () => {
+    if (!isHost || isPlaying) return;
+    setIsPlaying(true);
+    setShowYouTubeEmbed(true);
+    
+    if (gameCode) {
+      supabase.from('game_state')
+        .update({ game_phase: 'playing' })
+        .eq('game_code', gameCode)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error updating game state:', error);
+            toast.error('שגיאה בעדכון מצב המשחק');
+          }
+        });
+    }
+  };
+
+  const showLeaderboard = async () => {
+    if (!isHost || !gameCode) return;
+    
+    try {
+      const { error } = await supabase
+        .from('game_state')
+        .update({ game_phase: 'end' })
+        .eq('game_code', gameCode);
+        
+      if (error) {
+        console.error('Error updating game phase to end:', error);
+        toast.error('שגיאה בעדכון מצב המשחק');
+      } else {
+        toast.success('המשחק הסתיים, מציג טבלת מובילים');
+      }
+    } catch (err) {
+      console.error('Exception when ending game:', err);
+    }
+  };
+
+  const handleSongPlaybackEnded = () => {
+    setIsPlaying(false);
+    setShowYouTubeEmbed(false);
+    
+    if (isHost && gameCode) {
+      supabase.from('game_state')
+        .update({ game_phase: 'answering' })
+        .eq('game_code', gameCode)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error updating game state:', error);
+            toast.error('שגיאה בעדכון מצב המשחק');
+          }
+        });
+    }
+  };
+
+  const handleSongPlaybackError = () => {
+    setIsPlaying(false);
+    setShowYouTubeEmbed(false);
+    toast.error('אירעה שגיאה בהשמעת השיר');
+  };
+
+  const handleAnswer = (index: number) => {
+    if (selectedAnswer !== null) return;
+    
+    setSelectedAnswer(index);
+    setShowAnswerConfirmation(true);
+    
+    if (gameCode && playerName) {
+      supabase.from('players')
+        .update({ hasAnswered: true })
+        .eq('game_code', gameCode)
+        .eq('name', playerName)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error updating player answer:', error);
+          }
+        });
+    }
+    
+    setPendingAnswers([
+      ...pendingAnswers,
+      {
+        playerName: playerName || 'Unknown',
+        answerIndex: index,
+        timestamp: Date.now()
+      }
+    ]);
+  };
+
+  const handleSkip = () => {
+    if (selectedAnswer !== null || currentPlayer.skipsLeft <= 0) return;
+    
+    setCurrentPlayer(prev => ({
+      ...prev,
+      skipsLeft: prev.skipsLeft - 1
+    }));
+    
+    if (gameCode && playerName) {
+      supabase.from('players')
+        .update({ hasAnswered: true })
+        .eq('game_code', gameCode)
+        .eq('name', playerName)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error updating player skip:', error);
+          }
+        });
+    }
+  };
+
+  const handleTimerTimeout = () => {
+    if (selectedAnswer === null) {
+      handleSkip();
+    }
+  };
+
+  const playFullSong = () => {
+    if (!currentSong) return;
+    
+    setShowYouTubeEmbed(true);
+  };
+
+  const nextRound = async () => {
+    if (!isHost || !gameCode) return;
+    
+    try {
+      const { error } = await supabase
+        .from('game_state')
+        .update({ 
+          game_phase: 'playing',
+          current_round: 1
+        })
+        .eq('game_code', gameCode);
+        
+      if (error) {
+        console.error('Error starting next round:', error);
+        toast.error('שגיאה בעדכון מצב המשחק');
+      } else {
+        await supabase
+          .from('players')
+          .update({ hasAnswered: false, isReady: false })
+          .eq('game_code', gameCode);
+          
+        toast.success('סיבוב חדש התחיל');
+      }
+    } catch (err) {
+      console.error('Exception when starting next round:', err);
+    }
+  };
+
+  const resetAllPlayerScores = async () => {
+    if (!isHost || !gameCode) return;
+    
+    try {
+      const { error } = await supabase
+        .from('players')
+        .update({ score: 0 })
+        .eq('game_code', gameCode);
+        
+      if (error) {
+        console.error('Error resetting scores:', error);
+        toast.error('שגיאה באיפוס ניקוד');
+      } else {
+        toast.success('הניקוד אופס בהצלחה');
+        
+        setPlayers(prevPlayers => prevPlayers.map(player => ({
+          ...player,
+          score: 0
+        })));
+      }
+    } catch (err) {
+      console.error('Exception when resetting scores:', err);
+    }
+  };
 
   const updateGameState = async (phase: string) => {
     if (!isHost || !gameCode) return;
