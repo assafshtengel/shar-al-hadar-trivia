@@ -1,7 +1,7 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface UsePlayerManagementParams {
   gameCode: string | null;
@@ -27,12 +27,12 @@ export const usePlayerManagement = ({
   setStartGameDisabled 
 }: UsePlayerManagementParams) => {
   const [players, setPlayers] = useState<Player[]>([]);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const hostCheckCompletedRef = useRef<boolean>(false);
-  const fetchingPlayersRef = useRef<boolean>(false);
   const updatingPlayerRef = useRef<boolean>(false);
   const lastUpdateIdRef = useRef<string | null>(null);
-  
+  const channelName = `players-changes-${gameCode}`;
+
   const checkHostJoined = useCallback(async () => {
     if (hostCheckCompletedRef.current || !playerName || !gameCode) return;
     
@@ -91,40 +91,41 @@ export const usePlayerManagement = ({
     }
   }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
 
-  useEffect(() => {
-    console.log('Starting host check effect');
-    if (!hostCheckCompletedRef.current) {
-      checkHostJoined();
-    }
-    return () => {
-      console.log('Cleaning up host check effect');
-    };
-  }, [checkHostJoined]);
-
-  useEffect(() => {
-    if (!gameCode) {
-      console.error('No game code provided to usePlayerManagement');
+  const handlePlayerChange = useCallback((payload: any) => {
+    if (!payload || updatingPlayerRef.current) {
       return;
     }
 
-    console.log('Setting up player tracking for game:', gameCode);
-    let isMounted = true;
+    if (payload.eventType === 'INSERT') {
+      setPlayers((prevPlayers) => {
+        const newPlayer = payload.new as Player;
+        if (prevPlayers.some(p => p.id === newPlayer.id)) {
+          return prevPlayers;
+        }
+        return [...prevPlayers, newPlayer];
+      });
+    } else if (payload.eventType === 'UPDATE') {
+      setPlayers((prevPlayers) => 
+        prevPlayers.map(player => 
+          player.id === payload.new.id ? { ...player, ...payload.new } : player
+        )
+      );
+    } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+      setPlayers((prevPlayers) => 
+        prevPlayers.filter(player => player.id !== payload.old.id)
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!gameCode) return;
     
-    if (!fetchingPlayersRef.current) {
-      fetchPlayers();
-    }
+    if (channelRef.current) return;
 
-    if (channelRef.current) {
-      console.log('Removing existing players channel');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-
-    const channelId = `players-changes-${gameCode}-${Date.now()}`;
-    console.log(`Creating new player channel: ${channelId}`);
+    console.log(`Setting up player tracking for ${channelName}`);
     
     const channel = supabase
-      .channel(channelId)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -133,63 +134,24 @@ export const usePlayerManagement = ({
           table: 'players',
           filter: `game_code=eq.${gameCode}`
         },
-        (payload) => {
-          if (!isMounted) {
-            console.log('Component unmounted, ignoring player change');
-            return;
-          }
-
-          if (payload.new && typeof payload.new === 'object' && 'id' in payload.new && lastUpdateIdRef.current === payload.new.id) {
-            console.log('Skipping own update:', payload.new.id);
-            return;
-          }
-          
-          console.log('Player change detected:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            setPlayers((prevPlayers) => {
-              const newPlayer = payload.new as Player;
-              if (prevPlayers.some(p => p.id === newPlayer.id)) {
-                return prevPlayers;
-              }
-              return [...prevPlayers, newPlayer];
-            });
-            
-            if (playerName && payload.new && typeof payload.new === 'object' && 'name' in payload.new && payload.new.name === playerName) {
-              console.log(`Host ${playerName} joined through realtime, enabling start game`);
-              setHostJoined(true);
-              setStartGameDisabled(false);
-              hostCheckCompletedRef.current = true;
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            setPlayers((prevPlayers) => 
-              prevPlayers.map(player => 
-                player.id === payload.new.id ? { ...player, ...payload.new } : player
-              )
-            );
-          } else if (payload.eventType === 'DELETE' && payload.old && typeof payload.old === 'object' && 'id' in payload.old) {
-            setPlayers((prevPlayers) => 
-              prevPlayers.filter(player => player.id !== payload.old.id)
-            );
-          }
-        }
+        handlePlayerChange
       )
-      .subscribe((status) => {
-        console.log('Players subscription status:', status);
-      });
+      .subscribe();
 
     channelRef.current = channel;
 
+    if (!hostCheckCompletedRef.current) {
+      fetchPlayers();
+    }
+
     return () => {
       console.log('Cleaning up players subscription');
-      isMounted = false;
-      
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [gameCode, playerName, fetchPlayers, setHostJoined, setStartGameDisabled]);
+  }, [gameCode, handlePlayerChange, fetchPlayers]);
 
   const updatePlayer = useCallback(async (playerId: string, updates: Partial<Player>) => {
     if (updatingPlayerRef.current) {

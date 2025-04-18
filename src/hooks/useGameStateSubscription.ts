@@ -1,8 +1,8 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { GamePhase } from '@/contexts/GameStateContext';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface UseGameStateSubscriptionProps {
   gameCode: string | null;
@@ -21,12 +21,12 @@ export const useGameStateSubscription = ({
   clearGameData,
   navigate
 }: UseGameStateSubscriptionProps) => {
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const initialCheckDoneRef = useRef<boolean>(false);
-  const isSubscribingRef = useRef<boolean>(false);
   const updatingGameStateRef = useRef<boolean>(false);
   const lastGameStateUpdateRef = useRef<string | null>(null);
-  
+  const channelName = `game-state-changes-${gameCode}`;
+
   const checkGameState = useCallback(async () => {
     if (!gameCode || initialCheckDoneRef.current || isSubscribingRef.current) return;
     
@@ -108,27 +108,33 @@ export const useGameStateSubscription = ({
     }
   }, [gameCode, setGamePhase, setHostReady]);
 
+  const handleGameStateChange = useCallback((payload: any) => {
+    if (!payload.new || updatingGameStateRef.current) {
+      return;
+    }
+
+    if (payload.new && typeof payload.new === 'object' && 'game_phase' in payload.new) {
+      const newPhase = payload.new.game_phase as GamePhase;
+      setGamePhase(newPhase);
+      
+      if ('host_ready' in payload.new) {
+        setHostReady(!!payload.new.host_ready);
+      }
+    } else if (payload.eventType === 'DELETE' && !isHost) {
+      clearGameData();
+      navigate('/');
+    }
+  }, [setGamePhase, setHostReady, clearGameData, navigate, isHost]);
+
   useEffect(() => {
     if (!gameCode) return;
 
-    console.log("Setting up game state monitoring for code:", gameCode);
-    let isMounted = true;
+    if (channelRef.current) return;
+
+    console.log(`Setting up game state subscription for ${channelName}`);
     
-    if (channelRef.current) {
-      console.log('Removing existing game state channel');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-
-    if (!initialCheckDoneRef.current && !isSubscribingRef.current) {
-      checkGameState();
-    }
-
-    const channelId = `game-state-changes-${gameCode}-${Date.now()}`;
-    console.log(`Creating new game state channel: ${channelId}`);
-
     const channel = supabase
-      .channel(channelId)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -137,56 +143,20 @@ export const useGameStateSubscription = ({
           table: 'game_state',
           filter: `game_code=eq.${gameCode}`
         },
-        (payload) => {
-          if (!isMounted) {
-            console.log('Component unmounted, ignoring game state change');
-            return;
-          }
-          
-          // Skip if this update was triggered by our own code
-          if (payload.new && typeof payload.new === 'object' && 'game_code' in payload.new && lastGameStateUpdateRef.current === payload.new.game_code) {
-            console.log('Skipping own game state update');
-            return;
-          }
-          
-          console.log('Game state change detected:', payload);
-          
-          if (payload.new && typeof payload.new === 'object' && 'game_phase' in payload.new) {
-            const newPhase = payload.new.game_phase as GamePhase;
-            console.log(`Game phase update: ${newPhase}, isHost: ${isHost}`);
-            
-            setGamePhase(newPhase);
-            
-            if ('host_ready' in payload.new) {
-              setHostReady(!!payload.new.host_ready);
-            }
-          } else if (payload.eventType === 'DELETE' && !isHost) {
-            console.log('Game state deleted by host - ending game for player');
-            clearGameData();
-            navigate('/');
-          }
-        }
+        handleGameStateChange
       )
-      .subscribe((status) => {
-        console.log('Game state subscription status:', status);
-      });
+      .subscribe();
 
     channelRef.current = channel;
 
-    if (!initialCheckDoneRef.current && !isSubscribingRef.current) {
-      fetchGameState();
-    }
-
     return () => {
       console.log('Cleaning up game state subscription');
-      isMounted = false;
-      
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [gameCode, isHost, checkGameState, fetchGameState, setGamePhase, setHostReady, clearGameData, navigate]);
+  }, [gameCode, handleGameStateChange]);
 
   const updateGameState = useCallback(async (updates: Partial<{ game_phase: GamePhase, host_ready: boolean }>) => {
     if (!gameCode || updatingGameStateRef.current) {
