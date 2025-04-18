@@ -128,6 +128,204 @@ export const defaultSongBank: Song[] = [
     title: "שולי רנד – שבע השנים הטובות",
     embedUrl: "https://www.youtube.com/embed/uqmLzAuVyew?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=uqmLzAuVyew"
+  },
+  {
+    id: 50,
+    title: "רכבת לילה לקהיר - משינה",
+    embedUrl: "https://www.youtube.com/embed/IOSmBOsGRMc?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=IOSmBOsGRMc"
+  },
+  {
+    id: 51,
+    title: "אין מקום אחר - משינה",
+    embedUrl: "https://www.youtube.com/embed/PVAD3KWgQrQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=PVAD3KWgQrQ"
+  },
+  {
+    id: 52,
+    title: "הכוכבים דולקים על אש קטנה - משינה",
+    embedUrl: "https://www.youtube.com/embed/-ozbcdJ9he0?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=-ozbcdJ9he0"
+  },
+  {
+    id: 53,
+    title: "בן המלך - משינה",
+    embedUrl: "https://www.youtube.com/embed/CAFC1onZdQI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=CAFC1onZdQI"
+  },
+  {
+    id: 54,
+    title: "שלח לי מלאך - משינה",
+    embedUrl: "https://www.youtube.com/embed/UCH8WMIhvF4?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=UCH8WMIhvF4"
+  },
+  {
+    id: 55,
+    title: "בואי וניפול - משינה",
+    embedUrl: "https://www.youtube.com/embed/CqCt0UeHLGA?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=CqCt0UeHLGA"
+  },
+  {
+    id: 56,
+    title: "BMW שחורה - אתניקס",
+    embedUrl: "https://www.youtube.com/embed/IhD0BKCDRB4?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=IhD0BKCDRB4"
+  },
+  {
+    id: 57,
+    title: "כי החיים כל-כך יפים - אתניקס",
+    embedUrl: "https://www.youtube.com/embed/1VWT_MWF3Ws?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=1VWT_MWF3Ws"
+  },
+  {
+    id: 58,
+    title: "מסע - אתניקס",
+    embedUrl: "https://www.youtube.com/embed/H7-t1YQ937A?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=H7-t1YQ937A"
+  },
+  {
+    id: 59,
+    title: "מקדש האהבה - אתניקס",
+    embedUrl: "https://www.youtube.com/embed/bLi6ZX1CNes?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=bLi6ZX1CNes"
+  },
+  {
+    id: 60,
+    title: "אדמת האהבה - אתניקס",
+    embedUrl: "https://www.youtube.com/embed/jRYuuHVoD8s?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=jRYuuHVoD8s"
+  },
+  {
+    id: 61,
+    title: "איש קש - מוניקה סקס",
+    embedUrl: "https://www.youtube.com/embed/-32TOD2kg3g?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=-32TOD2kg3g"
+  },
+  {
+    id: 62,
+    title: "פצעים ונשיקות - מוניקה סקס",
+    embedUrl: "https://www.youtube.com/embed/z7tHTgp2l6k?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=z7tHTgp2l6k"
+  },
+  {
+    id: 63,
+    title: "מכה אפורה - מוניקה סקס",
+    embedUrl: "https://www.youtube.com/embed/DV55unut3oI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=DV55unut3oI"
+  },
+  {
+    id: 64,
+    title: "על הרצפה - מוניקה סקס",
+    embedUrl: "https://www.youtube.com/embed/dVwE5u1xFLw?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=dVwE5u1xFLw"
+  },
+  {
+    id: 65,
+    title: "גשם חזק - מוניקה סקס",
+    embedUrl: "https://www.youtube.com/embed/0gDOtz-V4PE?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=0gDOtz-V4PE"
+  },
+  {
+    id: 66,
+    title: "פאוץ' - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/K9qQNAdiXHI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=K9qQNAdiXHI"
+  },
+  {
+    id: 67,
+    title: "טרילילי טרללה - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/QB8NuvDML2I?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=QB8NuvDML2I"
+  },
+  {
+    id: 68,
+    title: "Unicorn - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/r4wbdKmM3bQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=r4wbdKmM3bQ"
+  },
+  {
+    id: 69,
+    title: "מיליון דולר - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/oQbh5Kvet04?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=oQbh5Kvet04"
+  },
+  {
+    id: 70,
+    title: "אני - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/jmSuPQu7xNA?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=jmSuPQu7xNA"
+  },
+  {
+    id: 71,
+    title: "הכי ישראלי - התקווה 6",
+    embedUrl: "https://www.youtube.com/embed/oYZvPnxDbX0?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=oYZvPnxDbX0"
+  },
+  {
+    id: 72,
+    title: "בעולם שלה - התקווה 6",
+    embedUrl: "https://www.youtube.com/embed/DgXHhNpA6L8?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=DgXHhNpA6L8"
+  },
+  {
+    id: 73,
+    title: "מה שיהיה יהיה - התקווה 6",
+    embedUrl: "https://www.youtube.com/embed/b3JRw1KhbYA?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=b3JRw1KhbYA"
+  },
+  {
+    id: 74,
+    title: "קופנגן - התקווה 6",
+    embedUrl: "https://www.youtube.com/embed/mMPos85fvb8?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=mMPos85fvb8"
+  },
+  {
+    id: 75,
+    title: "רץ אלייך - עילי בוטנר",
+    embedUrl: "https://www.youtube.com/embed/1pVcgz9Jv-U?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=1pVcgz9Jv-U"
+  },
+  {
+    id: 76,
+    title: "טיפות - עילי בוטנר",
+    embedUrl: "https://www.youtube.com/embed/-EiNeISPjZY?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=-EiNeISPjZY"
+  },
+  {
+    id: 77,
+    title: "בוא אליי - עילי בוטנר",
+    embedUrl: "https://www.youtube.com/embed/YOcMyGr9HqU?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=YOcMyGr9HqU"
+  },
+  {
+    id: 78,
+    title: "ילדים של אף אחד - עילי בוטנר",
+    embedUrl: "https://www.youtube.com/embed/4QZ3xAQRJMc?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=4QZ3xAQRJMc"
+  },
+  {
+    id: 79,
+    title: "בזמן האחרון - עידן עמדי",
+    embedUrl: "https://www.youtube.com/embed/f5fTCR7TOEU?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=f5fTCR7TOEU"
+  },
+  {
+    id: 80,
+    title: "נשכח או נסלח - עידן עמדי",
+    embedUrl: "https://www.youtube.com/embed/KfE_reB9EDY?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=KfE_reB9EDY"
+  },
+  {
+    id: 81,
+    title: "כל הציפורים - הראל סקעת",
+    embedUrl: "https://www.youtube.com/embed/V_FJDCsXXLc?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=V_FJDCsXXLc"
+  },
+  {
+    id: 82,
+    title: "ואת - הראל סקעת",
+    embedUrl: "https://www.youtube.com/embed/AcpgsbFvnbM?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=AcpgsbFvnbM"
   }
 ];
 
