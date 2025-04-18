@@ -124,5 +124,30 @@ export const usePlayerManagement = ({
     };
   }, [gameCode, playerName, setHostJoined, setStartGameDisabled]);
 
-  return { players };
+  // New function to reset player scores when a new game starts
+  const resetPlayerScores = async () => {
+    if (!gameCode) return;
+    
+    try {
+      const { error } = await supabase
+        .from('players')
+        .update({ score: 0 })
+        .eq('game_code', gameCode);
+        
+      if (error) {
+        console.error('Error resetting player scores:', error);
+      } else {
+        console.log('All player scores reset to 0');
+        
+        // Update local state to reflect the score reset
+        setPlayers(prevPlayers => 
+          prevPlayers.map(player => ({ ...player, score: 0 }))
+        );
+      }
+    } catch (err) {
+      console.error('Exception when resetting player scores:', err);
+    }
+  };
+
+  return { players, resetPlayerScores };
 };

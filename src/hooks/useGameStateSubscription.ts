@@ -77,6 +77,33 @@ export const useGameStateSubscription = ({
               description: 'אירעה שגיאה ביצירת מצב המשחק',
             });
           }
+        } else if (data && data.game_phase === 'end' && isHost) {
+          // Reset round and prepare for a new game
+          console.log("Resetting game state for a new game");
+          const { error: resetError } = await supabase
+            .from('game_state')
+            .update({
+              game_phase: 'waiting',
+              current_round: 1,
+              host_ready: false
+            })
+            .eq('game_code', gameCode);
+          
+          if (resetError) {
+            console.error('Error resetting game state:', resetError);
+          }
+          
+          // We should also reset all player scores here for a new game
+          const { error: resetScoreError } = await supabase
+            .from('players')
+            .update({ score: 0, hasAnswered: false, isReady: false })
+            .eq('game_code', gameCode);
+          
+          if (resetScoreError) {
+            console.error('Error resetting player scores:', resetScoreError);
+          } else {
+            console.log('All player scores reset for new game');
+          }
         }
       } catch (err) {
         console.error("Exception in checkGameState:", err);
