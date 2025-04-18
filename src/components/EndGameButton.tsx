@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { useGameState } from '@/contexts/GameStateContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // הוספת הגדרת הטיפוס עבור הפרופס של הקומפוננטה
 interface EndGameButtonProps {
@@ -27,6 +28,7 @@ const EndGameButton: React.FC<EndGameButtonProps> = ({ gameCode }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { clearGameData } = useGameState();
+  const isMobile = useIsMobile();
 
   const handleEndGame = async () => {
     if (!gameCode) {
@@ -96,7 +98,10 @@ const EndGameButton: React.FC<EndGameButtonProps> = ({ gameCode }) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" className="flex items-center gap-2">
+        <Button 
+          variant="destructive" 
+          className={`flex items-center gap-2 ${isMobile ? 'w-full mb-4' : ''}`}
+        >
           <X className="h-4 w-4" />
           סיים משחק
         </Button>
