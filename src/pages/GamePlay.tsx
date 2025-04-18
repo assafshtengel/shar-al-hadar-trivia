@@ -171,9 +171,10 @@ const GamePlay: React.FC = () => {
         }));
         break;
       case 'answering':
+        setTimerActive(false);
         setPhase('answerOptions');
         setSelectedAnswer(null);
-        if (!timerActive) {
+        if (!isHost) {
           startTimer();
         }
         break;
@@ -186,7 +187,7 @@ const GamePlay: React.FC = () => {
         setTimerActive(false);
         break;
     }
-  }, [serverGamePhase, timerActive]);
+  }, [serverGamePhase, isHost]);
 
   useEffect(() => {
     if (!gameCode || phase !== 'answerOptions' || !timerActive) return;
@@ -445,11 +446,12 @@ const GamePlay: React.FC = () => {
   };
 
   const startTimer = () => {
-    if (timerActive) {
-      console.log('Clearing existing timer before starting a new one');
+    if (phase !== 'answerOptions' || timerActive) {
+      console.log('Skipping timer start - wrong phase or timer already active');
       return;
     }
     
+    console.log('Starting new timer');
     setTimeLeft(21);
     setTimerActive(true);
     
