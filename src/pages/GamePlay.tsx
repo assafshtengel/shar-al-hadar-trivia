@@ -843,18 +843,16 @@ const GamePlay: React.FC = () => {
               </div>
             )}
             
-            {isHost && (
-              <AppButton 
-                variant="primary" 
-                size="lg"
-                onClick={playSong}
-                className="max-w-xs"
-                disabled={isPlaying}
-              >
-                {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
-                <Play className="mr-2" />
-              </AppButton>
-            )}
+            <AppButton 
+              variant="primary" 
+              size="lg"
+              onClick={playSong}
+              className="max-w-xs"
+              disabled={!isHost || isPlaying}
+            >
+              {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
+              <Play className="mr-2" />
+            </AppButton>
             
             {isPlaying && !showYouTubeEmbed && (
               <div className="relative w-40 h-40 flex items-center justify-center">
@@ -881,14 +879,14 @@ const GamePlay: React.FC = () => {
               </div>
             )}
             
-            {!isHost && (
+            {!isHost && !isPlaying && (
               <div className="text-lg text-gray-600 text-center">
                 המתן למנהל המשחק להשמיע את השיר הבא
               </div>
             )}
           </div>
         );
-      
+
       case 'answerOptions':
         return (
           <div className="flex flex-col items-center py-6 space-y-6">
