@@ -43,7 +43,7 @@ const AdSenseAd: React.FC<AdSenseAdProps> = ({
       />
       
       {/* Fallback content when ads are not loaded */}
-      <div className="ad-placeholder text-center p-4 text-sm text-gray-500">
+      <div className="ad-placeholder text-center p-2 text-xs text-gray-500">
         מקום פרסומת
       </div>
     </div>
