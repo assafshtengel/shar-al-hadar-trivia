@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface UsePlayerManagementParams {
   gameCode: string;
@@ -19,6 +19,9 @@ interface Player {
   isReady?: boolean; // Make sure this field is included
 }
 
+// Constants
+const MAX_PLAYERS = 6;
+
 export const usePlayerManagement = ({ 
   gameCode, 
   playerName, 
@@ -26,6 +29,7 @@ export const usePlayerManagement = ({
   setStartGameDisabled 
 }: UsePlayerManagementParams) => {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [playerLimitReached, setPlayerLimitReached] = useState(false);
 
   // Check if host is already in the players list
   useEffect(() => {
@@ -65,6 +69,17 @@ export const usePlayerManagement = ({
           console.log('Fetched players:', data);
           setPlayers(data);
           
+          // Check player limit
+          const currentPlayerCount = data.length;
+          const limitReached = currentPlayerCount >= MAX_PLAYERS;
+          setPlayerLimitReached(limitReached);
+
+          if (limitReached && !data.some(player => player.name === playerName)) {
+            toast.error('מספר השחקנים המרבי הושג', {
+              description: 'המשחק מלא. אנא המתן לסיבוב הבא.'
+            });
+          }
+          
           // Check if host is already in the players list
           if (playerName && data.some(player => player.name === playerName)) {
             console.log(`Host ${playerName} found in initial players fetch`);
@@ -96,6 +111,16 @@ export const usePlayerManagement = ({
           // Handle different event types
           if (payload.eventType === 'INSERT') {
             // Add new player to the list
+            const currentPlayerCount = players.length;
+            const limitReached = currentPlayerCount + 1 >= MAX_PLAYERS;
+            setPlayerLimitReached(limitReached);
+
+            if (limitReached) {
+              toast.warning('המשחק מלא', {
+                description: 'מספר השחקנים המרבי הושג.'
+              });
+            }
+
             setPlayers((prevPlayers) => [...prevPlayers, payload.new as Player]);
             
             // If the new player is the host, enable the start game button
@@ -126,6 +151,7 @@ export const usePlayerManagement = ({
             setPlayers((prevPlayers) => 
               prevPlayers.filter(player => player.id !== payload.old.id)
             );
+            setPlayerLimitReached(false);
           }
         }
       )
@@ -168,5 +194,5 @@ export const usePlayerManagement = ({
     }
   };
 
-  return { players, resetPlayerScores };
+  return { players, resetPlayerScores, playerLimitReached };
 };

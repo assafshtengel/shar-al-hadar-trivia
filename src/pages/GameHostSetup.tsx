@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Music, ExternalLink } from 'lucide-react';
@@ -33,7 +32,10 @@ const GameHostSetup: React.FC = () => {
     playerName: contextPlayerName
   });
 
-  const { players } = usePlayerManagement({
+  const { 
+    players, 
+    playerLimitReached 
+  } = usePlayerManagement({
     gameCode,
     playerName: contextPlayerName,
     setHostJoined,
@@ -88,6 +90,7 @@ const GameHostSetup: React.FC = () => {
             handleHostJoin={handleHostJoin}
             hostJoined={hostJoined}
             joinLoading={joinLoading}
+            playerLimitReached={playerLimitReached}
           />
 
           <PlayersList players={players} />
@@ -97,14 +100,15 @@ const GameHostSetup: React.FC = () => {
               variant="primary" 
               size="lg" 
               onClick={startGame} 
-              disabled={gameStarted || startGameDisabled}
+              disabled={gameStarted || startGameDisabled || playerLimitReached}
             >
-              {gameStarted ? "המשחק כבר התחיל" : 
+              {playerLimitReached ? "המשחק מלא" : 
+               gameStarted ? "המשחק כבר התחיל" : 
                startGameDisabled ? "יש להצטרף כמנחה תחילה" : "התחל משחק"}
             </AppButton>
-            {startGameDisabled && !hostJoined && (
+            {(startGameDisabled && !hostJoined || playerLimitReached) && (
               <p className="text-sm text-center text-amber-600 mt-1">
-                יש להצטרף כמנחה לפני התחלת המשחק
+                {playerLimitReached ? "המשחק מלא" : "יש להצטרף כמנחה לפני התחלת המשחק"}
               </p>
             )}
           </div>

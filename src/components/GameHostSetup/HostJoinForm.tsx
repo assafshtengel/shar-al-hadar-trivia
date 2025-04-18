@@ -1,44 +1,52 @@
 
 import React from 'react';
-import { Input } from '@/components/ui/input';
-import AppButton from '@/components/AppButton';
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface HostJoinFormProps {
   hostName: string;
   setHostName: (name: string) => void;
-  handleHostJoin: () => void;
+  handleHostJoin: () => Promise<void>;
   hostJoined: boolean;
   joinLoading: boolean;
+  playerLimitReached?: boolean;
 }
 
-const HostJoinForm: React.FC<HostJoinFormProps> = ({ 
-  hostName, 
-  setHostName, 
-  handleHostJoin, 
-  hostJoined, 
-  joinLoading 
+const HostJoinForm: React.FC<HostJoinFormProps> = ({
+  hostName,
+  setHostName,
+  handleHostJoin,
+  hostJoined,
+  joinLoading,
+  playerLimitReached = false
 }) => {
+  if (hostJoined) return null;
+
   return (
-    <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-md">
-      <h3 className="text-lg font-semibold mb-3 text-center">הצטרף למשחק כמנחה</h3>
+    <div className="w-full space-y-4 mb-6">
       <Input
+        type="text"
+        placeholder="הזן שם מנחה"
         value={hostName}
         onChange={(e) => setHostName(e.target.value)}
-        placeholder="הכנס את שמך (כדי להצטרף למשחק)"
-        disabled={hostJoined}
-        className="mb-3 text-right"
+        disabled={playerLimitReached}
+        className={playerLimitReached ? "cursor-not-allowed opacity-50" : ""}
       />
-      <AppButton
-        variant="secondary"
-        size="default"
-        onClick={handleHostJoin}
-        disabled={hostJoined || joinLoading}
+      <Button 
+        onClick={handleHostJoin} 
+        disabled={!hostName || joinLoading || playerLimitReached}
         className="w-full"
       >
-        {joinLoading ? "מצטרף..." : hostJoined ? "הצטרפת למשחק" : "הצטרף גם אני"}
-      </AppButton>
+        {playerLimitReached ? "המשחק מלא" : "הצטרף כמנחה"}
+      </Button>
+      {playerLimitReached && (
+        <p className="text-sm text-red-500 text-center">
+          מספר השחקנים המרבי הושג. לא ניתן להצטרף כעת.
+        </p>
+      )}
     </div>
   );
 };
 
 export default HostJoinForm;
+
