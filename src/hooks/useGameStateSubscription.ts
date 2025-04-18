@@ -27,7 +27,9 @@ export const useGameStateSubscription = ({
   const updatingGameStateRef = useRef<boolean>(false);
   const lastGameStateUpdateRef = useRef<string | null>(null);
   const isSubscribingRef = useRef<boolean>(false);
-  const channelName = `game-state-changes-${gameCode}`;
+  
+  // Create channel name outside of effects, conditionally based on gameCode
+  const channelName = gameCode ? `game-state-changes-${gameCode}` : null;
 
   const checkGameState = useCallback(async () => {
     if (!gameCode || initialCheckDoneRef.current || isSubscribingRef.current) return;
@@ -129,8 +131,9 @@ export const useGameStateSubscription = ({
   }, [setGamePhase, setHostReady, clearGameData, navigate, isHost]);
 
   useEffect(() => {
-    if (!gameCode) return;
+    if (!gameCode || !channelName) return;
 
+    // If we already have a channel subscription, don't create a new one
     if (channelRef.current) return;
 
     console.log(`Setting up game state subscription for ${channelName}`);
@@ -158,7 +161,7 @@ export const useGameStateSubscription = ({
         channelRef.current = null;
       }
     };
-  }, [gameCode, handleGameStateChange]);
+  }, [gameCode, channelName, handleGameStateChange]);
 
   const updateGameState = useCallback(async (updates: Partial<{ game_phase: GamePhase, host_ready: boolean }>) => {
     if (!gameCode || updatingGameStateRef.current) {

@@ -33,7 +33,9 @@ export const usePlayerManagement = ({
   const updatingPlayerRef = useRef<boolean>(false);
   const lastUpdateIdRef = useRef<string | null>(null);
   const fetchingPlayersRef = useRef<boolean>(false);
-  const channelName = `players-changes-${gameCode}`;
+  
+  // Create channel name outside of effects
+  const channelName = gameCode ? `players-changes-${gameCode}` : null;
 
   const checkHostJoined = useCallback(async () => {
     if (hostCheckCompletedRef.current || !playerName || !gameCode) return;
@@ -120,8 +122,9 @@ export const usePlayerManagement = ({
   }, []);
 
   useEffect(() => {
-    if (!gameCode) return;
+    if (!gameCode || !channelName) return;
     
+    // If we already have a channel subscription, don't create a new one
     if (channelRef.current) return;
 
     console.log(`Setting up player tracking for ${channelName}`);
@@ -153,7 +156,7 @@ export const usePlayerManagement = ({
         channelRef.current = null;
       }
     };
-  }, [gameCode, handlePlayerChange, fetchPlayers]);
+  }, [gameCode, channelName, handlePlayerChange, fetchPlayers]);
 
   const updatePlayer = useCallback(async (playerId: string, updates: Partial<Player>) => {
     if (updatingPlayerRef.current) {
