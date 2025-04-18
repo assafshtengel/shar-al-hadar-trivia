@@ -542,6 +542,7 @@ const GamePlay: React.FC = () => {
               hasAnswered: true,
               lastAnswer: currentRound.options[index].title,
               lastAnswerCorrect: isCorrect,
+              lastScore: points,
               pendingAnswer: index,
               pointsAwarded: true
             }));
@@ -1067,18 +1068,28 @@ const GamePlay: React.FC = () => {
 
   return <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
       <div className="container mx-auto px-4 py-6 relative z-10">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6 bg-white/50 backdrop-blur-sm p-4 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2 order-1 md:order-none">
             <LeaveGameButton />
             {isHost && <EndGameButton gameCode={gameCode} />}
           </div>
-          <h1 className="text-3xl font-bold text-primary">משחק שירים</h1>
-          <div className="flex items-center gap-4">
-            {isHost && currentRound && <AppButton variant="secondary" onClick={playFullSong} className="w-auto">
+          
+          <h1 className="text-3xl font-bold text-primary text-center order-0 md:order-none">
+            משחק שירים
+          </h1>
+          
+          <div className="flex flex-col md:flex-row items-center gap-4 order-2 md:order-none">
+            {isHost && currentRound && (
+              <AppButton 
+                variant="secondary" 
+                onClick={playFullSong} 
+                className="w-full md:w-auto"
+              >
                 השמע את השיר המלא
                 <Youtube className="mr-2" />
-              </AppButton>}
-            <div className="flex items-center gap-2">
+              </AppButton>
+            )}
+            <div className="flex items-center gap-2 bg-primary/5 px-3 py-1.5 rounded-md">
               <span className="text-sm text-gray-600">קוד משחק: </span>
               <span className="font-mono font-bold text-lg">{gameCode}</span>
             </div>
