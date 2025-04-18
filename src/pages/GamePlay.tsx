@@ -1074,8 +1074,22 @@ const GamePlay: React.FC = () => {
             {isHost && <EndGameButton gameCode={gameCode} />}
           </div>
           
-          <h1 className="text-3xl font-bold text-primary text-center order-0 md:order-none">
-            משחק שירים
+          <h1 className="flex items-center justify-center text-5xl font-bold text-primary text-center order-0 md:order-none relative">
+            <div className="flex items-center justify-center gap-3">
+              <MusicNote 
+                type="note3" 
+                className="absolute -top-6 -right-8 text-primary" 
+                size={32} 
+                animation="float"
+              />
+              <MusicNote 
+                type="note2" 
+                className="absolute -top-4 -left-6 text-secondary" 
+                size={28} 
+                animation="float-alt"
+              />
+              שיר על הדרך 🎶
+            </div>
           </h1>
           
           <div className="flex flex-col md:flex-row items-center gap-4 order-2 md:order-none">
