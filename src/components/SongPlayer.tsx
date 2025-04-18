@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
-import { Youtube, AlertTriangle, Music, Play, Volume2 } from 'lucide-react';
+import { Youtube, AlertTriangle, Music, Play, Volume2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import MusicNote from './MusicNote';
 import AppButton from './AppButton';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // YouTube IFrame API types
 declare global {
@@ -39,10 +41,15 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const [manualPlayNeeded, setManualPlayNeeded] = useState(false);
   const [youtubeReady, setYoutubeReady] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [shouldUseAudioFallback, setShouldUseAudioFallback] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const ytScriptLoaded = useRef(false);
+  const ytPlayAttempted = useRef(false);
+  const isMobile = useIsMobile();
 
   // Detect iOS devices
   useEffect(() => {
@@ -51,18 +58,25 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       return /iphone|ipad|ipod/.test(userAgent);
     };
     
-    setIsIOS(checkIsIOS());
-  }, []);
+    const isIOSDevice = checkIsIOS();
+    setIsIOS(isIOSDevice);
+    
+    // On iOS, try to use audio fallback directly
+    if (isIOSDevice && isMobile) {
+      setShouldUseAudioFallback(true);
+    }
+  }, [isMobile]);
+  
+  // Extract YouTube Video ID helper
+  const getYouTubeId = (url: string) => {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    return match ? match[1] : null;
+  };
 
   // Load YouTube API
   useEffect(() => {
-    if (!ytScriptLoaded.current && isPlaying && song && song.embedUrl) {
+    if (!ytScriptLoaded.current && isPlaying && song && song.embedUrl && !shouldUseAudioFallback) {
       // Extract video ID from embedUrl
-      const getYouTubeId = (url: string) => {
-        const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-        return match ? match[1] : null;
-      };
-      
       const videoId = getYouTubeId(song.embedUrl);
       
       if (!videoId) {
@@ -89,18 +103,47 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         ytScriptLoaded.current = true;
       }
     }
-  }, [isPlaying, song, onPlaybackError]);
+  }, [isPlaying, song, onPlaybackError, shouldUseAudioFallback]);
+
+  // Clean up resources when component unmounts or playback ends
+  const cleanupPlayer = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
+    // Stop and destroy YouTube player if it exists
+    if (playerRef.current) {
+      try {
+        playerRef.current.stopVideo();
+        playerRef.current.destroy();
+        playerRef.current = null;
+      } catch (error) {
+        console.error('Error cleaning up YouTube player:', error);
+      }
+    }
+    
+    // Cleanup audio element
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      } catch (error) {
+        console.error('Error cleaning up audio:', error);
+      }
+    }
+    
+    setShowYouTubeEmbed(false);
+    setManualPlayNeeded(false);
+    setIframeLoaded(false);
+    setAudioPlaying(false);
+  };
 
   // Initialize YouTube player when API is ready
   useEffect(() => {
-    if (!youtubeReady || !song || !isPlaying || !song.embedUrl || !containerRef.current) return;
+    if (!youtubeReady || !song || !isPlaying || !song.embedUrl || !containerRef.current || shouldUseAudioFallback) return;
 
     // Extract video ID from embedUrl
-    const getYouTubeId = (url: string) => {
-      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-      return match ? match[1] : null;
-    };
-    
     const videoId = getYouTubeId(song.embedUrl);
     
     if (!videoId) {
@@ -123,7 +166,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         videoId: videoId,
         playerVars: {
           autoplay: 1,
-          mute: 1, // Start muted (required for autoplay on iOS)
+          mute: 1, // Start muted (required for autoplay on mobile)
           controls: 0,
           showinfo: 0,
           modestbranding: 1,
@@ -139,7 +182,11 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       });
 
       setIframeLoaded(true);
-      setManualPlayNeeded(isIOS);
+      
+      // On iOS, we'll always show the manual play button
+      if (isIOS) {
+        setManualPlayNeeded(true);
+      }
       
       if (onPlaybackStarted) {
         onPlaybackStarted();
@@ -149,10 +196,11 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       setError('שגיאה בטעינת הנגן');
       if (onPlaybackError) onPlaybackError();
     }
-  }, [youtubeReady, song, isPlaying, onPlaybackStarted, onPlaybackError, isIOS]);
+  }, [youtubeReady, song, isPlaying, onPlaybackStarted, onPlaybackError, isIOS, shouldUseAudioFallback]);
 
   const onPlayerReady = (event: any) => {
     try {
+      ytPlayAttempted.current = true;
       event.target.playVideo();
       console.log('YouTube player ready');
       
@@ -184,12 +232,133 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const onPlayerError = (event: any) => {
     console.error('YouTube player error:', event);
     setError('שגיאה בהשמעת השיר');
+    
+    // Try audio fallback on error
+    setShouldUseAudioFallback(true);
+    
     cleanupPlayer();
     if (onPlaybackError) onPlaybackError();
   };
 
+  // Audio fallback player logic
+  useEffect(() => {
+    if (!song || !isPlaying || !shouldUseAudioFallback) return;
+    
+    // Only create new audio element if none exists
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      
+      audioRef.current.addEventListener('ended', () => {
+        console.log('Audio ended naturally');
+        cleanupPlayer();
+        onPlaybackEnded();
+      });
+      
+      audioRef.current.addEventListener('error', () => {
+        console.error('Audio playback error');
+        setError('שגיאה בהשמעת השיר');
+        if (onPlaybackError) onPlaybackError();
+      });
+    }
+    
+    // Try to use a direct audio URL if available from song
+    // For YouTube links, we'll use a service to convert YouTube to MP3
+    // This is for illustration purposes - in production, you'd need a proper API
+    let audioUrl = '';
+    
+    if (song.audioUrl) {
+      // Use direct audio URL if available
+      audioUrl = song.audioUrl;
+    } else if (song.embedUrl) {
+      // For YouTube, we would normally use a proper API, but for this example:
+      const videoId = getYouTubeId(song.embedUrl);
+      if (videoId) {
+        // This is just a placeholder - in production, replace with an actual service
+        // audioUrl = `https://example-audio-service.com/youtube-to-mp3?id=${videoId}`;
+        
+        // Since we don't have a real service, we'll handle the fallback differently
+        setError('אין קישור סאונד ישיר זמין');
+        if (onPlaybackError) {
+          onPlaybackError();
+          return;
+        }
+      }
+    }
+    
+    if (audioUrl) {
+      audioRef.current.src = audioUrl;
+      audioRef.current.muted = false;
+      
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('Audio playing successfully');
+            setAudioPlaying(true);
+            if (onPlaybackStarted) {
+              onPlaybackStarted();
+            }
+            
+            // Set timeout for playback duration
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+            }
+            timeoutRef.current = setTimeout(() => {
+              console.log('Audio playback timed out after duration:', duration);
+              cleanupPlayer();
+              onPlaybackEnded();
+            }, duration);
+          })
+          .catch(err => {
+            console.error('Error playing audio:', err);
+            setManualPlayNeeded(true); // Show manual play button
+            // We won't call onPlaybackError yet - we'll let the user try manual play
+          });
+      }
+    } else {
+      // No audio URL available
+      setError('אין קישור סאונד ישיר זמין');
+      if (onPlaybackError) {
+        onPlaybackError();
+      }
+    }
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+    };
+  }, [song, isPlaying, shouldUseAudioFallback, onPlaybackEnded, onPlaybackError, onPlaybackStarted, duration]);
+
   const handleManualPlay = () => {
-    if (playerRef.current) {
+    if (shouldUseAudioFallback && audioRef.current) {
+      try {
+        audioRef.current.muted = false;
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setManualPlayNeeded(false);
+              setAudioPlaying(true);
+              toast.success('השיר מתנגן', {
+                description: 'לחצת בהצלחה על כפתור ההפעלה'
+              });
+            })
+            .catch(error => {
+              console.error('Error in manual audio play:', error);
+              toast.error('שגיאה בהשמעת השיר', {
+                description: 'נסה לפתוח את הקישור הישיר לשיר'
+              });
+            });
+        }
+      } catch (error) {
+        console.error('Exception in manual audio play:', error);
+        toast.error('שגיאה בהשמעת השיר', {
+          description: 'נסה לפתוח את הקישור הישיר לשיר'
+        });
+      }
+    } else if (playerRef.current) {
       try {
         playerRef.current.unMute();
         playerRef.current.playVideo();
@@ -205,28 +374,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         });
       }
     }
-  };
-
-  const cleanupPlayer = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    
-    // Stop and destroy YouTube player if it exists
-    if (playerRef.current) {
-      try {
-        playerRef.current.stopVideo();
-        playerRef.current.destroy();
-        playerRef.current = null;
-      } catch (error) {
-        console.error('Error cleaning up YouTube player:', error);
-      }
-    }
-    
-    setShowYouTubeEmbed(false);
-    setManualPlayNeeded(false);
-    setIframeLoaded(false);
   };
 
   // Cleanup on unmount
@@ -312,11 +459,11 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
 
   return (
     <div className="relative w-full h-40" ref={containerRef}>
-      {showYouTubeEmbed && song.embedUrl ? (
+      {showYouTubeEmbed && song.embedUrl && !shouldUseAudioFallback ? (
         <>
           <div className="absolute top-0 left-0 w-full h-full z-10"></div>
           
-          {/* iOS Manual Play Button */}
+          {/* Manual Play Button */}
           {manualPlayNeeded && (
             <div className="absolute top-0 left-0 w-full h-full z-30 flex items-center justify-center bg-black/70">
               <div className="text-center">
@@ -337,7 +484,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
                   onClick={openDirectLink}
                   className="mt-4 flex items-center gap-2"
                 >
-                  <Youtube className="w-5 h-5" />
+                  <ExternalLink className="w-5 h-5" />
                   פתח קישור ישיר
                 </AppButton>
               </div>
@@ -347,6 +494,45 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           {/* Visual overlay to hide video but keep audio playing */}
           <div className="absolute top-0 left-0 w-full h-full z-20 bg-black"></div>
         </>
+      ) : shouldUseAudioFallback ? (
+        <div className="relative w-full h-full flex items-center justify-center bg-black">
+          {/* Audio fallback UI */}
+          {manualPlayNeeded ? (
+            <div className="flex flex-col items-center justify-center text-center p-4 z-30">
+              <AppButton 
+                variant="primary" 
+                size="default" 
+                onClick={handleManualPlay}
+                className="flex items-center gap-2"
+              >
+                <Play className="w-5 h-5" />
+                הפעל את השיר
+              </AppButton>
+              <p className="text-white mt-2 text-sm">במכשירים ניידים יש ללחוץ כאן להפעלת השמע</p>
+              
+              <AppButton 
+                variant="secondary" 
+                size="default" 
+                onClick={openDirectLink}
+                className="mt-4 flex items-center gap-2"
+              >
+                <ExternalLink className="w-5 h-5" />
+                פתח קישור ישיר
+              </AppButton>
+            </div>
+          ) : (
+            <div className="relative w-full h-full">
+              <div className="absolute w-full h-full">
+                <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
+                <MusicNote type="note2" className="absolute top-10 left-0 text-secondary animate-float-alt" size={28} />
+                <MusicNote type="note3" className="absolute bottom-10 right-10 text-accent animate-float" size={36} />
+              </div>
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
+                <Music className="w-10 h-10 text-primary" />
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="relative w-full h-full flex items-center justify-center">
           <div className="absolute w-full h-full">
