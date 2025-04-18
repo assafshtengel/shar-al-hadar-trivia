@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Music } from 'lucide-react';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
@@ -14,8 +14,6 @@ import { useGameStart } from '@/hooks/useGameStart';
 import { usePlayerManagement } from '@/hooks/usePlayerManagement';
 
 const GameHostSetup: React.FC = () => {
-  const location = useLocation();
-  const gameMode = location.state?.gameMode || 'local';
   const { gameCode: contextGameCode, setGameData, playerName: contextPlayerName } = useGameState();
   const [gameCode] = React.useState(() => contextGameCode || Math.floor(100000 + Math.random() * 900000).toString());
   
@@ -49,16 +47,9 @@ const GameHostSetup: React.FC = () => {
 
   useEffect(() => {
     if (!contextGameCode) {
-      setGameData({ 
-        gameCode, 
-        playerName: hostName || 'מנחה', 
-        isHost: true
-      });
-      
-      // Here we should separately update the game state in the database
-      // with the game_mode, but we're not modifying the GameState interface
+      setGameData({ gameCode, playerName: hostName || 'מנחה', isHost: true });
     }
-  }, [contextGameCode, gameCode, hostName, setGameData, gameMode]);
+  }, [contextGameCode, gameCode, hostName, setGameData]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">

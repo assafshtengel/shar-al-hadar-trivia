@@ -99,7 +99,7 @@ const GamePlay: React.FC = () => {
         console.error('Error updating game state:', error);
         toast({
           title: "שגיאה בעדכון מצב המשחק",
-          description: "אירעה שגי������ בעדכון מצב המשחק",
+          description: "אירעה שגי����� בעדכון מצב המשחק",
           variant: "destructive"
         });
       } else {
@@ -666,22 +666,10 @@ const GamePlay: React.FC = () => {
                 השמע את השיר המלא
                 <Youtube className="mr-2" />
               </AppButton>}
-            
-            <AppButton 
-              variant="secondary" 
-              className="mt-4 max-w-xs cursor-default" 
-              disabled 
-            >
-              מיד תועבר לצפייה בטבלת המובילים
-            </AppButton>
           </div>;
       case 'leaderboard':
         return <div className="flex flex-col items-center justify-center py-8">
             <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
-            
-            <p className="text-lg text-gray-600 mb-4 animate-fade-in text-center">
-              מיד תועבר לצפייה בטבלת המובילים
-            </p>
             
             {isHost && currentRound && <AppButton variant="secondary" size="lg" onClick={playFullSong} className="max-w-xs mb-6">
                 השמע את השיר האחרון

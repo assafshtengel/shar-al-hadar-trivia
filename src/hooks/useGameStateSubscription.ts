@@ -60,10 +60,6 @@ export const useGameStateSubscription = ({
 
         if (!data && isHost) {
           console.log("Creating initial game state for host");
-          
-          // Get the game mode from localStorage or use default 'local'
-          const storedGameMode = localStorage.getItem('gameMode') || 'local';
-          
           const { error: insertError } = await supabase
             .from('game_state')
             .insert([
@@ -71,8 +67,7 @@ export const useGameStateSubscription = ({
                 game_code: gameCode,
                 game_phase: 'waiting',
                 current_round: 1,
-                host_ready: false,
-                game_mode: storedGameMode // Correctly include game_mode here
+                host_ready: false
               }
             ]);
 
@@ -85,17 +80,12 @@ export const useGameStateSubscription = ({
         } else if (data && data.game_phase === 'end' && isHost) {
           // Reset round and prepare for a new game
           console.log("Resetting game state for a new game");
-          
-          // Get the stored game mode or use the one from the existing data
-          const storedGameMode = localStorage.getItem('gameMode') || data.game_mode || 'local';
-          
           const { error: resetError } = await supabase
             .from('game_state')
             .update({
               game_phase: 'waiting',
               current_round: 1,
-              host_ready: false,
-              game_mode: storedGameMode // Include game_mode in the update
+              host_ready: false
             })
             .eq('game_code', gameCode);
           

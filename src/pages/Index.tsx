@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { useToast } from '@/components/ui/use-toast';
 import LogoFooter from '@/components/LogoFooter';
-import GameModeSelector, { GameMode } from '@/components/GameModeSelector';
 
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [gameMode, setGameMode] = useState<GameMode>('local');
 
   const handleCreateGame = () => {
-    navigate('/host-setup', { state: { gameMode } });
+    navigate('/host-setup');
   };
 
   const handleJoinGame = () => {
@@ -85,9 +83,6 @@ const Index = () => {
           <p className="text-xl text-center mb-10 text-gray-700">
             משחק טריוויה מוזיקלי משפחתי לנסיעות! מזהים שירים במהירות – ונהנים מכל רגע.
           </p>
-
-          {/* Game Mode Selector */}
-          <GameModeSelector value={gameMode} onChange={setGameMode} />
 
           {/* Buttons container */}
           <div className="w-full space-y-4 mb-8">
