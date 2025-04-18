@@ -482,20 +482,9 @@ const GamePlay: React.FC = () => {
       const isCorrect = selectedAnswer === currentRound.correctAnswerIndex;
       const points = isCorrect ? 10 : 0;
       
-      pendingUpdates.push({
-        player_name: playerName,
-        is_correct: isCorrect,
-        points
-      });
+      pendingUpdates.push({\n        player_name: playerName,\n        is_correct: isCorrect,\n        points\n      });
       
-      setCurrentPlayer(prev => ({
-        ...prev,
-        hasAnswered: true,
-        lastAnswer: currentRound.options[selectedAnswer].name,
-        lastAnswerCorrect: isCorrect,
-        lastScore: points,
-        score: prev.score + points
-      }));
+      setCurrentPlayer(prev => ({\n        ...prev,\n        hasAnswered: true,\n        lastAnswer: currentRound.options[selectedAnswer].name,\n        lastAnswerCorrect: isCorrect,\n        lastScore: points,\n        score: prev.score + points\n      }));
     }
     
     setPendingAnswers(pendingUpdates);
@@ -641,7 +630,7 @@ const GamePlay: React.FC = () => {
     
     toast({
       title: "דילגת על השאלה",
-      description: `נותרו ${currentPlayer.skipsLeft - 1} דילוגים`,
+      description: `נותרו ${currentPlayer.skipsLeft - 1} דילוגים`
     });
   };
 
@@ -981,4 +970,3 @@ const GamePlay: React.FC = () => {
                 <div className="flex items-center justify-center gap-2 text-xl">
                   <span>קיבלת</span>
                   <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
-                  <span>נק
