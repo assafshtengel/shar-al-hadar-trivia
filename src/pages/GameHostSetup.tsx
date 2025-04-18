@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Music } from 'lucide-react';
@@ -52,7 +53,7 @@ const GameHostSetup: React.FC = () => {
         gameCode, 
         playerName: hostName || 'מנחה', 
         isHost: true,
-        gameMode: gameMode 
+        game_mode: gameMode 
       });
     }
   }, [contextGameCode, gameCode, hostName, setGameData, gameMode]);
@@ -115,3 +116,4 @@ const GameHostSetup: React.FC = () => {
 };
 
 export default GameHostSetup;
+
