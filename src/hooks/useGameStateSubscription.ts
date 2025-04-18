@@ -64,9 +64,8 @@ export const useGameStateSubscription = ({
 
     checkGameState();
 
-    // Create a unique channel name based on the game code
     const channel = supabase
-      .channel(`game_state_${gameCode}`)
+      .channel('schema-db-changes')
       .on(
         'postgres_changes',
         {
@@ -143,5 +142,5 @@ export const useGameStateSubscription = ({
       console.log('Removing game state channel');
       supabase.removeChannel(channel);
     };
-  }, [gameCode, isHost]); // Only re-run when gameCode or isHost changes
+  }, [gameCode, isHost, setGamePhase, setHostReady, clearGameData, navigate]);
 };

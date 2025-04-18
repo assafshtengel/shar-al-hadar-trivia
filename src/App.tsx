@@ -20,16 +20,23 @@ const App = () => (
       <Toaster />
       <Sonner closeButton position="top-center" />
       <BrowserRouter>
-        <GameStateProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/host-setup" element={<GameHostSetup />} />
-            <Route path="/join-game" element={<JoinGame />} />
-            <Route path="/waiting-room" element={<WaitingRoom />} />
-            <Route path="/gameplay" element={<GamePlay />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </GameStateProvider>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route 
+            path="*" 
+            element={
+              <GameStateProvider>
+                <Routes>
+                  <Route path="/host-setup" element={<GameHostSetup />} />
+                  <Route path="/join-game" element={<JoinGame />} />
+                  <Route path="/waiting-room" element={<WaitingRoom />} />
+                  <Route path="/gameplay" element={<GamePlay />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </GameStateProvider>
+            } 
+          />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
