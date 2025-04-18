@@ -32,6 +32,35 @@ const JoinGame = () => {
       return;
     }
 
+    // Get any existing game code from localStorage
+    const existingGameCode = localStorage.getItem('gameCode');
+    
+    if (existingGameCode) {
+      try {
+        // Clean up existing game state
+        await supabase
+          .from('game_state')
+          .delete()
+          .eq('game_code', existingGameCode);
+          
+        // Clean up existing players
+        await supabase
+          .from('players')
+          .delete()
+          .eq('game_code', existingGameCode);
+          
+        // Clear local storage
+        localStorage.removeItem('gameCode');
+        localStorage.removeItem('playerName');
+        localStorage.removeItem('isHost');
+        
+        console.log('Cleaned up existing game data:', existingGameCode);
+      } catch (err) {
+        console.error('Error cleaning up existing game:', err);
+        // Continue anyway as this is not critical
+      }
+    }
+
     try {
       // Check if game exists in game_state
       const { data: gameStateData, error: gameStateError } = await supabase
