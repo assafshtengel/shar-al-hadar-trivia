@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppButton from '@/components/AppButton';
@@ -108,7 +109,8 @@ const Index = () => {
           </div>
 
           <p className="text-xl text-center mb-6 text-gray-700">
-            משחק טריוויה מוזיקלי משפחתי לנסיעות! מזהים שירים במהירות – ונהנים מכל רגע.
+            המשחק המוזיקלי שכולם מדברים עליו – לנסיעות, ערבי שישי ומפגשים עם חברים. 
+            מזהים שירים, מתחרים בצחוק ויוצרים רגעים בלתי נשכחים.
           </p>
 
           <LiveStats />
