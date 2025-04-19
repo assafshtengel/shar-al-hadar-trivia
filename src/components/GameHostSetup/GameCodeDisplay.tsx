@@ -26,7 +26,7 @@ const GameCodeDisplay: React.FC<GameCodeDisplayProps> = ({ gameCode }) => {
   };
 
   const copyGameInvite = () => {
-    const inviteText = `יאללה - שחק איתי "שיר על הדרך"!\nקוד המשחק הוא: ${gameCode}\nקישור למשחק: https://shar-al-hadar-trivia.lovable.app`;
+    const inviteText = `יאללה - שחק/י איתי "שיר על הדרך"!\nקוד המשחק הוא: ${gameCode}\nקישור למשחק: https://did.li/trivia-music`;
     
     navigator.clipboard.writeText(inviteText).then(() => {
       toast({
