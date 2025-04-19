@@ -1,3 +1,6 @@
+
+import { fetchSongsFromSupabase, SupabaseSong } from '@/integrations/supabase/client';
+
 export interface Song {
   id: number;
   title: string;
@@ -8,6 +11,19 @@ export interface Song {
   fullUrl?: string;
 }
 
+// Convert Supabase song to our Song format
+export const convertSupabaseSongToSong = (supabaseSong: SupabaseSong): Song => {
+  return {
+    id: supabaseSong.id,
+    title: supabaseSong.title,
+    artist: supabaseSong.artist,
+    embedUrl: supabaseSong.embed_url,
+    fullUrl: supabaseSong.full_url || supabaseSong.youtube_url,
+    youtubeUrl: supabaseSong.youtube_url
+  };
+};
+
+// This is the default song bank that will be used as a fallback
 export const defaultSongBank: Song[] = [
   {
     id: 30,
@@ -498,4 +514,37 @@ export function createGameRound(songBank: Song[] = defaultSongBank) {
  */
 export function findSongById(songId: number, songBank: Song[] = defaultSongBank): Song | undefined {
   return songBank.find(song => song.id === songId);
+}
+
+/**
+ * Fetches songs from Supabase and converts them to our Song format
+ * @param limit Maximum number of songs to fetch
+ * @param category Optional category to filter by
+ * @returns Promise that resolves to an array of Song objects
+ */
+export async function fetchSongsForGame(limit = 20, category?: string): Promise<Song[]> {
+  try {
+    const supabaseSongs = await fetchSongsFromSupabase(limit, category);
+    
+    if (supabaseSongs.length === 0) {
+      console.warn('No songs found in Supabase, using default song bank');
+      return defaultSongBank;
+    }
+    
+    return supabaseSongs.map(convertSupabaseSongToSong);
+  } catch (error) {
+    console.error('Error fetching songs from Supabase:', error);
+    return defaultSongBank;
+  }
+}
+
+/**
+ * Creates a game round with a correct song and answer options from Supabase
+ * @param limit Maximum number of songs to fetch
+ * @param category Optional category to filter by
+ * @returns Promise that resolves to a game round object
+ */
+export async function createGameRoundFromSupabase(limit = 20, category?: string) {
+  const songs = await fetchSongsForGame(limit, category);
+  return createGameRound(songs);
 }

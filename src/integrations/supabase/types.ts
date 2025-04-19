@@ -72,6 +72,93 @@ export type Database = {
         }
         Relationships: []
       }
+      songs: {
+        Row: {
+          artist: string | null
+          artist_idan_raichel: boolean | null
+          artist_kaveret: boolean | null
+          artist_mashina: boolean | null
+          artist_noa_kirel: boolean | null
+          artist_omer_adam: boolean | null
+          artist_osher_cohen: boolean | null
+          artist_rita: boolean | null
+          artist_shlomo_artzi: boolean | null
+          category: string | null
+          created_at: string | null
+          embed_url: string | null
+          eurovision_hits: boolean | null
+          full_url: string | null
+          id: number
+          indie_alternative: boolean | null
+          israeli_2000s_hits: boolean | null
+          israeli_80s_hits: boolean | null
+          israeli_90s_hits: boolean | null
+          israeli_dance: boolean | null
+          israeli_hiphop: boolean | null
+          kids_nostalgia: boolean | null
+          love_ballads: boolean | null
+          military_classics: boolean | null
+          title: string
+          youtube_url: string | null
+        }
+        Insert: {
+          artist?: string | null
+          artist_idan_raichel?: boolean | null
+          artist_kaveret?: boolean | null
+          artist_mashina?: boolean | null
+          artist_noa_kirel?: boolean | null
+          artist_omer_adam?: boolean | null
+          artist_osher_cohen?: boolean | null
+          artist_rita?: boolean | null
+          artist_shlomo_artzi?: boolean | null
+          category?: string | null
+          created_at?: string | null
+          embed_url?: string | null
+          eurovision_hits?: boolean | null
+          full_url?: string | null
+          id?: never
+          indie_alternative?: boolean | null
+          israeli_2000s_hits?: boolean | null
+          israeli_80s_hits?: boolean | null
+          israeli_90s_hits?: boolean | null
+          israeli_dance?: boolean | null
+          israeli_hiphop?: boolean | null
+          kids_nostalgia?: boolean | null
+          love_ballads?: boolean | null
+          military_classics?: boolean | null
+          title: string
+          youtube_url?: string | null
+        }
+        Update: {
+          artist?: string | null
+          artist_idan_raichel?: boolean | null
+          artist_kaveret?: boolean | null
+          artist_mashina?: boolean | null
+          artist_noa_kirel?: boolean | null
+          artist_omer_adam?: boolean | null
+          artist_osher_cohen?: boolean | null
+          artist_rita?: boolean | null
+          artist_shlomo_artzi?: boolean | null
+          category?: string | null
+          created_at?: string | null
+          embed_url?: string | null
+          eurovision_hits?: boolean | null
+          full_url?: string | null
+          id?: never
+          indie_alternative?: boolean | null
+          israeli_2000s_hits?: boolean | null
+          israeli_80s_hits?: boolean | null
+          israeli_90s_hits?: boolean | null
+          israeli_dance?: boolean | null
+          israeli_hiphop?: boolean | null
+          kids_nostalgia?: boolean | null
+          love_ballads?: boolean | null
+          military_classics?: boolean | null
+          title?: string
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -83,3 +83,78 @@ export const verifyHostInPlayersTable = async ({ game_code, player_name }: Check
     return false;
   }
 };
+
+// Define song related interfaces and functions
+export interface SupabaseSong {
+  id: number;
+  title: string;
+  artist?: string;
+  embed_url?: string;
+  full_url?: string;
+  youtube_url?: string;
+  category?: string;
+}
+
+// Get songs from Supabase
+export const fetchSongsFromSupabase = async (limit = 20, category?: string) => {
+  let query = supabase
+    .from('songs')
+    .select('*');
+  
+  if (category) {
+    query = query.eq('category', category);
+  }
+  
+  const { data, error } = await query.limit(limit);
+  
+  if (error) {
+    console.error('Error fetching songs from Supabase:', error);
+    return [];
+  }
+  
+  return data as SupabaseSong[];
+};
+
+// Get a random song from Supabase
+export const getRandomSongFromSupabase = async (excludedIds: number[] = [], category?: string) => {
+  let query = supabase
+    .from('songs')
+    .select('*');
+  
+  if (category) {
+    query = query.eq('category', category);
+  }
+  
+  if (excludedIds.length > 0) {
+    query = query.not('id', 'in', `(${excludedIds.join(',')})`);
+  }
+  
+  // Order randomly to get a random song
+  const { data, error } = await query.order('id', { ascending: false }).limit(1);
+  
+  if (error) {
+    console.error('Error fetching random song from Supabase:', error);
+    return null;
+  }
+  
+  return data && data.length > 0 ? data[0] as SupabaseSong : null;
+};
+
+// Get songs by IDs from Supabase
+export const getSongsByIdsFromSupabase = async (songIds: number[]) => {
+  if (songIds.length === 0) {
+    return [];
+  }
+  
+  const { data, error } = await supabase
+    .from('songs')
+    .select('*')
+    .in('id', songIds);
+  
+  if (error) {
+    console.error('Error fetching songs by IDs from Supabase:', error);
+    return [];
+  }
+  
+  return data as SupabaseSong[];
+};
