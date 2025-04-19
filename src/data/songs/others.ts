@@ -1,3 +1,4 @@
+
 import { Song } from './types';
 
 export const otherSongs: Song[] = [
@@ -32,9 +33,10 @@ export const otherSongs: Song[] = [
     fullUrl: "https://www.youtube.com/watch?v=t_Edi4npk3I"
   },
   {
-    id: 100, // בחרתי מספר ID גבוה יחסית כדי למנוע התנגשויות
-    title: "מה אגיד לך - אייל גולן",
+    id: 100,
+    title: "מנשהו ממני - הראל סקעת",
     embedUrl: "https://www.youtube.com/embed/drCmREK_aYo?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=drCmREK_aYo"
   }
 ];
+
