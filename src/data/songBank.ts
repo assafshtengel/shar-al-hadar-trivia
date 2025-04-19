@@ -14,6 +14,7 @@ import { mosheSongs } from './songs/moshe';
 import { adamSongs } from './songs/adam';
 import { golanSongs } from './songs/golan';
 import { aharonSongs } from './songs/aharon';
+import { hanochSongs } from './songs/hanoch';
 
 export type { Song } from './songs/types';
 
@@ -41,5 +42,6 @@ export const defaultSongBank: Song[] = [
   ...mosheSongs,
   ...adamSongs,
   ...golanSongs,
-  ...aharonSongs
+  ...aharonSongs,
+  ...hanochSongs
 ];
