@@ -42,6 +42,33 @@ export type Database = {
         }
         Relationships: []
       }
+      improvements: {
+        Row: {
+          created_at: string
+          feedback: string
+          id: string
+          name: string
+          phone: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          feedback: string
+          id?: string
+          name: string
+          phone: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string
+          id?: string
+          name?: string
+          phone?: string
+          status?: string
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           game_code: string

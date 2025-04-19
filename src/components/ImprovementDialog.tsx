@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Lightbulb } from "lucide-react"  // Changed from Bulb to Lightbulb
+import { Lightbulb } from "lucide-react"
+import { supabase } from "@/integrations/supabase/client"
 
 export const ImprovementDialog = () => {
   const [name, setName] = useState("")
@@ -26,9 +27,13 @@ export const ImprovementDialog = () => {
     setIsSubmitting(true)
 
     try {
-      // Here you would typically send this to your backend
-      // For now, we'll just show a success message
-      console.log("Feedback submitted:", { name, phone, feedback })
+      const { error } = await supabase
+        .from('improvements')
+        .insert([
+          { name, phone, feedback }
+        ])
+
+      if (error) throw error
       
       toast({
         title: "תודה על המשוב!",
@@ -40,6 +45,7 @@ export const ImprovementDialog = () => {
       setPhone("")
       setFeedback("")
     } catch (error) {
+      console.error('Error submitting feedback:', error)
       toast({
         title: "שגיאה בשליחת המשוב",
         description: "אנא נסה שוב מאוחר יותר",
@@ -109,4 +115,3 @@ export const ImprovementDialog = () => {
     </Dialog>
   )
 }
-
