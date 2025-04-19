@@ -904,12 +904,12 @@ const GamePlay: React.FC = () => {
             </div>
             
             {isHost && <div className="flex flex-col items-center gap-4 mt-8">
-                <AppButton variant="primary" size="lg" onClick={nextRound} className="max-w-xs px-[43px] my-0 py-[34px]">
+                <AppButton variant="primary" size="lg" onClick={nextRound} className="max-w-xs px-[43px] my-0 py-[34px] text-xl">
                   התחל סיבוב חדש
                   <Play className="mr-2" />
                 </AppButton>
                 
-                {currentRound && <AppButton variant="secondary" onClick={playFullSong} className="max-w-xs">
+                {currentRound && <AppButton variant="secondary" onClick={playFullSong} className="max-w-xs py-0 my-0 mx-[4px] px-0 text-center rounded-full">
                   השמע את השיר המלא
                   <Youtube className="mr-2" />
                 </AppButton>}
@@ -952,10 +952,7 @@ const GamePlay: React.FC = () => {
           </h1>
           
           <div className="flex flex-col md:flex-row items-center gap-4 order-2 md:order-none">
-            {isHost && currentRound && <AppButton variant="secondary" onClick={playFullSong} className="w-full md:w-auto">
-                השמע את השיר המלא
-                <Youtube className="mr-2" />
-              </AppButton>}
+            {isHost && currentRound}
             <div className="flex items-center gap-2 bg-primary/5 px-3 py-1.5 rounded-md">
               <span className="text-sm text-gray-600">קוד משחק: </span>
               <span className="font-mono font-bold text-lg">{gameCode}</span>
@@ -968,8 +965,8 @@ const GamePlay: React.FC = () => {
       
       <div className="w-full max-w-4xl mx-auto p-4 mb-8">
         <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-6 border border-primary/20 relative overflow-hidden hover:shadow-xl transition-shadow duration-300">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 opacity-50"></div>
-          <div className="relative z-10 min-h-[100px] flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 opacity-50 py-0"></div>
+          <div className="relative z-10 min-h-[100px] flex items-center justify-center my-0">
             <div className="text-center text-gray-500">מקום לפרסומת</div>
           </div>
         </div>
