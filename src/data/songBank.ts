@@ -1,4 +1,5 @@
 
+import { fetchSongsFromSupabase, SupabaseSong } from '@/integrations/supabase/client';
 import { Song } from './songs/types';
 import { noaKirelSongs } from './songs/noaKirel';
 import { mashinaSongs } from './songs/mashina';
@@ -7,9 +8,8 @@ import { monicaSexSongs } from './songs/monicaSex';
 import { hatikva6Songs } from './songs/hatikva6';
 import { botnerSongs } from './songs/botner';
 import { otherSongs } from './songs/others';
-import { fetchSongsFromSupabase, SupabaseSong } from '@/integrations/supabase/client';
 
-export { Song } from './songs/types';
+export type { Song } from './songs/types';
 
 export const convertSupabaseSongToSong = (supabaseSong: SupabaseSong): Song => {
   return {
@@ -31,3 +31,4 @@ export const defaultSongBank: Song[] = [
   ...botnerSongs,
   ...otherSongs
 ];
+
