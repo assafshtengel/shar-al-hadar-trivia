@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -117,7 +118,8 @@ export const useGameStart = ({
             ...updateData,
             game_code: gameCode,
             current_round: 1,
-            game_mode: 'local' // Set default game mode
+            game_mode: 'local', // Set default game mode
+            game_phase: 'playing' // Add the required game_phase field
           });
       }
       
