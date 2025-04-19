@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -14,6 +13,7 @@ import EndGameButton from '@/components/EndGameButton';
 import { defaultSongBank, Song } from '@/data/songBank';
 import SongPlayer from '@/components/SongPlayer';
 import LeaveGameButton from '@/components/LeaveGameButton';
+import GameHostControls from '@/components/GameHostControls';
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 interface Player {
@@ -935,19 +935,15 @@ const GamePlay: React.FC = () => {
               </Table>
             </div>
             
-            {isHost && <div className="flex flex-col items-center gap-4 mt-8">
-                <AppButton variant="primary" size="lg" onClick={nextRound} className="max-w-xs px-[43px] my-0 py-[34px] text-xl">
-                  התחל סיבוב חדש
-                  <Play className="mr-2" />
-                </AppButton>
-                
-                {currentRound && <AppButton variant="secondary" onClick={playFullSong} className="max-w-xs py-0 my-0 mx-[4px] px-0 text-center rounded-full">
-                  השמע את השיר המלא
-                  <Youtube className="mr-2" />
-                </AppButton>}
-                
-                <EndGameButton gameCode={gameCode} />
-              </div>}
+            {isHost && (
+              <GameHostControls
+                roundCounter={roundCounter}
+                isTriviaRound={isTriviaRound}
+                onPlayNext={nextRound}
+                onResetScores={resetAllPlayerScores}
+                gamePhase={serverGamePhase}
+              />
+            )}
             
             {!isHost && !playerReady && <AppButton variant="primary" onClick={markPlayerReady} className="mt-8">
                 מוכן לסיבוב הבא
