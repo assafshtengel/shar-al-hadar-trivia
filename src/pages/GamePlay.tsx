@@ -905,7 +905,7 @@ const GamePlay: React.FC = () => {
               <SkipForward className="ml-2 text-secondary" />
             </div>
             
-            <h2 className="text-2xl font-bold text-primary">מה השיר?</h2>
+            <h2 className="text-2xl font-bold text-primary mb-4">מה השיר?</h2>
             
             {currentRound && (
               <div className="grid grid-cols-1 gap-4 w-full max-w-md">
@@ -913,23 +913,31 @@ const GamePlay: React.FC = () => {
                   <div key={index} className="relative">
                     <AppButton 
                       variant={selectedAnswer === index ? "primary" : "secondary"} 
-                      className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full text-right`}
+                      className={`
+                        ${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""}
+                        w-full text-right p-4 hover:scale-102 transition-all duration-200
+                        ${selectedAnswer === index ? 'ring-2 ring-primary ring-offset-2' : ''}
+                        bg-gradient-to-r from-secondary/10 to-transparent
+                      `}
                       disabled={selectedAnswer !== null} 
                       onClick={() => handleAnswer(index)}
                     >
-                      <div className="flex flex-col items-end">
-                        <span className="font-bold">{song.title}</span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="font-bold text-lg">{song.title}</span>
                         {song.artist && (
-                          <span className="text-sm opacity-80">מאת: {song.artist}</span>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Music className="h-4 w-4 ml-1 inline-block" />
+                            <span>{song.artist}</span>
+                          </div>
                         )}
                       </div>
                     </AppButton>
                     {selectedAnswer === index && showAnswerConfirmation && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 animate-fade-in">
                         {currentPlayer.lastAnswerCorrect ? (
-                          <CheckCircle2 className="text-green-500 w-6 h-6" />
+                          <CheckCircle2 className="text-green-500 w-6 h-6 animate-scale-in" />
                         ) : (
-                          <div className="text-red-500 w-6 h-6">✗</div>
+                          <div className="text-red-500 w-6 h-6 animate-scale-in">✗</div>
                         )}
                       </div>
                     )}
@@ -942,7 +950,7 @@ const GamePlay: React.FC = () => {
               variant="secondary" 
               onClick={handleSkip} 
               disabled={currentPlayer.skipsLeft <= 0 || selectedAnswer !== null || currentPlayer.hasAnswered}
-              className="max-w-xs"
+              className="max-w-xs mt-4 hover:bg-secondary/90 transition-colors"
             >
               דלג על השאלה
               <SkipForward className="mr-2" />
