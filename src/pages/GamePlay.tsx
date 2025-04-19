@@ -913,11 +913,16 @@ const GamePlay: React.FC = () => {
                   <div key={index} className="relative">
                     <AppButton 
                       variant={selectedAnswer === index ? "primary" : "secondary"} 
-                      className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full`} 
+                      className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full text-right`}
                       disabled={selectedAnswer !== null} 
                       onClick={() => handleAnswer(index)}
                     >
-                      {song.title}
+                      <div className="flex flex-col items-end">
+                        <span className="font-bold">{song.title}</span>
+                        {song.artist && (
+                          <span className="text-sm opacity-80">מאת: {song.artist}</span>
+                        )}
+                      </div>
                     </AppButton>
                     {selectedAnswer === index && showAnswerConfirmation && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
