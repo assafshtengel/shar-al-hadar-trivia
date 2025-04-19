@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Users, GameController } from 'lucide-react';
+import { Users, Gamepad2 } from 'lucide-react';
 
 const LiveStats = () => {
   const [stats, setStats] = useState({ games: 72, players: 290 });
@@ -27,7 +27,7 @@ const LiveStats = () => {
   return (
     <div className="bg-accent/10 rounded-lg p-4 flex gap-8 justify-center items-center my-6">
       <div className="flex items-center gap-2">
-        <GameController className="text-primary w-5 h-5" />
+        <Gamepad2 className="text-primary w-5 h-5" />
         <div className="text-center">
           <span className="font-bold text-xl text-primary">{stats.games}</span>
           <p className="text-sm text-gray-600">משחקים פעילים</p>
