@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
 import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
@@ -89,9 +90,13 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         validateYouTubeUrl(song.embedUrl).then(isValid => {
           if (!isValid) {
             console.error('Invalid YouTube URL detected for song:', song.title);
+            setError('השיר אינו זמין כרגע');
             if (onPlaybackError) {
               onPlaybackError();
             }
+            toast.error('השיר אינו זמין', {
+              description: 'מנסה לטעון שיר אחר...'
+            });
             return;
           }
           
@@ -115,9 +120,13 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           }
         });
       } else {
+        setError('לשיר זה אין קישור השמעה זמין');
         if (onPlaybackError) {
           onPlaybackError();
         }
+        toast.error('שגיאה בהשמעת השיר', {
+          description: 'אין קישור השמעה זמין לשיר זה'
+        });
       }
     } else {
       setShowYouTubeEmbed(false);
