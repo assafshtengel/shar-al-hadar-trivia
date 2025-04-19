@@ -1,4 +1,3 @@
-
 import { fetchSongsFromSupabase, SupabaseSong } from '@/integrations/supabase/client';
 
 export interface Song {
@@ -500,7 +499,4 @@ export const defaultSongBank: Song[] = [
   {
     id: 109,
     title: "בא לי אותך - נועה קירל",
-    embedUrl: "https://www.youtube.com/embed/Iv2hNKdCRl4?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://www.youtube.com/watch?v=Iv2hNKdCRl4"
-  }
-];
+    embedUrl: "https://www.youtube.com/embed/Iv2hNKdCRl4?autoplay=1&controls=0&modestbranding
