@@ -110,13 +110,15 @@ export const useGameStart = ({
           .eq('game_code', gameCode);
       } else {
         // Insert new game state if it doesn't exist
+        // Make sure to include all required fields for a new record
         console.log('Creating new game state record');
         updateResult = await supabase
           .from('game_state')
           .insert({
             ...updateData,
             game_code: gameCode,
-            current_round: 1
+            current_round: 1,
+            game_mode: 'local' // Set default game mode
           });
       }
       
