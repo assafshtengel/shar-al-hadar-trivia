@@ -10,11 +10,11 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { GameSettings } from '@/contexts/GameStateContext';
+import type { GameSettings as GameSettingsType } from '@/contexts/GameStateContext';
 
 interface GameSettingsProps {
-  settings: GameSettings;
-  onSettingsChange: (settings: GameSettings) => void;
+  settings: GameSettingsType;
+  onSettingsChange: (settings: GameSettingsType) => void;
   disabled?: boolean;
 }
 
