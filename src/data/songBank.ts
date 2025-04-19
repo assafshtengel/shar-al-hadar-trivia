@@ -502,5 +502,365 @@ export const defaultSongBank: Song[] = [
     title: "בא לי אותך - נועה קירל",
     embedUrl: "https://www.youtube.com/embed/Iv2hNKdCRl4?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=Iv2hNKdCRl4"
+  },
+  {
+    id: 160,
+    title: "אהבה מנצחת הכל - אייל גולן",
+    embedUrl: "https://www.youtube.com/embed/Ga7SO82bcl4?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=Ga7SO82bcl4"
+  },
+  {
+    id: 161,
+    title: "אין לי אותך - אייל גולן",
+    embedUrl: "https://www.youtube.com/embed/lE9ItPqGwVw?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=lE9ItPqGwVw"
+  },
+  {
+    id: 162,
+    title: "אין ייאוש בלילות - אייל גולן",
+    embedUrl: "https://www.youtube.com/embed/Lc5wmme_NVQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=Lc5wmme_NVQ"
+  },
+  {
+    id: 163,
+    title: "פזמון אחר - אייל גולן",
+    embedUrl: "https://www.youtube.com/embed/Xv8DqpQfvnI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=Xv8DqpQfvnI"
+  },
+  {
+    id: 164,
+    title: "מוכר הקסטות - אייל גולן",
+    embedUrl: "https://www.youtube.com/embed/VoV4G5IqFzs?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=VoV4G5IqFzs"
+  },
+  {
+    id: 165,
+    title: "פחד מפרידות - אייל גולן",
+    embedUrl: "https://www.youtube.com/embed/uR_ba5gF_EM?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=uR_ba5gF_EM"
+  },
+  {
+    id: 166,
+    title: "מחכה לו - אייל גולן",
+    embedUrl: "https://www.youtube.com/embed/zVCHto6VPXo?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=zVCHto6VPXo"
+  },
+  {
+    id: 167,
+    title: "החדר מסתובב - אייל גולן",
+    embedUrl: "https://www.youtube.com/embed/FmEqwXz767Q?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=FmEqwXz767Q"
+  },
+  {
+    id: 168,
+    title: "לב אחר - אייל גולן",
+    embedUrl: "https://www.youtube.com/embed/0SEzqRNkkFc?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=0SEzqRNkkFc"
+  },
+  {
+    id: 169,
+    title: "שכחתי מזמן - אייל גולן",
+    embedUrl: "https://www.youtube.com/embed/r84wVQccj38?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=r84wVQccj38"
+  },
+  {
+    id: 170,
+    title: "יש עוד עולם - דודו אהרון",
+    embedUrl: "https://www.youtube.com/embed/pR1AJJUpzTI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=pR1AJJUpzTI"
+  },
+  {
+    id: 171,
+    title: "אין לך לב - דודו אהרון",
+    embedUrl: "https://www.youtube.com/embed/6_vClLPNWgQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=6_vClLPNWgQ"
+  },
+  {
+    id: 172,
+    title: "אמא אמא - דודו אהרון",
+    embedUrl: "https://www.youtube.com/embed/BwdRD6cKcUw?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=BwdRD6cKcUw"
+  },
+  {
+    id: 173,
+    title: "אל אל ישראל - דודו אהרון",
+    embedUrl: "https://www.youtube.com/embed/4MKRr_qbCpA?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=4MKRr_qbCpA"
+  },
+  {
+    id: 174,
+    title: "מגדלים 2 - דודו אהרון",
+    embedUrl: "https://www.youtube.com/embed/4m8ci3Dn9g0?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=4m8ci3Dn9g0"
+  },
+  {
+    id: 175,
+    title: "בית ריק - דודו אהרון (עם בן חן)",
+    embedUrl: "https://www.youtube.com/embed/5GsY_sAyxpo?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=5GsY_sAyxpo"
+  },
+  {
+    id: 176,
+    title: "ארץ האבות - דודו אהרון",
+    embedUrl: "https://www.youtube.com/embed/LVjQizmCC-g?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=LVjQizmCC-g"
+  },
+  {
+    id: 177,
+    title: "נושמת אותך - דודו אהרון",
+    embedUrl: "https://www.youtube.com/embed/ZZFKyCJmWZI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=ZZFKyCJmWZI"
+  },
+  {
+    id: 178,
+    title: "מדמיין אותנו - דודו אהרון",
+    embedUrl: "https://www.youtube.com/embed/SmmDOQHrGjY?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=SmmDOQHrGjY"
+  },
+  {
+    id: 179,
+    title: "איתך הייתי מלך - דודו אהרון",
+    embedUrl: "https://www.youtube.com/embed/E7rhh4UNULU?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=E7rhh4UNULU"
+  },
+  {
+    id: 180,
+    title: "מלכת השושנים - עדן בן זקן",
+    embedUrl: "https://www.youtube.com/embed/nwpLIXdrHS0?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=nwpLIXdrHS0"
+  },
+  {
+    id: 181,
+    title: "לזאת שניצחה - עדן בן זקן",
+    embedUrl: "https://www.youtube.com/embed/vTDjXjZO_hk?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=vTDjXjZO_hk"
+  },
+  {
+    id: 182,
+    title: "מנגינה - עדן בן זקן",
+    embedUrl: "https://www.youtube.com/embed/fMyhIe_bV_s?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=fMyhIe_bV_s"
+  },
+  {
+    id: 183,
+    title: "תאמין לי - עדן בן זקן",
+    embedUrl: "https://www.youtube.com/embed/TMGMT_0J_nU?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=TMGMT_0J_nU"
+  },
+  {
+    id: 184,
+    title: "ריגוש זמני - עדן בן זקן",
+    embedUrl: "https://www.youtube.com/embed/2-mr1D8GG0I?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=2-mr1D8GG0I"
+  },
+  {
+    id: 185,
+    title: "חורף בלעדיי - עדן בן זקן",
+    embedUrl: "https://www.youtube.com/embed/1Wcys9VZkuk?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=1Wcys9VZkuk"
+  },
+  {
+    id: 186,
+    title: "מאה קילומטר - עדן בן זקן",
+    embedUrl: "https://www.youtube.com/embed/gI2fEm7-Qyo?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=gI2fEm7-Qyo"
+  },
+  {
+    id: 187,
+    title: "מותר לי לנוח - עדן בן זקן",
+    embedUrl: "https://www.youtube.com/embed/DtOmQzmUb80?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=DtOmQzmUb80"
+  },
+  {
+    id: 188,
+    title: "מלכת הלבבות - עדן בן זקן",
+    embedUrl: "https://www.youtube.com/embed/HKjJLpsa6G4?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=HKjJLpsa6G4"
+  },
+  {
+    id: 189,
+    title: "ילד מסוכן - עדן בן זקן",
+    embedUrl: "https://www.youtube.com/embed/j7epQOXchJQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=j7epQOXchJQ"
+  },
+  {
+    id: 190,
+    title: "געגועים - שרית חדד",
+    embedUrl: "https://www.youtube.com/embed/y0c-_wVzTww?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=y0c-_wVzTww"
+  },
+  {
+    id: 191,
+    title: "לחיות על אוטומט - שרית חדד",
+    embedUrl: "https://www.youtube.com/embed/druoyqhSBrU?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=druoyqhSBrU"
+  },
+  {
+    id: 192,
+    title: "כשהלב בוכה - שרית חדד",
+    embedUrl: "https://www.youtube.com/embed/bBCIefOfUKY?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=bBCIefOfUKY"
+  },
+  {
+    id: 193,
+    title: "הייתי בגן עדן - שרית חדד",
+    embedUrl: "https://www.youtube.com/embed/j2ZJufHIgp8?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=j2ZJufHIgp8"
+  },
+  {
+    id: 194,
+    title: "תגיד שאתה כאן - שרית חדד",
+    embedUrl: "https://www.youtube.com/embed/pFu6raIvy-Q?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=pFu6raIvy-Q"
+  },
+  {
+    id: 195,
+    title: "תצא לי מהראש - שרית חדד",
+    embedUrl: "https://www.youtube.com/embed/sZJgIsZI_Sk?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=sZJgIsZI_Sk"
+  },
+  {
+    id: 196,
+    title: "שיר אהבה - שרית חדד ונרקיס",
+    embedUrl: "https://www.youtube.com/embed/e2opfjSRzzk?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=e2opfjSRzzk"
+  },
+  {
+    id: 197,
+    title: "רק לאהוב - שרית חדד",
+    embedUrl: "https://www.youtube.com/embed/FmXT12RGGk4?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=FmXT12RGGk4"
+  },
+  {
+    id: 198,
+    title: "לא בשבילי - שרית חדד",
+    embedUrl: "https://www.youtube.com/embed/piUs7My1lYg?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=piUs7My1lYg"
+  },
+  {
+    id: 199,
+    title: "יש לילות - שרית חדד",
+    embedUrl: "https://www.youtube.com/embed/KFHEUcPS1_s?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=KFHEUcPS1_s"
+  },
+  {
+    id: 200,
+    title: "רק שלך - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/Jw02uPan7RU?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=Jw02uPan7RU"
+  },
+  {
+    id: 201,
+    title: "אהובתי כבר לא רואה אותי - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/QzDpV_8HVXk?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=QzDpV_8HVXk"
+  },
+  {
+    id: 202,
+    title: "תהום - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/L5WSsFFElvw?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=L5WSsFFElvw"
+  },
+  {
+    id: 203,
+    title: "טקילה - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/TPs0Fbw1-WY?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=TPs0Fbw1-WY"
+  },
+  {
+    id: 204,
+    title: "גברת אגו - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/0zurI1x0Bmc?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=0zurI1x0Bmc"
+  },
+  {
+    id: 205,
+    title: "תפילה - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/mQiTfvht20I?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=mQiTfvht20I"
+  },
+  {
+    id: 206,
+    title: "שני משוגעים - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/kVPnv2d_u5Y?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=kVPnv2d_u5Y"
+  },
+  {
+    id: 207,
+    title: "חברות שלך - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/s7juWTpjMMM?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=s7juWTpjMMM"
+  },
+  {
+    id: 208,
+    title: "מודה אני - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/YQ5f1OMFFL0?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=YQ5f1OMFFL0"
+  },
+  {
+    id: 209,
+    title: "נרקומן של בדידות - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/C3MTKYn6lhI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=C3MTKYn6lhI"
+  },
+  {
+    id: 210,
+    title: "נשבע - חיים משה",
+    embedUrl: "https://www.youtube.com/embed/X1huVu3GcAg?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=X1huVu3GcAg"
+  },
+  {
+    id: 211,
+    title: "אין יפה ממנה - חיים משה",
+    embedUrl: "https://www.youtube.com/embed/aAvC2ql3rCI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=aAvC2ql3rCI"
+  },
+  {
+    id: 212,
+    title: "לינדה (ג'אייגולִי) - חיים משה",
+    embedUrl: "https://www.youtube.com/embed/hSgTsC3cFDY?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=hSgTsC3cFDY"
+  },
+  {
+    id: 213,
+    title: "מסע חיי - חיים משה",
+    embedUrl: "https://www.youtube.com/embed/Wre-echxRWA?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=Wre-echxRWA"
+  },
+  {
+    id: 214,
+    title: "על סף דלתך - חיים משה",
+    embedUrl: "https://www.youtube.com/embed/V-82aDOkZOY?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=V-82aDOkZOY"
+  },
+  {
+    id: 215,
+    title: "איך שבאת - חיים משה",
+    embedUrl: "https://www.youtube.com/embed/8KrpNMZSTVQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=8KrpNMZSTVQ"
+  },
+  {
+    id: 216,
+    title: "רואים עליי - חיים משה",
+    embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  },
+  {
+    id: 217,
+    title: "זכיתי בך - חיים משה",
+    embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  },
+  {
+    id: 218,
+    title: "תהילה - חיים משה",
+    embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  },
+  {
+    id: 219,
+    title: "אהבת חיי - חיים משה",
+    embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
   }
 ];
