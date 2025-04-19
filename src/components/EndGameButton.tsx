@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,9 +9,8 @@ import { useGameState } from '@/contexts/GameStateContext';
 
 // הוספת הגדרת הטיפוס עבור הפרופס של הקומפוננטה
 interface EndGameButtonProps {
-  gameCode: string;
+  gameCode: string | null;
 }
-
 const EndGameButton: React.FC<EndGameButtonProps> = ({
   gameCode
 }) => {
@@ -83,23 +81,9 @@ const EndGameButton: React.FC<EndGameButtonProps> = ({
   };
   return <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" className="w-full">
-          סיים משחק
-          <X className="mr-2" />
-        </Button>
+        
       </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>האם אתה בטוח שברצונך לסיים את המשחק?</AlertDialogTitle>
-          <AlertDialogDescription>
-            פעולה זו תסיים את המשחק לכל השחקנים ותמחק את נתוני המשחק מהמערכת. לא ניתן לבטל פעולה זו.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>ביטול</AlertDialogCancel>
-          <AlertDialogAction onClick={handleEndGame}>סיים משחק</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
+      
     </AlertDialog>;
 };
 export default EndGameButton;
