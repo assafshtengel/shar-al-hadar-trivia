@@ -32,10 +32,7 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
           <Award className="mr-2 h-4 w-4" />
         </AppButton>}
       
-      <div className="flex items-center gap-2 text-xs text-gray-500 mt-2">
-        <AlertCircle className="h-3 w-3" />
-        <span>שאלות טריוויה מוצגות כל 5 סיבובים</span>
-      </div>
+      
     </div>;
 };
 export default GameHostControls;
