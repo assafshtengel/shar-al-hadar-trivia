@@ -17,6 +17,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Info } from 'lucide-react';
+import { HowToPlayDialog } from "@/components/HowToPlayDialog";
+import { ImprovementDialog } from "@/components/ImprovementDialog";
 
 const Index = () => {
   const { toast } = useToast();
@@ -195,6 +197,12 @@ const Index = () => {
               Powered by Shtengel Games
             </p>
           </div>
+        </div>
+
+        {/* New footer section with buttons */}
+        <div className="w-full flex flex-col sm:flex-row gap-4 justify-center mt-8">
+          <HowToPlayDialog />
+          <ImprovementDialog />
         </div>
       </div>
     </div>
