@@ -30,6 +30,33 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Function to ensure embedUrl has the required parameters
+  const ensureEmbedParams = (url: string | undefined): string => {
+    if (!url) return '';
+    
+    // If already has parameters, ensure the ones we need are there
+    if (url.includes('?')) {
+      const urlObj = new URL(url);
+      if (!urlObj.searchParams.has('autoplay')) {
+        urlObj.searchParams.append('autoplay', '1');
+      }
+      if (!urlObj.searchParams.has('controls')) {
+        urlObj.searchParams.append('controls', '0');
+      }
+      if (!urlObj.searchParams.has('modestbranding')) {
+        urlObj.searchParams.append('modestbranding', '1');
+      }
+      if (!urlObj.searchParams.has('rel')) {
+        urlObj.searchParams.append('rel', '0');
+      }
+      return urlObj.toString();
+    } 
+    // If no parameters, add them
+    else {
+      return `${url}?autoplay=1&controls=0&modestbranding=1&rel=0`;
+    }
+  };
+
   // Detect iOS devices
   useEffect(() => {
     const checkIsIOS = () => {
@@ -139,7 +166,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             ref={iframeRef}
             width="100%" 
             height="100%" 
-            src={song.embedUrl} 
+            src={ensureEmbedParams(song.embedUrl)} 
             frameBorder="0" 
             allow="autoplay; encrypted-media" 
             allowFullScreen 
