@@ -951,7 +951,11 @@ const GamePlay: React.FC = () => {
         if (isTriviaRound && currentTriviaQuestion) {
           return (
             <div className="flex flex-col items-center py-6 space-y-6">
-              <GameTimer initialSeconds={30} isActive={true} onTimeout={handleTimerTimeout} />
+              <GameTimer 
+                initialSeconds={8}  // Changed from 30 to 8 seconds for trivia
+                isActive={true} 
+                onTimeout={handleTimerTimeout} 
+              />
               
               <TriviaQuestion 
                 question={currentTriviaQuestion} 
