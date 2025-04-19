@@ -83,7 +83,6 @@ export type Database = {
           artist_omer_adam: boolean | null
           artist_osher_cohen: boolean | null
           artist_rita: boolean | null
-          artist_shalom_hanoch: boolean | null
           artist_shlomo_artzi: boolean | null
           category: string | null
           created_at: string | null
@@ -113,7 +112,6 @@ export type Database = {
           artist_omer_adam?: boolean | null
           artist_osher_cohen?: boolean | null
           artist_rita?: boolean | null
-          artist_shalom_hanoch?: boolean | null
           artist_shlomo_artzi?: boolean | null
           category?: string | null
           created_at?: string | null
@@ -143,7 +141,6 @@ export type Database = {
           artist_omer_adam?: boolean | null
           artist_osher_cohen?: boolean | null
           artist_rita?: boolean | null
-          artist_shalom_hanoch?: boolean | null
           artist_shlomo_artzi?: boolean | null
           category?: string | null
           created_at?: string | null
