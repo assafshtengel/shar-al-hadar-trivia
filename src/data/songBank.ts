@@ -609,5 +609,167 @@ export const defaultSongBank: Song[] = [
     title: "החברים של נטאשה - סדר עולמי חדש",
     embedUrl: "https://www.youtube.com/embed/JPphOPZYHtI?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=JPphOPZYHtI"
+  },
+  {
+    id: 160,
+    title: "תתארו לכם - שלמה ארצי",
+    embedUrl: "https://www.youtube.com/embed/Y0KxZz5k-RE?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=Y0KxZz5k-RE"
+  },
+  {
+    id: 161,
+    title: "היא לא יודעת מה עובר עלי - שלמה ארצי",
+    embedUrl: "https://www.youtube.com/embed/WHDQ-JHI6Z8?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=WHDQ-JHI6Z8"
+  },
+  {
+    id: 162,
+    title: "האהבה הישנה - שלמה ארצי",
+    embedUrl: "https://www.youtube.com/embed/02uV8M6XSto?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=02uV8M6XSto"
+  },
+  {
+    id: 163,
+    title: "נוף ילדות - שלמה ארצי",
+    embedUrl: "https://www.youtube.com/embed/OER8dtQPF14?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=OER8dtQPF14"
+  },
+  {
+    id: 164,
+    title: "ירח - שלמה ארצי",
+    embedUrl: "https://www.youtube.com/embed/hGiNUsSHkr0?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=hGiNUsSHkr0"
+  },
+  {
+    id: 165,
+    title: "לא עוזב את העיר - שלמה ארצי",
+    embedUrl: "https://www.youtube.com/embed/wtX3AzE0ozw?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=wtX3AzE0ozw"
+  },
+  {
+    id: 166,
+    title: "אהבתיה - שלמה ארצי",
+    embedUrl: "https://www.youtube.com/embed/19qoWmBJVRc?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=19qoWmBJVRc"
+  },
+  {
+    id: 167,
+    title: "בואי ניקח לנו יום - שלמה ארצי",
+    embedUrl: "https://www.youtube.com/embed/Up4FLZad54s?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=Up4FLZad54s"
+  },
+  {
+    id: 168,
+    title: "והאמת - שלמה ארצי עם ישי ריבו",
+    embedUrl: "https://www.youtube.com/embed/ZUPP10SvO3g?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=ZUPP10SvO3g"
+  },
+  {
+    id: 169,
+    title: "זה מה שנשאר - שלמה ארצי",
+    embedUrl: "https://www.youtube.com/embed/2zk_cTSeLUk?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=2zk_cTSeLUk"
+  },
+  {
+    id: 170,
+    title: "אני ואתה - אריק איינשטיין",
+    embedUrl: "https://www.youtube.com/embed/gP6PS-poyMg?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=gP6PS-poyMg"
+  },
+  {
+    id: 171,
+    title: "עוף גוזל - אריק איינשטיין",
+    embedUrl: "https://www.youtube.com/embed/kxDBpbMDsZA?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=kxDBpbMDsZA"
+  },
+  {
+    id: 172,
+    title: "סע לאט - אריק איינשטיין",
+    embedUrl: "https://www.youtube.com/embed/ZwTbFd8kdII?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=ZwTbFd8kdII"
+  },
+  {
+    id: 173,
+    title: "אוהב להיות בבית - אריק איינשטיין",
+    embedUrl: "https://www.youtube.com/embed/N_elLKPF7u0?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=N_elLKPF7u0"
+  },
+  {
+    id: 174,
+    title: "יש בי אהבה - אריק איינשטיין",
+    embedUrl: "https://www.youtube.com/embed/99yXtc_s_v4?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=99yXtc_s_v4"
+  },
+  {
+    id: 175,
+    title: "עטור מצחך - אריק איינשטיין",
+    embedUrl: "https://www.youtube.com/embed/WZM4iXT3-ic?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=WZM4iXT3-ic"
+  },
+  {
+    id: 176,
+    title: "בגללך - אריק איינשטיין",
+    embedUrl: "https://www.youtube.com/embed/5WEggKymynE?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=5WEggKymynE"
+  },
+  {
+    id: 177,
+    title: "גיטרה וכינור - אריק איינשטיין ושלום חנוך",
+    embedUrl: "https://www.youtube.com/embed/6UltSHD_BbM?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=6UltSHD_BbM"
+  },
+  {
+    id: 178,
+    title: "יושב על הגדר - אריק איינשטיין",
+    embedUrl: "https://www.youtube.com/embed/mchgrIehDT0?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=mchgrIehDT0"
+  },
+  {
+    id: 179,
+    title: "כמה טוב שבאת הביתה - אריק איינשטיין",
+    embedUrl: "https://www.youtube.com/embed/Che2jea8z_Q?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=Che2jea8z_Q"
+  },
+  {
+    id: 180,
+    title: "מחכים למשיח - שלום חנוך",
+    embedUrl: "https://www.youtube.com/embed/-0i3mev5EvQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=-0i3mev5EvQ"
+  },
+  {
+    id: 181,
+    title: "הדרכים הידועות - שלום חנוך",
+    embedUrl: "https://www.youtube.com/embed/nUI_OMbzVR8?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=nUI_OMbzVR8"
+  },
+  {
+    id: 182,
+    title: "ככה וככה - שלום חנוך",
+    embedUrl: "https://www.youtube.com/embed/kKTyqRlBNJI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=kKTyqRlBNJI"
+  },
+  {
+    id: 183,
+    title: "נגד הרוח - שלום חנוך",
+    embedUrl: "https://www.youtube.com/embed/0VkHJwmzRQw?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=0VkHJwmzRQw"
+  },
+  {
+    id: 184,
+    title: "מאיה - שלום חנוך",
+    embedUrl: "https://www.youtube.com/embed/CeE_zuoGTqs?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=CeE_zuoGTqs"
+  },
+  {
+    id: 185,
+    title: "לילה - שלום חנוך",
+    embedUrl: "https://www.youtube.com/embed/mnkE_XJdAMc?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=mnkE_XJdAMc"
+  },
+  {
+    id: 186,
+    title: "אדם בתוך עצמו - שלום חנוך",
+    embedUrl: "https://www.youtube.com/embed/vjEbQr56ty4?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=vjEbQr56ty4"
   }
 ];
