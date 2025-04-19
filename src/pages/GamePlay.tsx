@@ -391,14 +391,16 @@ const GamePlay: React.FC = () => {
 
       if (error) {
         console.error('Error fetching new song:', error);
-        toast.error('שגיאה בטעינת שיר חדש', {
-          description: "אנא נסה שוב"
+        toast({
+          title: "שגיאה בטעינת שיר חדש",
+          description: "אנא נסה שוב",
+          variant: "destructive"
         });
         return;
       }
 
       if (newSong) {
-        const gameRound = createGameRound([newSong]);
+        const gameRound = createGameRound();
         setCurrentRound(gameRound);
         setCurrentSong(gameRound.correctSong);
         setSelectedAnswer(null);
@@ -415,15 +417,19 @@ const GamePlay: React.FC = () => {
 
         if (updateError) {
           console.error('Error updating game state with new song:', updateError);
-          toast.error('שגיאה בעדכון השיר', {
-            description: "אנא נסה שוב"
+          toast({
+            title: "שגיאה בעדכון השיר",
+            description: "אנא נסה שוב",
+            variant: "destructive"
           });
         }
       }
     } catch (err) {
       console.error('Exception when fetching new song:', err);
-      toast.error('שגיאה בטעינת שיר חדש', {
-        description: "אנא נסה שוב"
+      toast({
+        title: "שגיאה בטעינת שיר חדש",
+        description: "אנא נסה שוב",
+        variant: "destructive"
       });
     }
   };
@@ -1004,7 +1010,7 @@ const GamePlay: React.FC = () => {
             
             {!isHost && playerReady && <div className="mt-8 p-4 bg-primary/10 rounded-lg text-center">
                 <div className="font-semibold mb-2">אתה מוכן לסיבוב הבא</div>
-                <div className="text-sm">ממתין למנהל המשחק להתחיל...</div>
+                <div className="text-sm">ממתי�� למנהל המשחק להתחיל...</div>
               </div>}
           </div>;
       default:
