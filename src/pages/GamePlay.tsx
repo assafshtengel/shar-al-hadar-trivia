@@ -374,64 +374,14 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  const handleSongPlaybackError = async () => {
-    console.log('Error playing song, fetching another one...');
-    if (!isHost) return;
-
-    const currentSongId = currentSong?.id || 0;
-    
-    try {
-      const { data: newSong, error } = await supabase
-        .from('songs')
-        .select('*')
-        .not('id', 'eq', currentSongId)
-        .order('RANDOM()')
-        .limit(1)
-        .single();
-
-      if (error) {
-        console.error('Error fetching new song:', error);
-        toast({
-          title: "שגיאה בטעינת שיר חדש",
-          description: "אנא נסה שוב",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (newSong) {
-        const gameRound = createGameRound();
-        setCurrentRound(gameRound);
-        setCurrentSong(gameRound.correctSong);
-        setSelectedAnswer(null);
-        setIsPlaying(true);
-        
-        const roundDataString = JSON.stringify(gameRound);
-        const { error: updateError } = await supabase
-          .from('game_state')
-          .update({
-            current_song_name: roundDataString,
-            current_song_url: gameRound.correctSong.embedUrl
-          })
-          .eq('game_code', gameCode);
-
-        if (updateError) {
-          console.error('Error updating game state with new song:', updateError);
-          toast({
-            title: "שגיאה בעדכון השיר",
-            description: "אנא נסה שוב",
-            variant: "destructive"
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Exception when fetching new song:', err);
-      toast({
-        title: "שגיאה בטעינת שיר חדש",
-        description: "אנא נסה שוב",
-        variant: "destructive"
-      });
-    }
+  const handleSongPlaybackError = () => {
+    toast({
+      title: "שגיאה בהשמעת השיר",
+      description: "אירעה שגיאה בהשמעת השיר, בחר שיר אחר",
+      variant: "destructive"
+    });
+    setIsPlaying(false);
+    setShowYouTubeEmbed(false);
   };
 
   const handleTimerTimeout = () => {
@@ -862,12 +812,7 @@ const GamePlay: React.FC = () => {
         return <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
-            <SongPlayer 
-              song={currentSong} 
-              isPlaying={isPlaying && showYouTubeEmbed} 
-              onPlaybackEnded={handleSongPlaybackEnded} 
-              onPlaybackError={handleSongPlaybackError}
-            />
+            <SongPlayer song={currentSong} isPlaying={isPlaying && showYouTubeEmbed} onPlaybackEnded={handleSongPlaybackEnded} onPlaybackError={handleSongPlaybackError} />
             
             <AppButton variant="primary" size="lg" onClick={playSong} className="max-w-xs" disabled={!isHost || isPlaying}>
               {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
@@ -1010,7 +955,7 @@ const GamePlay: React.FC = () => {
             
             {!isHost && playerReady && <div className="mt-8 p-4 bg-primary/10 rounded-lg text-center">
                 <div className="font-semibold mb-2">אתה מוכן לסיבוב הבא</div>
-                <div className="text-sm">ממתי�� למנהל המשחק להתחיל...</div>
+                <div className="text-sm">ממתין למנהל המשחק להתחיל...</div>
               </div>}
           </div>;
       default:
