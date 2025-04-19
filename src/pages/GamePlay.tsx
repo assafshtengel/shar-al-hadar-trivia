@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -10,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
 import { supabase } from '@/integrations/supabase/client';
 import EndGameButton from '@/components/EndGameButton';
-import { defaultSongBank, createGameRound, Song } from '@/data/songBank';
+import { defaultSongBank, Song } from '@/data/songBank';
 import SongPlayer from '@/components/SongPlayer';
 import LeaveGameButton from '@/components/LeaveGameButton';
 
