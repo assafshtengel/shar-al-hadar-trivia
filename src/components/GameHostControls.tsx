@@ -53,8 +53,8 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
       
       {isWaitingPhase && (
         <AppButton 
-          variant="outline" 
-          size="sm" 
+          variant="secondary" 
+          size="default" 
           onClick={onResetScores} 
           className="text-sm"
         >
