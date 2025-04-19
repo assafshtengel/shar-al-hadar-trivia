@@ -4,7 +4,7 @@ import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import GameTimer from '@/components/GameTimer';
-import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, CheckCircle2, Youtube } from 'lucide-react';
+import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, CheckCircle2, Youtube, AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
@@ -868,19 +868,25 @@ const GamePlay: React.FC = () => {
               </div>}
           </div>;
       case 'answerOptions':
-        return <div className="flex flex-col items-center py-6 space-y-6">
-            <GameTimer initialSeconds={10} isActive={true} onTimeout={handleTimerTimeout} />
-            
-            <div className="flex items-center">
-              <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
-              <SkipForward className="ml-2 text-secondary" />
-            </div>
-            
-            <h2 className="text-2xl font-bold text-primary">מה השיר?</h2>
-            
-            {currentRound ? <div className="grid grid-cols-1 gap-4 w-full max-w-md">
-                {currentRound.options.map((song, index) => <div key={index} className="relative">
-                    <AppButton variant={selectedAnswer === index ? "primary" : "secondary"} className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full`} disabled={selectedAnswer !== null} onClick={() => handleAnswer(index)}>
-                      {song.title}
-                    </AppButton>
-                    {selectedAnswer === index && showAnswerConfirmation && <div className="absolute right-3 top
+        return (
+        <div className="flex flex-col items-center py-6 space-y-6">
+          <GameTimer initialSeconds={10} isActive={true} onTimeout={handleTimerTimeout} />
+          
+          <div className="flex items-center">
+            <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
+            <SkipForward className="ml-2 text-secondary" />
+          </div>
+          
+          <h2 className="text-2xl font-bold text-primary">מה השיר?</h2>
+          
+          {currentRound && (
+            <div className="grid grid-cols-1 gap-4 w-full max-w-md">
+              {currentRound.options.map((song, index) => (
+                <div key={index} className="relative">
+                  <AppButton 
+                    variant={selectedAnswer === index ? "primary" : "secondary"} 
+                    className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full`} 
+                    disabled={selectedAnswer !== null} 
+                    onClick={() => handleAnswer(index)}
+                  >
+                    {song.title}
