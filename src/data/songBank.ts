@@ -8,6 +8,12 @@ import { monicaSexSongs } from './songs/monicaSex';
 import { hatikva6Songs } from './songs/hatikva6';
 import { botnerSongs } from './songs/botner';
 import { otherSongs } from './songs/others';
+import { artziSongs } from './songs/artzi';
+import { einsteinSongs } from './songs/einstein';
+import { mosheSongs } from './songs/moshe';
+import { adamSongs } from './songs/adam';
+import { golanSongs } from './songs/golan';
+import { aharonSongs } from './songs/aharon';
 
 export type { Song } from './songs/types';
 
@@ -29,6 +35,11 @@ export const defaultSongBank: Song[] = [
   ...monicaSexSongs,
   ...hatikva6Songs,
   ...botnerSongs,
-  ...otherSongs
+  ...otherSongs,
+  ...artziSongs,
+  ...einsteinSongs,
+  ...mosheSongs,
+  ...adamSongs,
+  ...golanSongs,
+  ...aharonSongs
 ];
-

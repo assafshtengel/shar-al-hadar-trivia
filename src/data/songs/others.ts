@@ -183,7 +183,7 @@ export const otherSongs: Song[] = [
   },
   {
     id: 176,
-    title: "ארץ האבות - דודו אהרון",
+    title: "ארץ האבות - ��ודו אהרון",
     embedUrl: "https://www.youtube.com/embed/LVjQizmCC-g?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=LVjQizmCC-g"
   }
