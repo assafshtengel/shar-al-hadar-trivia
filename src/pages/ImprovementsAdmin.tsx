@@ -11,13 +11,15 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 
+type ImprovementStatus = 'pending' | 'in_review' | 'approved' | 'implemented' | 'rejected'
+
 type Improvement = {
   id: string
   created_at: string
   name: string
   phone: string
   feedback: string
-  status: 'pending' | 'in_review' | 'approved' | 'implemented' | 'rejected'
+  status: ImprovementStatus
 }
 
 const statusTranslations = {
@@ -51,10 +53,16 @@ export default function ImprovementsAdmin() {
       return
     }
 
-    setImprovements(data || [])
+    // Type casting to ensure status is properly typed
+    const typedData = data?.map(item => ({
+      ...item,
+      status: item.status as ImprovementStatus
+    })) || []
+    
+    setImprovements(typedData)
   }
 
-  const updateStatus = async (id: string, newStatus: Improvement['status']) => {
+  const updateStatus = async (id: string, newStatus: ImprovementStatus) => {
     const { error } = await supabase
       .from('improvements')
       .update({ status: newStatus })
@@ -105,7 +113,7 @@ export default function ImprovementsAdmin() {
                 <TableCell>
                   <select
                     value={improvement.status}
-                    onChange={(e) => updateStatus(improvement.id, e.target.value as Improvement['status'])}
+                    onChange={(e) => updateStatus(improvement.id, e.target.value as ImprovementStatus)}
                     className="border rounded p-1"
                   >
                     {Object.entries(statusTranslations).map(([value, label]) => (
