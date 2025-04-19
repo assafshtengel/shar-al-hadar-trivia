@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Bulb } from "lucide-react"
+import { Lightbulb } from "lucide-react"  // Changed from Bulb to Lightbulb
 
 export const ImprovementDialog = () => {
   const [name, setName] = useState("")
@@ -54,7 +54,7 @@ export const ImprovementDialog = () => {
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="secondary" className="flex items-center gap-2">
-          <Bulb className="h-4 w-4" />
+          <Lightbulb className="h-4 w-4" />  {/* Updated icon name */}
           רעיונות לשיפור
         </Button>
       </DialogTrigger>
@@ -109,3 +109,4 @@ export const ImprovementDialog = () => {
     </Dialog>
   )
 }
+
