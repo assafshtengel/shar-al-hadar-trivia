@@ -1041,7 +1041,14 @@ const GamePlay: React.FC = () => {
                   <Play className="mr-2" />
                 </AppButton>
                 
-                
+                {currentRound && <AppButton 
+                  variant="secondary" 
+                  onClick={playFullSong} 
+                  className="max-w-xs"
+                >
+                  השמע את השיר המלא
+                  <Youtube className="mr-2" />
+                </AppButton>}
                 
                 <EndGameButton gameCode={gameCode} />
               </div>}
