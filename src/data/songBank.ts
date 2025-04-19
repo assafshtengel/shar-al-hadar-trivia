@@ -1,4 +1,3 @@
-
 import { fetchSongsFromSupabase, SupabaseSong } from '@/integrations/supabase/client';
 import { Song } from './songs/types';
 import { noaKirelSongs } from './songs/noaKirel';
@@ -15,6 +14,7 @@ import { adamSongs } from './songs/adam';
 import { golanSongs } from './songs/golan';
 import { aharonSongs } from './songs/aharon';
 import { hanochSongs } from './songs/hanoch';
+import { religiousSongs } from './songs/religiousSongs';
 
 export type { Song } from './songs/types';
 
@@ -43,5 +43,6 @@ export const defaultSongBank: Song[] = [
   ...adamSongs,
   ...golanSongs,
   ...aharonSongs,
-  ...hanochSongs
+  ...hanochSongs,
+  ...religiousSongs
 ];
