@@ -450,58 +450,53 @@ export const defaultSongBank: Song[] = [
   },
   {
     id: 101,
-    title: "קרן פלס - שיר של אחרי",
-    embedUrl: "https://www.youtube.com/embed/D7GgGvS8VXg?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://www.youtube.com/watch?v=D7GgGvS8VXg"
-  }
-];
-
-export function generateAnswerOptions(
-  correctSong: Song,
-  allSongs: Song[],
-  numOptions: number = 4
-): Song[] {
-  const otherSongs = allSongs.filter(song => song.id !== correctSong.id);
-  const shuffledSongs = [...otherSongs].sort(() => Math.random() - 0.5);
-  const wrongAnswers = shuffledSongs.slice(0, numOptions - 1);
-  const options = [correctSong, ...wrongAnswers];
-  return options.sort(() => Math.random() - 0.5);
-}
-
-export function getRandomSong(songs: Song[] = defaultSongBank): Song {
-  const randomIndex = Math.floor(Math.random() * songs.length);
-  return songs[randomIndex];
-}
-
-export function createGameRound(songBank: Song[] = defaultSongBank) {
-  const correctSong = getRandomSong(songBank);
-  const options = generateAnswerOptions(correctSong, songBank);
-  return {
-    correctSong,
-    options,
-    correctAnswerIndex: options.findIndex(song => song.id === correctSong.id)
-  };
-}
-
-export function findSongById(songId: number, songBank: Song[] = defaultSongBank): Song | undefined {
-  return songBank.find(song => song.id === songId);
-}
-
-export async function fetchSongsForGame(limit = 20, category?: string): Promise<Song[]> {
-  try {
-    const supabaseSongs = await fetchSongsFromSupabase(limit, category);
-    if (supabaseSongs.length === 0) {
-      console.warn('No songs found in Supabase, using default song bank');
-      return defaultSongBank;
-    }
-    return supabaseSongs.map(convertSupabaseSongToSong);
-  } catch (error) {
-    console.error('Error fetching songs from Supabase:', error);
-    return defaultSongBank;
-  }
-}
-
-export async function createGameRoundFromSupabase(limit = 20, category?: string) {
-  const songs = await fetchSongsForGame(limit, category);
-  return createGameRound(songs);
-}
+    title: "Thought About That - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/TwZP2BErikM?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=TwZP2BErikM"
+  },
+  {
+    id: 102,
+    title: "Unicorn (Hope Version) - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/KON8O5H1yMY?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=KON8O5H1yMY"
+  },
+  {
+    id: 103,
+    title: "אין אותי - נועה קירל ואושר כהן",
+    embedUrl: "https://www.youtube.com/embed/h3iqvIWAfck?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=h3iqvIWAfck"
+  },
+  {
+    id: 104,
+    title: "אם אתה גבר - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/9on_1WpYvAY?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=9on_1WpYvAY"
+  },
+  {
+    id: 105,
+    title: "אמא שלי - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/Qpdq37kHE2s?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=Qpdq37kHE2s"
+  },
+  {
+    id: 106,
+    title: "אמבולנס - נועה קירל ומרגי",
+    embedUrl: "https://www.youtube.com/embed/T8cC6YWUHPc?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=T8cC6YWUHPc"
+  },
+  {
+    id: 107,
+    title: "אני - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/fY_UOsz8jNI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=fY_UOsz8jNI"
+  },
+  {
+    id: 108,
+    title: "אתה אני אולי - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/i0tFsOAMmBs?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=i0tFsOAMmBs"
+  },
+  {
+    id: 109,
+    title: "בא לי אותך - נועה קירל",
+    embedUrl: "https://www.youtube.com/embed/Iv2hNKdCRl4?autoplay=1&controls=0&modestbranding
