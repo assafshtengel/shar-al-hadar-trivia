@@ -5,6 +5,7 @@ import MusicNote from '@/components/MusicNote';
 import { useToast } from '@/components/ui/use-toast';
 import { useGameState } from '@/contexts/GameStateContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import LiveStats from '@/components/LiveStats';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -48,7 +49,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
-      {/* Background musical notes */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <MusicNote 
           type="note1" 
@@ -89,7 +89,6 @@ const Index = () => {
 
       <div className="container mx-auto px-4 py-12 flex-1 flex flex-col justify-center items-center relative z-10 max-w-md">
         <div className="w-full flex flex-col items-center">
-          {/* Logo with music icons */}
           <div className="flex items-center justify-center mb-6 relative">
             <MusicNote 
               type="note3" 
@@ -108,10 +107,11 @@ const Index = () => {
             />
           </div>
 
-          {/* Description */}
-          <p className="text-xl text-center mb-10 text-gray-700">
+          <p className="text-xl text-center mb-6 text-gray-700">
             משחק טריוויה מוזיקלי משפחתי לנסיעות! מזהים שירים במהירות – ונהנים מכל רגע.
           </p>
+
+          <LiveStats />
 
           {isIOS && (
             <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
@@ -144,7 +144,6 @@ const Index = () => {
             </div>
           )}
 
-          {/* Buttons container */}
           <div className="w-full space-y-4 mb-8">
             <AppButton 
               variant={isIOS ? "secondary" : "primary"}
@@ -164,7 +163,6 @@ const Index = () => {
             </AppButton>
           </div>
 
-          {/* Decorative car on road illustration */}
           <div className="w-full flex justify-center mt-8">
             <div className="relative">
               <div className="w-16 h-1 bg-gray-400 rounded-full mb-1 mx-auto"></div>
@@ -174,7 +172,6 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Shtengel Games Logo */}
           <div className="w-full flex flex-col items-center mt-16 mb-8">
             <div className="relative flex items-center justify-center mb-2">
               <MusicNote 
@@ -199,7 +196,6 @@ const Index = () => {
           </div>
         </div>
 
-        {/* New footer section with buttons */}
         <div className="w-full flex flex-col sm:flex-row gap-4 justify-center mt-8">
           <HowToPlayDialog />
           <ImprovementDialog />
