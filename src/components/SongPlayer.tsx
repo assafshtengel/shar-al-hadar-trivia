@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
 import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
@@ -21,7 +20,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   onPlaybackEnded,
   onPlaybackStarted,
   onPlaybackError,
-  duration = 8000 // Default to 8 seconds
+  duration = 8000
 }) => {
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,11 +29,9 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Function to ensure embedUrl has the required parameters
   const ensureEmbedParams = (url: string | undefined): string => {
     if (!url) return '';
     
-    // If already has parameters, ensure the ones we need are there
     if (url.includes('?')) {
       const urlObj = new URL(url);
       if (!urlObj.searchParams.has('autoplay')) {
@@ -51,13 +48,11 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       }
       return urlObj.toString();
     } 
-    // If no parameters, add them
     else {
       return `${url}?autoplay=1&controls=0&modestbranding=1&rel=0`;
     }
   };
 
-  // Detect iOS devices
   useEffect(() => {
     const checkIsIOS = () => {
       const userAgent = window.navigator.userAgent.toLowerCase();
@@ -67,8 +62,21 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     setIsIOS(checkIsIOS());
   }, []);
 
+  const validateYouTubeUrl = async (url: string): Promise<boolean> => {
+    try {
+      const response = await fetch(url);
+      if (response.status === 404) {
+        console.error('YouTube video not found:', url);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error validating YouTube URL:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
-    // Clean up any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -78,35 +86,44 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       if (song.embedUrl) {
         console.log('Starting song playback:', song.title);
         
-        if (isIOS) {
-          // For iOS, we need manual user interaction
-          setManualPlayNeeded(true);
-          setShowYouTubeEmbed(true);
-          setError(null);
-        } else {
-          // For non-iOS, proceed as normal
-          setShowYouTubeEmbed(true);
-          setError(null);
-          
-          if (onPlaybackStarted) {
-            onPlaybackStarted();
+        validateYouTubeUrl(song.embedUrl).then(isValid => {
+          if (!isValid) {
+            console.error('Invalid YouTube URL detected for song:', song.title);
+            setError('השיר אינו זמין כרגע');
+            if (onPlaybackError) {
+              onPlaybackError();
+            }
+            toast.error('השיר אינו זמין', {
+              description: 'מנסה לטעון שיר אחר...'
+            });
+            return;
           }
           
-          // Set up timer to end playback
-          timeoutRef.current = setTimeout(() => {
-            console.log('Song playback ended:', song.title);
-            setShowYouTubeEmbed(false);
-            onPlaybackEnded();
-          }, duration);
-        }
+          if (isIOS) {
+            setManualPlayNeeded(true);
+            setShowYouTubeEmbed(true);
+            setError(null);
+          } else {
+            setShowYouTubeEmbed(true);
+            setError(null);
+            
+            if (onPlaybackStarted) {
+              onPlaybackStarted();
+            }
+            
+            timeoutRef.current = setTimeout(() => {
+              console.log('Song playback ended:', song.title);
+              setShowYouTubeEmbed(false);
+              onPlaybackEnded();
+            }, duration);
+          }
+        });
       } else {
-        // Handle case where song doesn't have an embed URL
-        console.error('Song has no embed URL:', song);
         setError('לשיר זה אין קישור השמעה זמין');
         if (onPlaybackError) {
           onPlaybackError();
         }
-        toast.error('לא ניתן להשמיע את השיר', {
+        toast.error('שגיאה בהשמעת השיר', {
           description: 'אין קישור השמעה זמין לשיר זה'
         });
       }
@@ -115,7 +132,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       setManualPlayNeeded(false);
     }
 
-    // Cleanup function
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -131,7 +147,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       onPlaybackStarted();
     }
     
-    // Set up timer to end playback
     timeoutRef.current = setTimeout(() => {
       console.log('Song playback ended (iOS):', song?.title);
       setShowYouTubeEmbed(false);
@@ -177,7 +192,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             }}
           />
           
-          {/* iOS Manual Play Button */}
           {manualPlayNeeded && (
             <div className="absolute top-0 left-0 w-full h-full z-30 flex items-center justify-center bg-black/70">
               <div className="text-center">
@@ -195,7 +209,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             </div>
           )}
           
-          {/* Visual overlay to hide video but keep audio playing */}
           <div className="absolute top-0 left-0 w-full h-full z-20 bg-black"></div>
         </>
       ) : (

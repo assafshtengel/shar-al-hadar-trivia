@@ -374,14 +374,58 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  const handleSongPlaybackError = () => {
-    toast({
-      title: "שגיאה בהשמעת השיר",
-      description: "אירעה שגיאה בהשמעת השיר, בחר שיר אחר",
-      variant: "destructive"
-    });
-    setIsPlaying(false);
-    setShowYouTubeEmbed(false);
+  const handleSongPlaybackError = async () => {
+    console.log('Error playing song, fetching another one...');
+    if (!isHost) return;
+
+    const currentSongId = currentSong?.id || 0;
+    
+    try {
+      const { data: newSong, error } = await supabase
+        .from('songs')
+        .select('*')
+        .not('id', 'eq', currentSongId)
+        .order('RANDOM()')
+        .limit(1)
+        .single();
+
+      if (error) {
+        console.error('Error fetching new song:', error);
+        toast.error('שגיאה בטעינת שיר חדש', {
+          description: "אנא נסה שוב"
+        });
+        return;
+      }
+
+      if (newSong) {
+        const gameRound = createGameRound([newSong]);
+        setCurrentRound(gameRound);
+        setCurrentSong(gameRound.correctSong);
+        setSelectedAnswer(null);
+        setIsPlaying(true);
+        
+        const roundDataString = JSON.stringify(gameRound);
+        const { error: updateError } = await supabase
+          .from('game_state')
+          .update({
+            current_song_name: roundDataString,
+            current_song_url: gameRound.correctSong.embedUrl
+          })
+          .eq('game_code', gameCode);
+
+        if (updateError) {
+          console.error('Error updating game state with new song:', updateError);
+          toast.error('שגיאה בעדכון השיר', {
+            description: "אנא נסה שוב"
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Exception when fetching new song:', err);
+      toast.error('שגיאה בטעינת שיר חדש', {
+        description: "אנא נסה שוב"
+      });
+    }
   };
 
   const handleTimerTimeout = () => {
@@ -812,7 +856,12 @@ const GamePlay: React.FC = () => {
         return <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
-            <SongPlayer song={currentSong} isPlaying={isPlaying && showYouTubeEmbed} onPlaybackEnded={handleSongPlaybackEnded} onPlaybackError={handleSongPlaybackError} />
+            <SongPlayer 
+              song={currentSong} 
+              isPlaying={isPlaying && showYouTubeEmbed} 
+              onPlaybackEnded={handleSongPlaybackEnded} 
+              onPlaybackError={handleSongPlaybackError}
+            />
             
             <AppButton variant="primary" size="lg" onClick={playSong} className="max-w-xs" disabled={!isHost || isPlaying}>
               {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
