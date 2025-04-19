@@ -1,4 +1,3 @@
-
 import { Song } from './types';
 
 export const einsteinSongs: Song[] = [
@@ -27,7 +26,7 @@ export const einsteinSongs: Song[] = [
     fullUrl: "https://www.youtube.com/watch?v=N_elLKPF7u0"
   },
   {
-    id: 174,
+    id: 175,
     title: "יש בי אהבה - אריק איינשטיין",
     embedUrl: "https://www.youtube.com/embed/99yXtc_s_v4?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=99yXtc_s_v4"
