@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Music, ExternalLink } from 'lucide-react';
@@ -8,13 +9,21 @@ import EndGameButton from '@/components/EndGameButton';
 import PlayersList from '@/components/GameHostSetup/PlayersList';
 import GameCodeDisplay from '@/components/GameHostSetup/GameCodeDisplay';
 import HostJoinForm from '@/components/GameHostSetup/HostJoinForm';
+import GameSettings from '@/components/GameHostSetup/GameSettings';
 import { useHostJoin } from '@/hooks/useHostJoin';
 import { useGameStart } from '@/hooks/useGameStart';
 import { usePlayerManagement } from '@/hooks/usePlayerManagement';
 import LeaveGameButton from '@/components/LeaveGameButton';
 
 const GameHostSetup: React.FC = () => {
-  const { gameCode: contextGameCode, setGameData, playerName: contextPlayerName } = useGameState();
+  const { 
+    gameCode: contextGameCode, 
+    setGameData, 
+    playerName: contextPlayerName,
+    gameSettings,
+    updateGameSettings
+  } = useGameState();
+  
   const [gameCode] = React.useState(() => contextGameCode || Math.floor(100000 + Math.random() * 900000).toString());
   
   const {
@@ -45,7 +54,8 @@ const GameHostSetup: React.FC = () => {
   const { gameStarted, startGame } = useGameStart({
     gameCode,
     players,
-    hostJoined
+    hostJoined,
+    gameSettings
   });
 
   useEffect(() => {
@@ -92,6 +102,14 @@ const GameHostSetup: React.FC = () => {
             joinLoading={joinLoading}
             playerLimitReached={playerLimitReached}
           />
+          
+          {hostJoined && (
+            <GameSettings
+              settings={gameSettings}
+              onSettingsChange={updateGameSettings}
+              disabled={gameStarted}
+            />
+          )}
 
           <PlayersList players={players} />
 

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
@@ -7,6 +8,11 @@ import { toast } from 'sonner';
 
 type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
 
+export interface GameSettings {
+  scoreLimit: number | null; // null means no limit
+  gameDuration: number | null; // in minutes, null means no time limit
+}
+
 interface GameStateContextType {
   gameCode: string | null;
   playerName: string | null;
@@ -15,6 +21,8 @@ interface GameStateContextType {
   setGameData: (data: { gameCode: string; playerName: string; isHost?: boolean }) => void;
   clearGameData: () => void;
   answerTimeLimit: number;
+  gameSettings: GameSettings;
+  updateGameSettings: (settings: GameSettings) => void;
 }
 
 const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
@@ -34,6 +42,18 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [hostReady, setHostReady] = useState<boolean>(false);
   const previousGamePhaseRef = useRef<GamePhase | null>(null);
   const answerTimeLimit = 30; // Increased from 21 to 30 seconds to give more time to answer
+  
+  const [gameSettings, setGameSettings] = useState<GameSettings>(() => {
+    const savedSettings = localStorage.getItem('gameSettings');
+    return savedSettings 
+      ? JSON.parse(savedSettings) 
+      : { scoreLimit: null, gameDuration: null };
+  });
+  
+  const updateGameSettings = (settings: GameSettings) => {
+    setGameSettings(settings);
+    localStorage.setItem('gameSettings', JSON.stringify(settings));
+  };
   
   const setGameData = (data: { gameCode: string; playerName: string; isHost?: boolean }) => {
     setGameCode(data.gameCode);
@@ -95,7 +115,9 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isHost,
         setGameData,
         clearGameData,
-        answerTimeLimit
+        answerTimeLimit,
+        gameSettings,
+        updateGameSettings
       }}
     >
       <GameEndOverlay 

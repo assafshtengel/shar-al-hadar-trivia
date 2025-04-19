@@ -3,14 +3,21 @@ import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { GameSettings } from '@/contexts/GameStateContext';
 
 interface UseGameStartParams {
   gameCode: string;
   players: any[];
   hostJoined: boolean;
+  gameSettings?: GameSettings;
 }
 
-export const useGameStart = ({ gameCode, players, hostJoined }: UseGameStartParams) => {
+export const useGameStart = ({ 
+  gameCode, 
+  players, 
+  hostJoined,
+  gameSettings
+}: UseGameStartParams) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [gameStarted, setGameStarted] = useState(false);
@@ -38,7 +45,9 @@ export const useGameStart = ({ gameCode, players, hostJoined }: UseGameStartPara
       .from('game_state')
       .update({ 
         game_phase: 'playing',
-        host_ready: true
+        host_ready: true,
+        score_limit: gameSettings?.scoreLimit || null,
+        game_duration: gameSettings?.gameDuration || null
       })
       .eq('game_code', gameCode);
 
@@ -55,7 +64,11 @@ export const useGameStart = ({ gameCode, players, hostJoined }: UseGameStartPara
     setGameStarted(true);
     toast({
       title: "המשחק התחיל!",
-      description: "כעת אתה יכול להשמיע שירים"
+      description: gameSettings?.scoreLimit 
+        ? `המשחק יסתיים כאשר שחקן יגיע ל-${gameSettings.scoreLimit} נקודות` 
+        : gameSettings?.gameDuration
+        ? `המשחק יסתיים לאחר ${gameSettings.gameDuration} דקות` 
+        : "כעת אתה יכול להשמיע שירים"
     });
 
     navigate('/gameplay');
