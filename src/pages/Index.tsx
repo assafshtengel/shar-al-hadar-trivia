@@ -4,20 +4,44 @@ import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { useToast } from '@/components/ui/use-toast';
 import { useGameState } from '@/contexts/GameStateContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Info } from 'lucide-react';
 
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { clearGameData } = useGameState();
+  const { isIOS } = useIsMobile();
 
   const handleCreateGame = () => {
-    clearGameData(); // Clear any existing game data
+    if (isIOS) {
+      return;
+    }
+    clearGameData();
     navigate('/host-setup');
   };
 
   const handleJoinGame = () => {
-    clearGameData(); // Clear any existing game data
+    clearGameData();
     navigate('/join-game');
+  };
+
+  const handleReportIssue = () => {
+    toast({
+      title: "תודה על הדיווח",
+      description: "נבדוק את הנושא בהקדם",
+    });
   };
 
   return (
@@ -87,14 +111,46 @@ const Index = () => {
             משחק טריוויה מוזיקלי משפחתי לנסיעות! מזהים שירים במהירות – ונהנים מכל רגע.
           </p>
 
+          {isIOS && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center gap-2 text-amber-700 mb-2">
+                <Info size={20} />
+                <span className="font-semibold">הערה חשובה למשתמשי iPhone</span>
+              </div>
+              <p className="text-sm text-amber-700">
+                בשל הגבלות של Apple, משתמשי iPhone יכולים להשתתף במשחק כשחקנים בלבד, ולא כמנחים.
+              </p>
+              <AlertDialog>
+                <AlertDialogTrigger className="text-sm text-primary underline mt-2">
+                  אין לי iPhone אבל אני לא מצליח/ה להיות מנחה
+                </AlertDialogTrigger>
+                <AlertDialogContent dir="rtl">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>דיווח על בעיה טכנית</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      אנו מצטערים על אי הנוחות. אם אין ברשותך iPhone אך אינך מצליח/ה להיות מנחה, נשמח לקבל את הדיווח שלך כדי שנוכל לטפל בבעיה.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>ביטול</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleReportIssue}>
+                      דווח/י על הבעיה
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+
           {/* Buttons container */}
           <div className="w-full space-y-4 mb-8">
             <AppButton 
-              variant="primary" 
+              variant={isIOS ? "secondary" : "primary"}
               size="lg"
               onClick={handleCreateGame}
+              disabled={isIOS}
             >
-              הקם משחק חדש – פלאפון ראשי
+              {isIOS ? "לא זמין למשתמשי iPhone" : "הקם משחק חדש – פלאפון ראשי"}
             </AppButton>
             
             <AppButton 
