@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { GameSettings } from '@/contexts/GameStateContext';
 
 type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
 
@@ -12,6 +13,7 @@ interface UseGameStateSubscriptionProps {
   setHostReady: (ready: boolean) => void;
   clearGameData: () => void;
   navigate: (path: string) => void;
+  gameSettings?: GameSettings; // Add game settings
 }
 
 export const useGameStateSubscription = ({
@@ -20,7 +22,8 @@ export const useGameStateSubscription = ({
   setGamePhase,
   setHostReady,
   clearGameData,
-  navigate
+  navigate,
+  gameSettings
 }: UseGameStateSubscriptionProps) => {
   const isSubscribingRef = useRef(false);
   const channelRef = useRef<any>(null);
@@ -28,10 +31,133 @@ export const useGameStateSubscription = ({
   const phaseUpdateTimeRef = useRef<number>(0);
   const initializingRef = useRef<boolean>(true);
   const gameCodeRef = useRef<string | null>(null);
+  const gameStartTimeRef = useRef<number | null>(null);
+  const checkScoreIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     gameCodeRef.current = gameCode;
   }, [gameCode]);
+  
+  // Setup timer for game duration if applicable
+  useEffect(() => {
+    if (!gameCode || !isHost || !gameSettings?.gameDuration) return;
+    
+    const setupGameDurationTimer = () => {
+      // Only set the start time if we're in playing phase and it hasn't been set yet
+      if (lastGamePhaseRef.current === 'playing' && !gameStartTimeRef.current) {
+        console.log(`Setting up game duration timer for ${gameSettings.gameDuration} minutes`);
+        gameStartTimeRef.current = Date.now();
+        
+        // Check every 30 seconds if the game time limit has been reached
+        const intervalId = setInterval(async () => {
+          if (!gameStartTimeRef.current || !gameSettings.gameDuration) return;
+          
+          const currentTime = Date.now();
+          const elapsedMinutes = (currentTime - gameStartTimeRef.current) / (1000 * 60);
+          
+          console.log(`Game time elapsed: ${elapsedMinutes.toFixed(2)} minutes of ${gameSettings.gameDuration} limit`);
+          
+          if (elapsedMinutes >= gameSettings.gameDuration) {
+            console.log(`Game duration limit reached (${gameSettings.gameDuration} minutes). Ending game.`);
+            
+            // Clear interval
+            clearInterval(intervalId);
+            
+            // End the game
+            if (gameCode && isHost) {
+              try {
+                const { error } = await supabase
+                  .from('game_state')
+                  .update({ game_phase: 'end' })
+                  .eq('game_code', gameCode);
+                
+                if (error) {
+                  console.error('Error ending game due to time limit:', error);
+                } else {
+                  toast('הזמן נגמר!', {
+                    description: `המשחק הסתיים לאחר ${gameSettings.gameDuration} דקות`,
+                  });
+                }
+              } catch (err) {
+                console.error('Exception ending game by time limit:', err);
+              }
+            }
+          }
+        }, 30000); // Check every 30 seconds
+        
+        checkScoreIntervalRef.current = intervalId;
+      }
+    };
+    
+    setupGameDurationTimer();
+    
+    return () => {
+      if (checkScoreIntervalRef.current) {
+        clearInterval(checkScoreIntervalRef.current);
+        checkScoreIntervalRef.current = null;
+      }
+    };
+  }, [gameCode, isHost, gameSettings, lastGamePhaseRef.current]);
+
+  // Setup score limit checker
+  useEffect(() => {
+    if (!gameCode || !isHost || !gameSettings?.scoreLimit) return;
+    
+    const checkScoreLimit = async () => {
+      try {
+        // Only check if we're in playing or results phase
+        if (['playing', 'results', 'answering'].includes(lastGamePhaseRef.current || '')) {
+          const { data, error } = await supabase
+            .from('players')
+            .select('name, score')
+            .eq('game_code', gameCode)
+            .order('score', { ascending: false });
+          
+          if (error) {
+            console.error('Error checking player scores:', error);
+            return;
+          }
+          
+          if (data && data.length > 0) {
+            const highestScore = data[0].score;
+            console.log(`Checking score limit: Highest score is ${highestScore}, limit is ${gameSettings.scoreLimit}`);
+            
+            if (highestScore >= gameSettings.scoreLimit) {
+              console.log(`Score limit reached! Player ${data[0].name} has reached ${highestScore} points.`);
+              
+              // End the game
+              const { error: updateError } = await supabase
+                .from('game_state')
+                .update({ game_phase: 'end' })
+                .eq('game_code', gameCode);
+              
+              if (updateError) {
+                console.error('Error ending game due to score limit:', updateError);
+              } else {
+                toast('משחק הסתיים!', {
+                  description: `השחקן ${data[0].name} הגיע ל-${highestScore} נקודות והשיג את מגבלת הניקוד`,
+                });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Exception in checkScoreLimit:', err);
+      }
+    };
+    
+    // Check score limit initially and then every 15 seconds
+    checkScoreLimit();
+    const intervalId = setInterval(checkScoreLimit, 15000);
+    checkScoreIntervalRef.current = intervalId;
+    
+    return () => {
+      if (checkScoreIntervalRef.current) {
+        clearInterval(checkScoreIntervalRef.current);
+        checkScoreIntervalRef.current = null;
+      }
+    };
+  }, [gameCode, isHost, gameSettings, lastGamePhaseRef.current]);
   
   useEffect(() => {
     if (!gameCode) return;
@@ -156,6 +282,12 @@ export const useGameStateSubscription = ({
                 lastGamePhaseRef.current = newPhase;
                 phaseUpdateTimeRef.current = currentTime;
                 
+                // If phase changed to playing and we have a game duration, reset the start time
+                if (newPhase === 'playing' && gameSettings?.gameDuration && isHost) {
+                  gameStartTimeRef.current = Date.now();
+                  console.log(`Game phase changed to playing, starting duration timer: ${gameSettings.gameDuration} minutes`);
+                }
+                
                 // Always set the game phase, regardless of the player rank
                 setGamePhase(newPhase);
                 
@@ -212,6 +344,12 @@ export const useGameStateSubscription = ({
           lastGamePhaseRef.current = currentPhase;
           phaseUpdateTimeRef.current = Date.now();
           
+          // If it's in playing phase and we have a game duration, set the start time
+          if (currentPhase === 'playing' && gameSettings?.gameDuration && isHost) {
+            gameStartTimeRef.current = Date.now();
+            console.log(`Initial game phase is playing, starting duration timer: ${gameSettings.gameDuration} minutes`);
+          }
+          
           setGamePhase(currentPhase);
           
           if ('host_ready' in data) {
@@ -236,6 +374,12 @@ export const useGameStateSubscription = ({
         }
         channelRef.current = null;
       }
+      
+      // Clear any interval timers
+      if (checkScoreIntervalRef.current) {
+        clearInterval(checkScoreIntervalRef.current);
+        checkScoreIntervalRef.current = null;
+      }
     };
-  }, [gameCode, isHost, setGamePhase, setHostReady, clearGameData, navigate]);
+  }, [gameCode, isHost, setGamePhase, setHostReady, clearGameData, navigate, gameSettings]);
 };
