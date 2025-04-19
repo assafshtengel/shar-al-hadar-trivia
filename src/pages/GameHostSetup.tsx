@@ -51,7 +51,7 @@ const GameHostSetup: React.FC = () => {
     setStartGameDisabled
   });
 
-  const { gameStarted, startGame } = useGameStart({
+  const { gameStarted, startGame, isStarting } = useGameStart({
     gameCode,
     players,
     hostJoined,
@@ -107,7 +107,7 @@ const GameHostSetup: React.FC = () => {
             <GameSettings
               settings={gameSettings}
               onSettingsChange={updateGameSettings}
-              disabled={gameStarted}
+              disabled={gameStarted || isStarting}
             />
           )}
 
@@ -118,9 +118,11 @@ const GameHostSetup: React.FC = () => {
               variant="primary" 
               size="lg" 
               onClick={startGame} 
-              disabled={gameStarted || startGameDisabled || playerLimitReached}
+              disabled={gameStarted || startGameDisabled || playerLimitReached || isStarting}
+              loading={isStarting}
             >
-              {playerLimitReached ? "המשחק מלא" : 
+              {isStarting ? "מתחיל משחק..." :
+               playerLimitReached ? "המשחק מלא" : 
                gameStarted ? "המשחק כבר התחיל" : 
                startGameDisabled ? "יש להצטרף כמנחה תחילה" : "התחל משחק"}
             </AppButton>
