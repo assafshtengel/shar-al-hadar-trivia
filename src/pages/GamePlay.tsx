@@ -53,9 +53,6 @@ interface PendingAnswerUpdate {
   points: number;
 }
 
-// Initialize songs with the default ones, will be replaced by Supabase ones
-const [songs, setSongs] = useState<Song[]>([]);
-
 const GamePlay: React.FC = () => {
   const {
     toast
@@ -84,6 +81,7 @@ const GamePlay: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [players, setPlayers] = useState<SupabasePlayer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [songs, setSongs] = useState<Song[]>([]); // Moved inside the component
   const [currentPlayer, setCurrentPlayer] = useState<Player>({
     name: playerName || "שחקן נוכחי",
     score: 0,
@@ -839,20 +837,48 @@ const GamePlay: React.FC = () => {
     }
   };
 
+  const checkAllPlayersAnswered = useCallback(async () => {
+    if (!gameCode) return false;
+    const { data, error } = await supabase
+      .from('players')
+      .select('hasAnswered')
+      .eq('game_code', gameCode);
+    
+    if (error || !data) {
+      console.error('Error checking if all players answered:', error);
+      return false;
+    }
+    
+    return data.every(player => player.hasAnswered);
+  }, [gameCode]);
+
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
-        return <div className="flex flex-col items-center justify-center py-6 space-y-6">
+        return (
+          <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
-            <SongPlayer song={currentSong} isPlaying={isPlaying && showYouTubeEmbed} onPlaybackEnded={handleSongPlaybackEnded} onPlaybackError={handleSongPlaybackError} />
+            <SongPlayer 
+              song={currentSong} 
+              isPlaying={isPlaying && showYouTubeEmbed} 
+              onPlaybackEnded={handleSongPlaybackEnded} 
+              onPlaybackError={handleSongPlaybackError} 
+            />
             
-            <AppButton variant="primary" size="lg" onClick={playSong} className="max-w-xs" disabled={!isHost || isPlaying}>
+            <AppButton 
+              variant="primary" 
+              size="lg" 
+              onClick={playSong} 
+              className="max-w-xs" 
+              disabled={!isHost || isPlaying}
+            >
               {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
               <Play className="mr-2" />
             </AppButton>
             
-            {isPlaying && !showYouTubeEmbed && <div className="relative w-40 h-40 flex items-center justify-center">
+            {isPlaying && !showYouTubeEmbed && (
+              <div className="relative w-40 h-40 flex items-center justify-center">
                 <div className="absolute w-full h-full">
                   <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
                   <MusicNote type="note2" className="absolute top-10 left-0 text-secondary animate-float-alt" size={28} />
@@ -861,32 +887,23 @@ const GamePlay: React.FC = () => {
                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
                   <Music className="w-10 h-10 text-primary" />
                 </div>
-              </div>}
+              </div>
+            )}
             
-            {!isHost && !isPlaying && <div className="text-lg text-gray-600 text-center">
+            {!isHost && !isPlaying && (
+              <div className="text-lg text-gray-600 text-center">
                 המתן למנהל המשחק להשמיע את השיר הבא
-              </div>}
-          </div>;
+              </div>
+            )}
+          </div>
+        );
+        
       case 'answerOptions':
         return (
-        <div className="flex flex-col items-center py-6 space-y-6">
-          <GameTimer initialSeconds={10} isActive={true} onTimeout={handleTimerTimeout} />
-          
-          <div className="flex items-center">
-            <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
-            <SkipForward className="ml-2 text-secondary" />
-          </div>
-          
-          <h2 className="text-2xl font-bold text-primary">מה השיר?</h2>
-          
-          {currentRound && (
-            <div className="grid grid-cols-1 gap-4 w-full max-w-md">
-              {currentRound.options.map((song, index) => (
-                <div key={index} className="relative">
-                  <AppButton 
-                    variant={selectedAnswer === index ? "primary" : "secondary"} 
-                    className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full`} 
-                    disabled={selectedAnswer !== null} 
-                    onClick={() => handleAnswer(index)}
-                  >
-                    {song.title}
+          <div className="flex flex-col items-center py-6 space-y-6">
+            <GameTimer initialSeconds={10} isActive={true} onTimeout={handleTimerTimeout} />
+            
+            <div className="flex items-center">
+              <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
+              <SkipForward className="ml-2 text-secondary" />
+            </div>
