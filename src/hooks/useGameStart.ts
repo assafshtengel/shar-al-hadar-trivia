@@ -52,33 +52,78 @@ export const useGameStart = ({
 
       console.log('Starting game with settings:', gameSettings);
       
-      // Prepare update data
-      const updateData = { 
+      // Prepare update data with essential game state fields
+      const updateData: Record<string, any> = { 
         game_phase: 'playing',
         host_ready: true,
       };
       
-      // Add score limit if set
+      // Add score limit if set (make sure it's a number)
       if (gameSettings?.scoreLimit) {
-        updateData['score_limit'] = gameSettings.scoreLimit;
+        const scoreLimitValue = Number(gameSettings.scoreLimit);
+        if (!isNaN(scoreLimitValue)) {
+          updateData.score_limit = scoreLimitValue;
+          console.log(`Setting score limit to ${scoreLimitValue}`);
+        } else {
+          console.warn('Invalid score limit value, ignoring:', gameSettings.scoreLimit);
+        }
       }
       
-      // Add time limit if set
+      // Add time limit if set (make sure it's a number)
       if (gameSettings?.gameDuration) {
-        updateData['game_duration'] = gameSettings.gameDuration;
+        const durationValue = Number(gameSettings.gameDuration);
+        if (!isNaN(durationValue)) {
+          updateData.game_duration = durationValue;
+          console.log(`Setting game duration to ${durationValue} minutes`);
+        } else {
+          console.warn('Invalid game duration value, ignoring:', gameSettings.gameDuration);
+        }
       }
       
       console.log('Sending update to database:', updateData);
 
-      const { error } = await supabase
+      // First check if the game_state record exists
+      const { data: existingGameState, error: checkError } = await supabase
         .from('game_state')
-        .update(updateData)
-        .eq('game_code', gameCode);
-
-      if (error) {
-        console.error('Error updating game state:', error);
+        .select('*')
+        .eq('game_code', gameCode)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error('Error checking game state:', checkError);
+        sonnerToast('שגיאה בבדיקת מצב המשחק', {
+          description: `אירעה שגיאה בבדיקת מצב המשחק: ${checkError.message}`,
+          position: 'top-center',
+        });
+        setIsStarting(false);
+        return;
+      }
+      
+      let updateResult;
+      
+      if (existingGameState) {
+        // Update existing game state
+        console.log('Updating existing game state:', existingGameState);
+        updateResult = await supabase
+          .from('game_state')
+          .update(updateData)
+          .eq('game_code', gameCode);
+      } else {
+        // Insert new game state if it doesn't exist
+        console.log('Creating new game state record');
+        updateResult = await supabase
+          .from('game_state')
+          .insert({
+            ...updateData,
+            game_code: gameCode,
+            current_round: 1
+          });
+      }
+      
+      if (updateResult.error) {
+        console.error('Error updating/creating game state:', updateResult.error);
         sonnerToast('שגיאה בהתחלת המשחק', {
-          description: `אירעה שגיאה בהתחלת המשחק: ${error.message}`,
+          description: `אירעה שגיאה בהתחלת המשחק: ${updateResult.error.message}`,
           position: 'top-center',
         });
         setIsStarting(false);
@@ -97,6 +142,7 @@ export const useGameStart = ({
         position: 'top-center',
       });
 
+      // Navigate to gameplay
       navigate('/gameplay');
     } catch (err) {
       console.error('Unexpected error starting game:', err);
