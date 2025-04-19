@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -82,7 +81,7 @@ const GamePlay: React.FC = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [players, setPlayers] = useState<SupabasePlayer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [songs, setSongs] = useState<Song[]>([]); // Moved inside the component
+  const [songs, setSongs] = useState<Song[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player>({
     name: playerName || "שחקן נוכחי",
     score: 0,
@@ -93,7 +92,21 @@ const GamePlay: React.FC = () => {
     pointsAwarded: false
   });
 
-  // Load songs from Supabase
+  const checkAllPlayersAnswered = useCallback(async () => {
+    if (!gameCode) return false;
+    const { data, error } = await supabase
+      .from('players')
+      .select('hasAnswered')
+      .eq('game_code', gameCode);
+    
+    if (error || !data) {
+      console.error('Error checking if all players answered:', error);
+      return false;
+    }
+    
+    return data.every(player => player.hasAnswered);
+  }, [gameCode]);
+
   useEffect(() => {
     const loadSongs = async () => {
       try {
@@ -305,7 +318,6 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  // Modified createGameRound function to use loaded songs
   function createGameRound(): GameRound {
     if (songs.length === 0) {
       console.warn('No songs available to create a round');
@@ -349,7 +361,6 @@ const GamePlay: React.FC = () => {
     }
   }, [showYouTubeEmbed, isHost]);
 
-  // Modified playSong function to check if songs are loaded
   const playSong = async () => {
     if (!isHost) return;
     
@@ -838,21 +849,6 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  const checkAllPlayersAnswered = useCallback(async () => {
-    if (!gameCode) return false;
-    const { data, error } = await supabase
-      .from('players')
-      .select('hasAnswered')
-      .eq('game_code', gameCode);
-    
-    if (error || !data) {
-      console.error('Error checking if all players answered:', error);
-      return false;
-    }
-    
-    return data.every(player => player.hasAnswered);
-  }, [gameCode]);
-
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
@@ -1037,14 +1033,14 @@ const GamePlay: React.FC = () => {
                   <Award className="mr-2" />
                 </AppButton>
                 
-                <EndGameButton gameCode={gameCode} />
+                <EndGameButton gameCode={gameCode || ""} />
               </div>
             )}
             
             {!isHost && (
               <div className="text-center mt-4">
                 <p className="text-gray-600 mb-4">ממתין למנהל המשחק להתחיל סיבוב חדש...</p>
-                <LeaveGameButton gameCode={gameCode} />
+                <LeaveGameButton gameCode={gameCode || ""} />
               </div>
             )}
           </div>

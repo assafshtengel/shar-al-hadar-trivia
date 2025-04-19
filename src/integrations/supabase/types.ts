@@ -75,6 +75,7 @@ export type Database = {
       songs: {
         Row: {
           artist: string | null
+          artist_arik_ainshtain: boolean | null
           artist_idan_raichel: boolean | null
           artist_kaveret: boolean | null
           artist_mashina: boolean | null
@@ -103,6 +104,7 @@ export type Database = {
         }
         Insert: {
           artist?: string | null
+          artist_arik_ainshtain?: boolean | null
           artist_idan_raichel?: boolean | null
           artist_kaveret?: boolean | null
           artist_mashina?: boolean | null
@@ -131,6 +133,7 @@ export type Database = {
         }
         Update: {
           artist?: string | null
+          artist_arik_ainshtain?: boolean | null
           artist_idan_raichel?: boolean | null
           artist_kaveret?: boolean | null
           artist_mashina?: boolean | null
