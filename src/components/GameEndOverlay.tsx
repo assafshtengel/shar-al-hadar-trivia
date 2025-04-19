@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameState } from '@/contexts/GameStateContext';
 import { toast } from 'sonner';
+import { X } from 'lucide-react';
+import AppButton from './AppButton';
 
 interface GameEndOverlayProps {
   isVisible: boolean;
@@ -72,9 +74,8 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
   }, [isVisible]);
   
   useEffect(() => {
-    // The overlay should only trigger redirect for non-hosts
-    // Hosts stay on the game page to control the next round
-    if (showOverlay && !isHost) {
+    // The overlay should only be visible for 4 seconds before redirecting
+    if (showOverlay) {
       // Clear any existing redirect timer
       if (redirectTimerRef.current) {
         clearTimeout(redirectTimerRef.current);
@@ -83,14 +84,10 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
       
       console.log('Overlay visible, scheduling redirect with delay');
       redirectTimerRef.current = setTimeout(() => {
-        console.log('Redirecting to home and clearing game data');
-        toast('המשחק הסתיים', {
-          description: 'חוזר לדף הבית',
-        });
-        clearGameData();
-        navigate('/');
+        console.log('Auto-redirecting to home and clearing game data');
+        handleCloseOverlay();
         redirectTimerRef.current = null;
-      }, 8000); // Longer delay to give user more time to see the message
+      }, 4000); // Changed from 8000 to 4000 (4 seconds)
     }
     
     return () => {
@@ -99,21 +96,47 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         redirectTimerRef.current = null;
       }
     };
-  }, [showOverlay, isHost, navigate, clearGameData]);
+  }, [showOverlay]);
+
+  const handleCloseOverlay = () => {
+    console.log('Closing overlay, redirecting to home and clearing game data');
+    toast('המשחק הסתיים', {
+      description: 'חוזר לדף הבית',
+    });
+    clearGameData();
+    navigate('/');
+    setShowOverlay(false);
+  };
   
   // Make sure to display it for all players, not just host or top players
   if (!showOverlay) return null;
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md mx-auto animate-scale-in">
+      <div className="relative bg-white p-6 rounded-lg shadow-lg text-center max-w-md mx-auto animate-scale-in">
+        <button 
+          onClick={handleCloseOverlay}
+          className="absolute right-2 top-2 text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          aria-label="סגור"
+        >
+          <X size={20} />
+        </button>
+        
         <h2 className="text-2xl font-bold text-primary mb-4">המשחק הסתיים</h2>
         <p className="text-lg text-gray-700 mb-4">
           המשחק הסתיים. תחזרו לדף הבית להתחיל משחק חדש
         </p>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 mb-3">
           מועבר לדף הבית באופן אוטומטי...
         </div>
+        
+        <AppButton 
+          variant="primary" 
+          size="sm" 
+          onClick={handleCloseOverlay}
+        >
+          סגור וחזור לדף הבית
+        </AppButton>
       </div>
     </div>
   );

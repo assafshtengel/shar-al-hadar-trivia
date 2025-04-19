@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useGameState } from '@/contexts/GameStateContext';
+import { toast } from 'sonner';
 
 interface LeaveGameDialogProps {
   isOpen: boolean;
@@ -12,12 +13,17 @@ interface LeaveGameDialogProps {
 
 const LeaveGameDialog = ({ isOpen, onClose }: LeaveGameDialogProps) => {
   const navigate = useNavigate();
-  const { clearGameData } = useGameState();
+  const { clearGameData, gameCode } = useGameState();
 
   const handleLeaveGame = () => {
+    console.log('Leave game dialog: Clearing game data and navigating to home page');
     clearGameData();
     onClose();
     navigate('/');
+    
+    toast('עזבת את המשחק', {
+      description: 'חזרת לדף הבית בהצלחה',
+    });
   };
 
   return (
