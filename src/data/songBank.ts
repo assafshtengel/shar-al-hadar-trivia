@@ -1,4 +1,3 @@
-
 import { fetchSongsFromSupabase, SupabaseSong } from '@/integrations/supabase/client';
 
 export interface Song {
@@ -11,7 +10,6 @@ export interface Song {
   fullUrl?: string;
 }
 
-// Convert Supabase song to our Song format
 export const convertSupabaseSongToSong = (supabaseSong: SupabaseSong): Song => {
   return {
     id: supabaseSong.id,
@@ -23,7 +21,6 @@ export const convertSupabaseSongToSong = (supabaseSong: SupabaseSong): Song => {
   };
 };
 
-// This is the default song bank that will be used as a fallback
 export const defaultSongBank: Song[] = [
   {
     id: 30,
@@ -450,55 +447,35 @@ export const defaultSongBank: Song[] = [
     title: "לשונות של אש - אביתר בנאי",
     embedUrl: "https://www.youtube.com/embed/cTsJuLlmySs?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=cTsJuLlmySs"
+  },
+  {
+    id: 101,
+    title: "קרן פלס - שיר של אחרי",
+    embedUrl: "https://www.youtube.com/embed/D7GgGvS8VXg?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=D7GgGvS8VXg"
   }
 ];
 
-/**
- * Generates a set of possible answers for a given song including the correct answer
- * @param correctSong The correct song
- * @param allSongs All available songs to choose incorrect answers from
- * @param numOptions Number of options to generate (default: 4)
- * @returns Array of song options with the correct song included
- */
 export function generateAnswerOptions(
   correctSong: Song,
   allSongs: Song[],
   numOptions: number = 4
 ): Song[] {
-  // Create a copy of all songs excluding the correct one
   const otherSongs = allSongs.filter(song => song.id !== correctSong.id);
-  
-  // Shuffle the array to get random songs
   const shuffledSongs = [...otherSongs].sort(() => Math.random() - 0.5);
-  
-  // Take n-1 songs for wrong answers
   const wrongAnswers = shuffledSongs.slice(0, numOptions - 1);
-  
-  // Combine correct and wrong answers, then shuffle
   const options = [correctSong, ...wrongAnswers];
-  
   return options.sort(() => Math.random() - 0.5);
 }
 
-/**
- * Gets a random song from the song bank
- * @param songs Array of songs to select from
- * @returns A randomly selected song
- */
 export function getRandomSong(songs: Song[] = defaultSongBank): Song {
   const randomIndex = Math.floor(Math.random() * songs.length);
   return songs[randomIndex];
 }
 
-/**
- * Creates a game round with a correct song and answer options
- * @param songBank Array of songs to use (defaults to the built-in song bank)
- * @returns An object with the correct song and answer options
- */
 export function createGameRound(songBank: Song[] = defaultSongBank) {
   const correctSong = getRandomSong(songBank);
   const options = generateAnswerOptions(correctSong, songBank);
-  
   return {
     correctSong,
     options,
@@ -506,31 +483,17 @@ export function createGameRound(songBank: Song[] = defaultSongBank) {
   };
 }
 
-/**
- * Find a song by its ID
- * @param songId The ID of the song to find
- * @param songBank Array of songs to search in
- * @returns The song with the given ID or undefined if not found
- */
 export function findSongById(songId: number, songBank: Song[] = defaultSongBank): Song | undefined {
   return songBank.find(song => song.id === songId);
 }
 
-/**
- * Fetches songs from Supabase and converts them to our Song format
- * @param limit Maximum number of songs to fetch
- * @param category Optional category to filter by
- * @returns Promise that resolves to an array of Song objects
- */
 export async function fetchSongsForGame(limit = 20, category?: string): Promise<Song[]> {
   try {
     const supabaseSongs = await fetchSongsFromSupabase(limit, category);
-    
     if (supabaseSongs.length === 0) {
       console.warn('No songs found in Supabase, using default song bank');
       return defaultSongBank;
     }
-    
     return supabaseSongs.map(convertSupabaseSongToSong);
   } catch (error) {
     console.error('Error fetching songs from Supabase:', error);
@@ -538,12 +501,6 @@ export async function fetchSongsForGame(limit = 20, category?: string): Promise<
   }
 }
 
-/**
- * Creates a game round with a correct song and answer options from Supabase
- * @param limit Maximum number of songs to fetch
- * @param category Optional category to filter by
- * @returns Promise that resolves to a game round object
- */
 export async function createGameRoundFromSupabase(limit = 20, category?: string) {
   const songs = await fetchSongsForGame(limit, category);
   return createGameRound(songs);
