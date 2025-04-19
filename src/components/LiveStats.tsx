@@ -6,7 +6,7 @@ const LiveStats = () => {
   const [stats, setStats] = useState({ games: 72, players: 290 });
 
   useEffect(() => {
-    // Update stats every 3 minutes with random but realistic numbers
+    // Update stats every 30 seconds with random but realistic numbers
     const interval = setInterval(() => {
       const baseGames = 65; // Minimum number of games
       const basePlayers = 260; // Minimum number of players
@@ -19,7 +19,7 @@ const LiveStats = () => {
         games: randomGames,
         players: randomPlayers
       });
-    }, 180000); // 3 minutes interval
+    }, 30000); // 30 seconds interval
 
     return () => clearInterval(interval);
   }, []);
@@ -46,3 +46,4 @@ const LiveStats = () => {
 };
 
 export default LiveStats;
+
