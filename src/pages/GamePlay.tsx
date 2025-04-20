@@ -67,7 +67,7 @@ const GamePlay: React.FC = () => {
     answerTimeLimit
   } = useGameState();
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
-  const [timeLeft, setTimeLeft] = useState(answerTimeLimit);
+  const [timeLeft, setTimeLeft] = useState(6);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
@@ -995,26 +995,6 @@ const GamePlay: React.FC = () => {
         );
         
       case 'answerOptions':
-        if (isTriviaRound && currentTriviaQuestion) {
-          return (
-            <div className="flex flex-col items-center py-6 space-y-6">
-              <GameTimer 
-                initialSeconds={8} 
-                isActive={true} 
-                onTimeout={handleTimerTimeout} 
-              />
-              
-              <TriviaQuestion 
-                question={currentTriviaQuestion} 
-                onAnswer={handleTriviaAnswer}
-                timeUp={timeLeft <= 0}
-                showOptions={true}
-                isFinalPhase={false}
-              />
-            </div>
-          );
-        }
-        
         const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
         const isFinalPhase = timeSinceStart > 8;
         const showOptions = timeSinceStart >= 1.5;
@@ -1022,10 +1002,14 @@ const GamePlay: React.FC = () => {
         return (
           <div className="flex flex-col items-center py-6 space-y-6">
             <GameTimer 
-              initialSeconds={12} 
+              initialSeconds={6} 
               isActive={true} 
               onTimeout={handleTimerTimeout} 
             />
+            
+            <div className="text-xl font-semibold text-primary">
+              הניקוד שלך בסיבוב זה: {currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}
+            </div>
             
             <div className="flex items-center">
               <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
