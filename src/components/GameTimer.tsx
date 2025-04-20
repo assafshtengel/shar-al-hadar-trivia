@@ -18,7 +18,8 @@ const GameTimer: React.FC<GameTimerProps> = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const lastTickTimeRef = useRef<number>(Date.now());
-  const timeoutTriggeredRef = useRef<boolean>(false); // Add a ref to track if timeout was triggered
+  const timeoutTriggeredRef = useRef<boolean>(false);
+  const forceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Reset timer when props change
   useEffect(() => {
@@ -29,14 +30,39 @@ const GameTimer: React.FC<GameTimerProps> = ({
       setTimeLeft(initialSeconds);
       startTimeRef.current = Date.now();
       lastTickTimeRef.current = Date.now();
+      
+      // Set a hard timeout that will trigger regardless of other conditions
+      if (forceTimeoutRef.current) {
+        clearTimeout(forceTimeoutRef.current);
+      }
+      
+      forceTimeoutRef.current = setTimeout(() => {
+        console.log('Force timeout triggered after timer duration');
+        if (!timeoutTriggeredRef.current) {
+          timeoutTriggeredRef.current = true;
+          onTimeout();
+        }
+      }, initialSeconds * 1000 + 500); // Adding a small buffer
     } else {
       if (timerRef.current) {
         console.log('Clearing timer due to isActive change');
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      
+      if (forceTimeoutRef.current) {
+        clearTimeout(forceTimeoutRef.current);
+        forceTimeoutRef.current = null;
+      }
     }
-  }, [initialSeconds, isActive]);
+    
+    return () => {
+      if (forceTimeoutRef.current) {
+        clearTimeout(forceTimeoutRef.current);
+        forceTimeoutRef.current = null;
+      }
+    };
+  }, [initialSeconds, isActive, onTimeout]);
 
   // Handle timer logic
   useEffect(() => {
@@ -52,22 +78,28 @@ const GameTimer: React.FC<GameTimerProps> = ({
         setTimeLeft(prev => {
           const newTime = Math.max(prev - elapsed / 1000, 0);
           
-          // Only trigger timeout once when time is very close to 0
-          if (newTime <= 0.1 && !timeoutTriggeredRef.current) {
-            console.log('Timer reached threshold (0.1s), triggering timeout callback');
+          // Trigger timeout once when time reaches 0
+          if (newTime <= 0.05 && !timeoutTriggeredRef.current) {
+            console.log('Timer reached zero, triggering timeout callback');
             timeoutTriggeredRef.current = true; // Mark timeout as triggered
             
             if (timerRef.current) {
-              console.log('Timer reached zero, cleaning up');
+              console.log('Cleaning up timer after timeout');
               clearInterval(timerRef.current);
               timerRef.current = null;
-              onTimeout();
             }
+            
+            // Use setTimeout to ensure the UI updates before the callback
+            setTimeout(() => {
+              console.log('Executing timeout callback');
+              onTimeout();
+            }, 10);
+            
             return 0;
           }
           return newTime;
         });
-      }, 100); // Update more frequently for smoother countdown
+      }, 50); // Update more frequently for smoother countdown and more reliable timeout
     }
     
     return () => {
