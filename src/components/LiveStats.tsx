@@ -3,17 +3,22 @@ import React, { useEffect, useState } from 'react';
 import { Users, Gamepad2 } from 'lucide-react';
 
 const LiveStats = () => {
-  const [stats, setStats] = useState({ games: 72, players: 290 });
+  const [stats, setStats] = useState({ games: 45, players: 180 });
 
   useEffect(() => {
     // Update stats every 30 seconds with random but realistic numbers
     const interval = setInterval(() => {
-      const baseGames = 65; // Minimum number of games
-      const basePlayers = 260; // Minimum number of players
+      const minGames = 7; // Minimum number of games
+      const maxGames = 125; // Maximum number of games
+      const minPlayersPerGame = 3; // Minimum average players per game
+      const maxPlayersPerGame = 6; // Maximum average players per game
       
-      // Generate random numbers within a realistic range
-      const randomGames = baseGames + Math.floor(Math.random() * 20);
-      const randomPlayers = basePlayers + Math.floor(Math.random() * 60);
+      // Generate random number of games
+      const randomGames = minGames + Math.floor(Math.random() * (maxGames - minGames));
+      
+      // Calculate players based on average players per game
+      const averagePlayersPerGame = minPlayersPerGame + Math.random() * (maxPlayersPerGame - minPlayersPerGame);
+      const randomPlayers = Math.floor(randomGames * averagePlayersPerGame);
       
       setStats({
         games: randomGames,
