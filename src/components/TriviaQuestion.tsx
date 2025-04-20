@@ -5,7 +5,11 @@ import AppButton from '@/components/AppButton';
 import { CheckCircle2, XCircle } from 'lucide-react';
 
 interface TriviaQuestionProps {
-  question: TriviaQuestionType;
+  question: TriviaQuestionType | {
+    question: string;
+    options: string[];
+    correctAnswerIndex: number;
+  };
   onAnswer: (isCorrect: boolean, selectedIndex: number) => void;
   timeUp: boolean;
   answerStartTime?: number;

@@ -489,16 +489,15 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  const handleAnswer = async (index: number) => {
+  const handleAnswer = async (isCorrect: boolean, selectedIndex: number) => {
     if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound || currentPlayer.pointsAwarded) {
       console.log("Already answered or missing round data or points already awarded - ignoring selection");
       return;
     }
     
-    console.log(`Player ${playerName} selected answer: ${index}`);
-    setSelectedAnswer(index);
+    console.log(`Player ${playerName} selected answer: ${selectedIndex}`);
+    setSelectedAnswer(selectedIndex);
     
-    const isCorrect = index === currentRound.correctAnswerIndex;
     const currentTime = Date.now();
     const timeSinceStart = (currentTime - (gameStartTimeRef.current || currentTime)) / 1000;
     
@@ -536,10 +535,10 @@ const GamePlay: React.FC = () => {
             setCurrentPlayer(prev => ({
               ...prev,
               hasAnswered: true,
-              lastAnswer: currentRound.options[index].title,
+              lastAnswer: currentRound.options[selectedIndex].title,
               lastAnswerCorrect: isCorrect,
               lastScore: points,
-              pendingAnswer: index,
+              pendingAnswer: selectedIndex,
               pointsAwarded: true
             }));
             setShowAnswerConfirmation(true);
@@ -555,10 +554,10 @@ const GamePlay: React.FC = () => {
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
-      lastAnswer: currentRound.options[index].title,
+      lastAnswer: currentRound.options[selectedIndex].title,
       lastAnswerCorrect: isCorrect,
       lastScore: points,
-      pendingAnswer: index,
+      pendingAnswer: selectedIndex,
       score: updatedScore,
       pointsAwarded: true
     }));
@@ -1019,7 +1018,7 @@ const GamePlay: React.FC = () => {
                   options: currentRound.options.map(song => song.title || ''),
                   correctAnswerIndex: currentRound.correctAnswerIndex
                 }}
-                onAnswer={handleAnswer}
+                onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)}
                 timeUp={timeLeft <= 0}
                 answerStartTime={gameStartTimeRef.current || Date.now()}
                 elapsedTime={timeSinceStart}
