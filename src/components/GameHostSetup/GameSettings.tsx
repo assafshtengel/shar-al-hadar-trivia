@@ -55,7 +55,7 @@ const GameSettings: React.FC<GameSettingsProps> = ({
               <Trophy className="h-4 w-4 text-amber-500" />
               <Label htmlFor="score-limit">הגבלת ניקוד</Label>
             </div>
-            <Switch id="enable-score" checked={showScoreLimit} onCheckedChange={handleScoreLimitToggle} disabled={disabled} className="text-red-950 bg-zinc-950 hover:bg-zinc-800" />
+            <Switch id="enable-score" checked={showScoreLimit} onCheckedChange={handleScoreLimitToggle} disabled={disabled} className="" />
           </div>
           
           {showScoreLimit && <div className="mt-2">
