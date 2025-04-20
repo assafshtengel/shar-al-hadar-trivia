@@ -38,21 +38,15 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
           <Play className="mr-2" />
         </AppButton>
 
-        <a 
+        <AppButton 
+          variant="secondary" 
+          size="lg" 
           onClick={onPlayFullSong} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          role="button"
+          className="px-[43px] my-0 py-[34px] text-xl"
         >
-          <AppButton 
-            variant="secondary" 
-            size="lg" 
-            className="px-[43px] my-0 py-[34px] text-xl"
-          >
-            השמע שיר אחרון
-            <Youtube className="mr-2" />
-          </AppButton>
-        </a>
+          השמע שיר אחרון
+          <Youtube className="mr-2" />
+        </AppButton>
       </div>
 
       {isWaitingPhase}
