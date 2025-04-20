@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import AppButton from '@/components/AppButton';
@@ -16,6 +15,7 @@ interface TriviaQuestionProps {
   elapsedTime?: number;
   showOptions: boolean;
   isFinalPhase: boolean;
+  hasAnsweredEarly?: boolean;
 }
 
 const TriviaQuestion: React.FC<TriviaQuestionProps> = ({ 
@@ -25,20 +25,19 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   answerStartTime = 0,
   elapsedTime = 0,
   showOptions,
-  isFinalPhase
+  isFinalPhase,
+  hasAnsweredEarly = false
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
   const [visibleOptions, setVisibleOptions] = useState(question.options);
 
   useEffect(() => {
-    if (isFinalPhase && !answered) {
-      // Filter out 2 random wrong answers for final phase
+    if (isFinalPhase && !answered && !hasAnsweredEarly) {
       const wrongAnswerIndices = question.options
         .map((_, index) => index)
         .filter(index => index !== question.correctAnswerIndex);
       
-      // Randomly select 2 indices to remove
       const indicesToRemove = wrongAnswerIndices
         .sort(() => Math.random() - 0.5)
         .slice(0, 2);
@@ -51,7 +50,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     } else {
       setVisibleOptions(question.options);
     }
-  }, [isFinalPhase, question.options, question.correctAnswerIndex, answered]);
+  }, [isFinalPhase, question.options, question.correctAnswerIndex, answered, hasAnsweredEarly]);
 
   const handleSelectAnswer = (index: number) => {
     if (answered || timeUp) return;
@@ -63,6 +62,18 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     onAnswer(isCorrect, index);
   };
 
+  if (hasAnsweredEarly && isFinalPhase) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4">
+        <div className="bg-gray-100 p-6 rounded-xl text-center">
+          <p className="text-lg text-gray-600">
+            כבר ענית על השאלה בשלב מוקדם יותר
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4">
       <h2 className="text-2xl font-bold text-primary mb-6 text-center">
@@ -72,7 +83,6 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
       <div className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg w-full mb-6 border-2 border-primary/20">
         <p className="text-xl font-medium mb-6 text-center">{question.question}</p>
         
-        {/* Always show options during song playback */}
         <div className="grid grid-cols-1 gap-4">
           {visibleOptions.map((option, index) => {
             const originalIndex = question.options.indexOf(option);

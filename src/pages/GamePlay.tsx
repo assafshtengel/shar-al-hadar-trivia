@@ -93,6 +93,7 @@ const GamePlay: React.FC = () => {
   const [isTriviaRound, setIsTriviaRound] = useState<boolean>(false);
   const [currentTriviaQuestion, setCurrentTriviaQuestion] = useState<TriviaQuestionType | null>(null);
   const gameStartTimeRef = useRef<number | null>(null);
+  const [answeredEarly, setAnsweredEarly] = useState(false);
 
   const checkAllPlayersAnswered = useCallback(async () => {
     if (!gameCode) return false;
@@ -501,6 +502,10 @@ const GamePlay: React.FC = () => {
     const currentTime = Date.now();
     const timeSinceStart = (currentTime - (gameStartTimeRef.current || currentTime)) / 1000;
     
+    if (timeSinceStart <= 12) {
+      setAnsweredEarly(true);
+    }
+    
     let points = 0;
     const isFinalPhase = timeSinceStart > 8; // Final 4 seconds phase
     
@@ -798,7 +803,9 @@ const GamePlay: React.FC = () => {
 
   const nextRound = async () => {
     if (!isHost) return;
-    await resetPlayersAnsweredStatus();
+    
+    setAnsweredEarly(false);
+    
     setSelectedAnswer(null);
     setTimerActive(false);
     setPlayerReady(false);
@@ -1040,6 +1047,7 @@ const GamePlay: React.FC = () => {
                 elapsedTime={timeSinceStart}
                 showOptions={showOptions}
                 isFinalPhase={isFinalPhase}
+                hasAnsweredEarly={answeredEarly}
               />
             ) : (
               <div className="text-lg text-gray-600 animate-pulse">
