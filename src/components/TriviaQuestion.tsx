@@ -41,14 +41,15 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     console.log(`TriviaQuestion: handleSelectAnswer called with index: ${index}`);
     console.log(`TriviaQuestion: Current state - answered: ${answered}, timeUp: ${timeUp}`);
     
-    // Don't process if already answered or time is up
+    // Don't process if already answered
     if (answered) {
       console.log('TriviaQuestion: Already answered, ignoring selection');
       return;
     }
     
-    if (timeUp) {
-      console.log('TriviaQuestion: Time is up, ignoring selection');
+    // Don't process if time is up (but allow if not answered yet)
+    if (timeUp && answered) {
+      console.log('TriviaQuestion: Time is up and already answered, ignoring selection');
       return;
     }
     
@@ -97,7 +98,8 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
                   console.log(`TriviaQuestion: Button clicked for option ${index}: ${option}`);
                   handleSelectAnswer(index);
                 }}
-                disabled={timeUp && answered}
+                // Only disable after answering, never disable if not answered yet
+                disabled={answered}
               >
                 {option}
                 
