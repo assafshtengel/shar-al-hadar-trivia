@@ -877,33 +877,6 @@ const GamePlay: React.FC = () => {
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
-        if (isTriviaRound && currentTriviaQuestion) {
-          return (
-            <div className="flex flex-col items-center justify-center py-6 space-y-6">
-              <h2 className="text-2xl font-bold text-primary">שאלת טריוויה במוזיקה</h2>
-              
-              {isHost ? (
-                <AppButton 
-                  variant="primary" 
-                  size="lg" 
-                  onClick={() => {
-                    updateGameState('answering');
-                    setPhase('answerOptions');
-                  }} 
-                  className="max-w-xs"
-                >
-                  הצג שאלת טריוויה
-                  <Play className="mr-2" />
-                </AppButton>
-              ) : (
-                <div className="text-lg text-gray-600 text-center">
-                  המתן למנהל המשחק להציג את שאלת הטריוויה
-                </div>
-              )}
-            </div>
-          );
-        }
-        
         return (
           <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
@@ -923,7 +896,7 @@ const GamePlay: React.FC = () => {
               disabled={!isHost || isPlaying}
             >
               {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
-              <Play className="mr-2 py-[26px]" />
+              <Play className="mr-2" />
             </AppButton>
             
             {isPlaying && !showYouTubeEmbed && (
@@ -948,27 +921,13 @@ const GamePlay: React.FC = () => {
         );
         
       case 'answerOptions':
-        if (isTriviaRound && currentTriviaQuestion) {
-          return (
-            <div className="flex flex-col items-center py-6 space-y-6">
-              <GameTimer 
-                initialSeconds={8}  // Changed from 30 to 8 seconds for trivia
-                isActive={true} 
-                onTimeout={handleTimerTimeout} 
-              />
-              
-              <TriviaQuestion 
-                question={currentTriviaQuestion} 
-                onAnswer={handleTriviaAnswer}
-                timeUp={timeLeft <= 0}
-              />
-            </div>
-          );
-        }
-        
         return (
           <div className="flex flex-col items-center py-6 space-y-6">
-            <GameTimer initialSeconds={10} isActive={true} onTimeout={handleTimerTimeout} />
+            <GameTimer 
+              initialSeconds={10} 
+              isActive={true} 
+              onTimeout={handleTimerTimeout} 
+            />
             
             <div className="flex items-center">
               <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
