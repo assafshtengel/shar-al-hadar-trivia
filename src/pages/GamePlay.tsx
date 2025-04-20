@@ -983,7 +983,7 @@ const GamePlay: React.FC = () => {
           {isHost ? (
             <EndGameButton gameCode={gameCode} />
           ) : (
-            <LeaveGameButton />
+            <LeaveGameButton gameCode={gameCode} />
           )}
         </div>
         

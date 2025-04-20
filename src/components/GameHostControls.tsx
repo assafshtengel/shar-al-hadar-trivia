@@ -28,16 +28,13 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
 
   const playFullSong = () => {
     if (!currentSong?.fullUrl) {
-      toast({
-        title: "אין קישור לשיר המלא",
-        description: "לא נמצא קישור להשמעת השיר המלא",
-        variant: "destructive"
+      toast("אין קישור לשיר המלא", {
+        description: "לא נמצא קישור להשמעת השיר המלא"
       });
       return;
     }
 
-    toast({
-      title: "משמיע את השיר המלא",
+    toast("משמיע את השיר המלא", {
       description: "השיר המלא מתנגן כעת"
     });
     
