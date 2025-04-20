@@ -17,6 +17,7 @@ interface TriviaQuestionProps {
   showOptions: boolean;
   isFinalPhase: boolean;
   hasAnsweredEarly?: boolean;
+  showQuestion?: boolean; // Added to control visibility of question during song playback
 }
 
 const TriviaQuestion: React.FC<TriviaQuestionProps> = ({ 
@@ -27,7 +28,8 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   elapsedTime = 0,
   showOptions,
   isFinalPhase,
-  hasAnsweredEarly = false
+  hasAnsweredEarly = false,
+  showQuestion = true // Default to showing question
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -67,6 +69,10 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     const isCorrect = index === question.correctAnswerIndex;
     onAnswer(isCorrect, index);
   };
+
+  if (!showQuestion) {
+    return null;
+  }
 
   if (hasAnsweredEarly && isFinalPhase) {
     return (

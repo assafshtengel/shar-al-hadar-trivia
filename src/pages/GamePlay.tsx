@@ -964,13 +964,36 @@ const GamePlay: React.FC = () => {
           <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
-            <SongPlayer song={currentSong} isPlaying={isPlaying && showYouTubeEmbed} onPlaybackEnded={handleSongPlaybackEnded} onPlaybackError={handleSongPlaybackError} />
+            <SongPlayer 
+              song={currentSong} 
+              isPlaying={isPlaying && showYouTubeEmbed} 
+              onPlaybackEnded={handleSongPlaybackEnded} 
+              onPlaybackError={handleSongPlaybackError} 
+              onPlaybackStarted={() => {
+                // Trigger the same behavior for non-host players as for host
+                if (currentRound) {
+                  gameStartTimeRef.current = Date.now();
+                }
+              }}
+              showOverlay={false} // Don't show black overlay so question can be seen
+            />
             
-            {currentRound && showYouTubeEmbed && <TriviaQuestion question={{
-              question: "מה השיר?",
-              options: currentRound.options.map(song => song.title || ''),
-              correctAnswerIndex: currentRound.correctAnswerIndex
-            }} onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} timeUp={timeLeft <= 0} answerStartTime={gameStartTimeRef.current || Date.now()} elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} showOptions={true} isFinalPhase={false} />}
+            {currentRound && showYouTubeEmbed && 
+              <TriviaQuestion 
+                question={{
+                  question: "מה השיר?",
+                  options: currentRound.options.map(song => song.title || ''),
+                  correctAnswerIndex: currentRound.correctAnswerIndex
+                }} 
+                onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} 
+                timeUp={timeLeft <= 0} 
+                answerStartTime={gameStartTimeRef.current || Date.now()} 
+                elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} 
+                showOptions={true} 
+                isFinalPhase={false}
+                showQuestion={isPlaying && showYouTubeEmbed} // Show question during song playback
+              />
+            }
             
             <AppButton variant="primary" size="lg" onClick={playSong} className="max-w-xs" disabled={!isHost || isPlaying}>
               {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
@@ -993,6 +1016,7 @@ const GamePlay: React.FC = () => {
               </div>}
           </div>
         );
+      
       case 'answerOptions':
         const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
         const isFinalPhase = timeSinceStart > 8; // Final phase with 50-50
@@ -1062,6 +1086,7 @@ const GamePlay: React.FC = () => {
             )}
           </div>
         );
+      
       case 'scoringFeedback':
         return (
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
@@ -1116,6 +1141,7 @@ const GamePlay: React.FC = () => {
             )}
           </div>
         );
+      
       case 'leaderboard':
         return (
           <div className="flex flex-col items-center justify-center py-8">
@@ -1162,6 +1188,7 @@ const GamePlay: React.FC = () => {
               </div>}
           </div>
         );
+      
       default:
         return (
           <div className="flex flex-col items-center justify-center h-full">

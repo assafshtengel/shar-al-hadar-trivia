@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
 import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
@@ -13,6 +12,7 @@ interface SongPlayerProps {
   onPlaybackStarted?: () => void;
   onPlaybackError?: () => void;
   duration?: number;
+  showOverlay?: boolean;
 }
 
 const SongPlayer: React.FC<SongPlayerProps> = ({
@@ -21,7 +21,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   onPlaybackEnded,
   onPlaybackStarted,
   onPlaybackError,
-  duration = 8000 // Default to 8 seconds
+  duration = 8000,
+  showOverlay = true
 }) => {
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,11 +31,9 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Function to ensure embedUrl has the required parameters
   const ensureEmbedParams = (url: string | undefined): string => {
     if (!url) return '';
     
-    // If already has parameters, ensure the ones we need are there
     if (url.includes('?')) {
       const urlObj = new URL(url);
       if (!urlObj.searchParams.has('autoplay')) {
@@ -51,13 +50,11 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       }
       return urlObj.toString();
     } 
-    // If no parameters, add them
     else {
       return `${url}?autoplay=1&controls=0&modestbranding=1&rel=0`;
     }
   };
 
-  // Detect iOS devices
   useEffect(() => {
     const checkIsIOS = () => {
       const userAgent = window.navigator.userAgent.toLowerCase();
@@ -68,7 +65,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   }, []);
 
   useEffect(() => {
-    // Clean up any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -79,12 +75,10 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         console.log('Starting song playback:', song.title);
         
         if (isIOS) {
-          // For iOS, we need manual user interaction
           setManualPlayNeeded(true);
           setShowYouTubeEmbed(true);
           setError(null);
         } else {
-          // For non-iOS, proceed as normal
           setShowYouTubeEmbed(true);
           setError(null);
           
@@ -92,7 +86,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             onPlaybackStarted();
           }
           
-          // Set up timer to end playback
           timeoutRef.current = setTimeout(() => {
             console.log('Song playback ended:', song.title);
             setShowYouTubeEmbed(false);
@@ -100,7 +93,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           }, duration);
         }
       } else {
-        // Handle case where song doesn't have an embed URL
         console.error('Song has no embed URL:', song);
         setError('לשיר זה אין קישור השמעה זמין');
         if (onPlaybackError) {
@@ -115,7 +107,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       setManualPlayNeeded(false);
     }
 
-    // Cleanup function
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -131,7 +122,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       onPlaybackStarted();
     }
     
-    // Set up timer to end playback
     timeoutRef.current = setTimeout(() => {
       console.log('Song playback ended (iOS):', song?.title);
       setShowYouTubeEmbed(false);
@@ -177,7 +167,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             }}
           />
           
-          {/* iOS Manual Play Button */}
           {manualPlayNeeded && (
             <div className="absolute top-0 left-0 w-full h-full z-30 flex items-center justify-center bg-black/70">
               <div className="text-center">
@@ -195,8 +184,9 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             </div>
           )}
           
-          {/* Visual overlay to hide video but keep audio playing */}
-          <div className="absolute top-0 left-0 w-full h-full z-20 bg-black"></div>
+          {showOverlay && (
+            <div className="absolute top-0 left-0 w-full h-full z-20 bg-black"></div>
+          )}
         </>
       ) : (
         <div className="relative w-full h-full flex items-center justify-center">
