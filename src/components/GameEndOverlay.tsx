@@ -3,8 +3,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameState } from '@/contexts/GameStateContext';
 import { toast } from 'sonner';
-import { X } from 'lucide-react';
+import { X, Trophy, Award } from 'lucide-react';
 import AppButton from './AppButton';
+import { supabase } from '@/integrations/supabase/client';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface GameEndOverlayProps {
   isVisible: boolean;
@@ -13,6 +15,7 @@ interface GameEndOverlayProps {
 
 const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) => {
   const [showOverlay, setShowOverlay] = useState(false);
+  const [players, setPlayers] = useState<{id: string, name: string, score: number}[]>([]);
   const navigate = useNavigate();
   const { clearGameData } = useGameState();
   const lastVisibilityChange = useRef<number>(Date.now());
@@ -31,6 +34,38 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
       }
     };
   }, []);
+  
+  // Fetch players' final scores when overlay becomes visible
+  useEffect(() => {
+    const fetchFinalScores = async () => {
+      const { gameCode } = useGameState();
+      if (!gameCode) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('players')
+          .select('id, name, score')
+          .eq('game_code', gameCode)
+          .order('score', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching final scores:', error);
+          return;
+        }
+
+        if (data) {
+          console.log('Final game scores:', data);
+          setPlayers(data);
+        }
+      } catch (err) {
+        console.error('Exception fetching final scores:', err);
+      }
+    };
+
+    if (showOverlay) {
+      fetchFinalScores();
+    }
+  }, [showOverlay]);
   
   useEffect(() => {
     // Only process visibility changes if there's a significant gap (0.75 seconds)
@@ -74,7 +109,7 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
   }, [isVisible]);
   
   useEffect(() => {
-    // The overlay should only be visible for 4 seconds before redirecting
+    // The overlay should be visible for at least 10 seconds before redirecting
     if (showOverlay) {
       // Clear any existing redirect timer
       if (redirectTimerRef.current) {
@@ -82,12 +117,12 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         redirectTimerRef.current = null;
       }
       
-      console.log('Overlay visible, scheduling redirect with delay');
+      console.log('Overlay visible, scheduling redirect with 10-second delay');
       redirectTimerRef.current = setTimeout(() => {
         console.log('Auto-redirecting to home and clearing game data');
         handleCloseOverlay();
         redirectTimerRef.current = null;
-      }, 4000); // Changed from 8000 to 4000 (4 seconds)
+      }, 10000); // Changed from 4000 to 10000 (10 seconds)
     }
     
     return () => {
@@ -123,9 +158,40 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         </button>
         
         <h2 className="text-2xl font-bold text-primary mb-4">המשחק הסתיים</h2>
-        <p className="text-lg text-gray-700 mb-4">
-          המשחק הסתיים. תחזרו לדף הבית להתחיל משחק חדש
-        </p>
+        
+        <div className="w-full mb-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-right">מיקום</TableHead>
+                <TableHead className="text-right">שם</TableHead>
+                <TableHead className="text-right">ניקוד</TableHead>
+                <TableHead className="w-12"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {players.map((player, idx) => (
+                <TableRow key={player.id}>
+                  <TableCell className="font-medium">{idx + 1}</TableCell>
+                  <TableCell className="font-semibold">{player.name}</TableCell>
+                  <TableCell className={`font-bold ${player.score < 0 ? "text-red-500" : ""}`}>
+                    {player.score}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
+                    {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
+                    {idx === 2 && <Award className="h-5 w-5 text-amber-700" />}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        
+        <div className="text-sm text-gray-500 mb-3">
+          {players.length > 0 && `המנצח: ${players[0].name} עם ${players[0].score} נקודות`}
+        </div>
+        
         <div className="text-sm text-gray-500 mb-3">
           מועבר לדף הבית באופן אוטומטי...
         </div>
