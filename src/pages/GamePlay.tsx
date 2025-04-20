@@ -890,10 +890,6 @@ const GamePlay: React.FC = () => {
       }
     }
     
-    if (!isCorrect) {
-      points = isFinalPhase ? -2 : 0;
-    }
-    
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
@@ -1047,15 +1043,17 @@ const GamePlay: React.FC = () => {
               </div>
             )}
             
-            <AppButton 
-              variant="secondary" 
-              className="mt-4 max-w-xs" 
-              disabled={selectedAnswer !== null || currentPlayer.skipsLeft <= 0} 
-              onClick={handleSkip}
-            >
-              דלג ({currentPlayer.skipsLeft})
-              <SkipForward className="mr-2" />
-            </AppButton>
+            {!currentPlayer.hasAnswered && (
+              <AppButton 
+                variant="secondary" 
+                className="mt-4 max-w-xs" 
+                disabled={selectedAnswer !== null || currentPlayer.skipsLeft <= 0} 
+                onClick={handleSkip}
+              >
+                דלג ({currentPlayer.skipsLeft})
+                <SkipForward className="mr-2" />
+              </AppButton>
+            )}
             
             {selectedAnswer !== null && (
               <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
