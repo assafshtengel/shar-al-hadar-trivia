@@ -37,19 +37,24 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     }
   }, [timeUp]);
 
+  // Force reset state after component re-renders
+  useEffect(() => {
+    const resetTimer = setTimeout(() => {
+      if (!answered && selectedAnswer === null) {
+        console.log('TriviaQuestion: Force resetting state after delay');
+      }
+    }, 100);
+    
+    return () => clearTimeout(resetTimer);
+  }, [answered, selectedAnswer]);
+
   const handleSelectAnswer = (index: number) => {
     console.log(`TriviaQuestion: handleSelectAnswer called with index: ${index}`);
-    console.log(`TriviaQuestion: Current state - answered: ${answered}, timeUp: ${timeUp}`);
+    console.log(`TriviaQuestion: Current state - answered: ${answered}, timeUp: ${timeUp}, selectedAnswer: ${selectedAnswer}`);
     
-    // Don't process if already answered
-    if (answered) {
+    // Don't allow selection if already answered
+    if (answered || selectedAnswer !== null) {
       console.log('TriviaQuestion: Already answered, ignoring selection');
-      return;
-    }
-    
-    // Don't process if time is up (but allow if not answered yet)
-    if (timeUp && answered) {
-      console.log('TriviaQuestion: Time is up and already answered, ignoring selection');
       return;
     }
     
@@ -70,6 +75,8 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
       setShowAnswerConfirmation(false);
     }, 2000);
   };
+
+  console.log(`TriviaQuestion render: answered=${answered}, selectedAnswer=${selectedAnswer}, timeUp=${timeUp}`);
 
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4">
@@ -98,7 +105,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
                   console.log(`TriviaQuestion: Button clicked for option ${index}: ${option}`);
                   handleSelectAnswer(index);
                 }}
-                // Only disable after answering, never disable if not answered yet
+                // Only disable if this specific answer has been selected
                 disabled={answered}
               >
                 {option}
