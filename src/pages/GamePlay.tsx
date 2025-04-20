@@ -92,6 +92,7 @@ const GamePlay: React.FC = () => {
   const [roundCounter, setRoundCounter] = useState<number>(1);
   const [isTriviaRound, setIsTriviaRound] = useState<boolean>(false);
   const [currentTriviaQuestion, setCurrentTriviaQuestion] = useState<TriviaQuestionType | null>(null);
+  const gameStartTimeRef = useRef<number | null>(null);
 
   const checkAllPlayersAnswered = useCallback(async () => {
     if (!gameCode) return false;
@@ -329,7 +330,7 @@ const GamePlay: React.FC = () => {
           console.log('Setting timer active after YouTube embed finishes (non-host)');
           setTimerActive(true);
         }
-      }, 8000);
+      }, 12000); // Changed to 12 seconds
       return () => clearTimeout(timer);
     }
   }, [showYouTubeEmbed, isHost]);
@@ -345,6 +346,7 @@ const GamePlay: React.FC = () => {
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     setAllPlayersAnswered(false);
+    gameStartTimeRef.current = Date.now(); // Set start time for scoring
     const roundDataString = JSON.stringify(gameRound);
     const {
       error
@@ -492,10 +494,33 @@ const GamePlay: React.FC = () => {
       console.log("Already answered or missing round data or points already awarded - ignoring selection");
       return;
     }
+    
     console.log(`Player ${playerName} selected answer: ${index}`);
     setSelectedAnswer(index);
+    
     const isCorrect = index === currentRound.correctAnswerIndex;
-    const points = isCorrect ? 10 : 0;
+    const currentTime = Date.now();
+    const timeSinceStart = (currentTime - (gameStartTimeRef.current || currentTime)) / 1000;
+    
+    let points = 0;
+    const isFinalPhase = timeSinceStart > 8; // Final 4 seconds phase
+    
+    if (isFinalPhase) {
+      // Final phase scoring
+      points = isCorrect ? 4 : -2;
+    } else {
+      // Dynamic scoring based on time
+      if (timeSinceStart <= 3) {
+        points = 13; // Maximum points for quick answers
+      } else if (timeSinceStart <= 8) {
+        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5); // Decreasing points
+      }
+    }
+    
+    if (!isCorrect) {
+      points = isFinalPhase ? -2 : 0;
+    }
+
     let currentScore = 0;
     let hasAlreadyAnswered = false;
     if (gameCode && playerName) {
@@ -961,14 +986,24 @@ const GamePlay: React.FC = () => {
                 question={currentTriviaQuestion} 
                 onAnswer={handleTriviaAnswer}
                 timeUp={timeLeft <= 0}
+                showOptions={true}
+                isFinalPhase={false}
               />
             </div>
           );
         }
         
+        const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
+        const isFinalPhase = timeSinceStart > 8;
+        const showOptions = timeSinceStart >= 1.5;
+        
         return (
           <div className="flex flex-col items-center py-6 space-y-6">
-            <GameTimer initialSeconds={10} isActive={true} onTimeout={handleTimerTimeout} />
+            <GameTimer 
+              initialSeconds={12} 
+              isActive={true} 
+              onTimeout={handleTimerTimeout} 
+            />
             
             <div className="flex items-center">
               <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
@@ -978,25 +1013,19 @@ const GamePlay: React.FC = () => {
             <h2 className="text-2xl font-bold text-primary">מה השיר?</h2>
             
             {currentRound ? (
-              <div className="grid grid-cols-1 gap-4 w-full max-w-md">
-                {currentRound.options.map((song, index) => (
-                  <div key={index} className="relative">
-                    <AppButton 
-                      variant={selectedAnswer === index ? "primary" : "secondary"} 
-                      className={`${selectedAnswer !== null && selectedAnswer !== index ? "opacity-50" : ""} w-full`} 
-                      disabled={selectedAnswer !== null} 
-                      onClick={() => handleAnswer(index)}
-                    >
-                      {song.title}
-                    </AppButton>
-                    {selectedAnswer === index && showAnswerConfirmation && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 rounded-md animate-fade-in">
-                        ✓ הבחירה שלך נקלטה!
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <TriviaQuestion 
+                question={{
+                  question: "מה השיר?",
+                  options: currentRound.options.map(song => song.title || ''),
+                  correctAnswerIndex: currentRound.correctAnswerIndex
+                }}
+                onAnswer={handleAnswer}
+                timeUp={timeLeft <= 0}
+                answerStartTime={gameStartTimeRef.current || Date.now()}
+                elapsedTime={timeSinceStart}
+                showOptions={showOptions}
+                isFinalPhase={isFinalPhase}
+              />
             ) : (
               <div className="text-lg text-gray-600 animate-pulse">
                 טוען אפשרויות...
