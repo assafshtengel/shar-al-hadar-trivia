@@ -69,7 +69,15 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
         </AppButton>
       )}
       
-      {isWaitingPhase}
+      <AppButton
+        variant="outline"
+        size="default"
+        onClick={onResetScores}
+        className="max-w-xs px-4 py-2"
+      >
+        אפס ניקוד לכל השחקנים
+        <Award className="mr-2" />
+      </AppButton>
     </div>
   );
 };
