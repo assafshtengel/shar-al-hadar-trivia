@@ -681,7 +681,7 @@ const GamePlay: React.FC = () => {
     
     toast({
       title: "דילגת על השאלה",
-      description: `נותרו ${currentPlayer.skipsLeft - 1} דילוגים`
+      description: `נותרו ${currentPlayer.skipsLeft - 1} דילוג��ם`
     });
   };
 
@@ -1065,7 +1065,8 @@ const GamePlay: React.FC = () => {
       case 'scoringFeedback':
         return (
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
-            {currentPlayer.lastAnswerCorrect !== undefined ? <>
+            {currentPlayer.lastAnswerCorrect !== undefined ? (
+              <>
                 <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text-center`}>
                   {currentPlayer.lastAnswerCorrect ? 'כל הכבוד! ענית נכון!' : 'אוי לא! טעית.'}
                 </div>
@@ -1076,14 +1077,20 @@ const GamePlay: React.FC = () => {
                   <span>נקודות</span>
                 </div>
                 
-                {currentPlayer.lastAnswer && <div className="text-lg">
+                {currentPlayer.lastAnswer && (
+                  <div className="text-lg">
                     {currentPlayer.lastAnswerCorrect ? 'תשובה נכונה:' : 'בחרת:'} {currentPlayer.lastAnswer}
-                  </div>}
+                  </div>
+                )}
                 
-                {!currentPlayer.lastAnswerCorrect && currentRound && <div className="text-lg font-semibold text-green-500">
+                {!currentPlayer.lastAnswerCorrect && currentRound && !isTriviaRound && (
+                  <div className="text-lg font-semibold text-green-500">
                     התשובה הנכונה: {currentRound.correctSong.title}
-                  </div>}
-              </> : <>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
                 <div className="text-2xl font-bold text-secondary text-center">
                   דילגת על השאלה
                 </div>
@@ -1093,12 +1100,20 @@ const GamePlay: React.FC = () => {
                   <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
                   <span>נקודות</span>
                 </div>
-              </>}
+              </>
+            )}
             
-            {isHost && currentRound && <AppButton variant="secondary" size="lg" onClick={playFullSong} className="max-w-xs mt-4">
+            {isHost && currentRound && !isTriviaRound && (
+              <AppButton 
+                variant="secondary" 
+                size="lg" 
+                onClick={playFullSong} 
+                className="max-w-xs mt-4"
+              >
                 השמע את השיר המלא
                 <Youtube className="mr-2" />
-              </AppButton>}
+              </AppButton>
+            )}
           </div>
         );
       case 'leaderboard':
