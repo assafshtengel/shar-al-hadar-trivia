@@ -1,7 +1,8 @@
+
 import React from 'react';
 import AppButton from '@/components/AppButton';
-import { Play, AlertCircle, Gauge, Award, Youtube } from 'lucide-react';
-import { toast } from 'sonner';
+import { Play, Youtube } from 'lucide-react';
+
 interface GameHostControlsProps {
   roundCounter: number;
   isTriviaRound: boolean;
@@ -10,6 +11,7 @@ interface GameHostControlsProps {
   onPlayFullSong?: () => void;
   gamePhase: string | null;
 }
+
 const GameHostControls: React.FC<GameHostControlsProps> = ({
   roundCounter,
   isTriviaRound,
@@ -21,22 +23,36 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
   const isPlayingPhase = gamePhase === 'playing';
   const isWaitingPhase = gamePhase === 'waiting' || gamePhase === 'results' || gamePhase === 'end';
   const nextRoundType = (roundCounter + 1) % 5 === 0 ? 'טריוויה' : 'שיר';
-  return <div className="flex flex-col items-center gap-4 mt-4">
-      <AppButton variant="primary" size="lg" onClick={onPlayNext} className="max-w-xs px-[43px] my-0 py-[34px] text-xl" disabled={isPlayingPhase}>
-        {isTriviaRound ? 'הצג שאלת טריוויה' : 'התחל סיבוב חדש'}
-        <Play className="mr-2" />
-      </AppButton>
-      
-      <div className="flex gap-4">
-        <AppButton variant="secondary" size="lg" onClick={onPlayFullSong} className="px-[43px] my-0 py-[34px] text-xl">
+
+  return (
+    <div className="flex flex-col items-center gap-4 mt-4">
+      <div className="flex gap-4 items-center">
+        <AppButton 
+          variant="primary" 
+          size="lg" 
+          onClick={onPlayNext} 
+          className="max-w-xs px-[43px] my-0 py-[34px] text-xl" 
+          disabled={isPlayingPhase}
+        >
+          {isTriviaRound ? 'הצג שאלת טריוויה' : 'התחל סיבוב חדש'}
+          <Play className="mr-2" />
+        </AppButton>
+        
+        <AppButton 
+          variant="secondary" 
+          size="lg" 
+          onClick={onPlayFullSong} 
+          className="px-[43px] my-0 py-[34px] text-xl"
+        >
           השמע שיר אחרון
           <Youtube className="mr-2" />
         </AppButton>
-
-        
       </div>
 
       {isWaitingPhase}
-    </div>;
+    </div>
+  );
 };
+
 export default GameHostControls;
+
