@@ -1,7 +1,7 @@
 
 import React from 'react';
 import AppButton from '@/components/AppButton';
-import { Play, AlertCircle, Gauge, Award } from 'lucide-react';
+import { Play, AlertCircle, Gauge, Award, Youtube } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface GameHostControlsProps {
@@ -9,6 +9,7 @@ interface GameHostControlsProps {
   isTriviaRound: boolean;
   onPlayNext: () => void;
   onResetScores: () => void;
+  onPlayFullSong?: () => void;
   gamePhase: string | null;
 }
 
@@ -17,6 +18,7 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
   isTriviaRound,
   onPlayNext,
   onResetScores,
+  onPlayFullSong,
   gamePhase
 }) => {
   const isPlayingPhase = gamePhase === 'playing';
@@ -36,15 +38,27 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
         <Play className="mr-2" />
       </AppButton>
       
-      <AppButton
-        variant="secondary"
-        size="lg"
-        onClick={onResetScores}
-        className="max-w-xs px-[43px] my-0 py-[34px] text-xl"
-      >
-        איפוס ניקוד
-        <Award className="mr-2" />
-      </AppButton>
+      <div className="flex gap-4">
+        <AppButton
+          variant="secondary"
+          size="lg"
+          onClick={onPlayFullSong}
+          className="px-[43px] my-0 py-[34px] text-xl"
+        >
+          השמע שיר אחרון
+          <Youtube className="mr-2" />
+        </AppButton>
+
+        <AppButton
+          variant="secondary"
+          size="lg"
+          onClick={onResetScores}
+          className="px-[43px] my-0 py-[34px] text-xl"
+        >
+          איפוס ניקוד
+          <Award className="mr-2" />
+        </AppButton>
+      </div>
 
       {isWaitingPhase}
     </div>
@@ -52,3 +66,4 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
 };
 
 export default GameHostControls;
+
