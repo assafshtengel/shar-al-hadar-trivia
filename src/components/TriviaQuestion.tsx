@@ -21,6 +21,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 
   // Reset state when question changes
   useEffect(() => {
+    console.log('TriviaQuestion: Question changed, resetting state');
     setSelectedAnswer(null);
     setAnswered(false);
     setShowAnswerConfirmation(false);
@@ -29,16 +30,29 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   // Reset when timeUp changes to false (new question)
   useEffect(() => {
     if (!timeUp) {
+      console.log('TriviaQuestion: timeUp changed to false, resetting state');
       setSelectedAnswer(null);
       setAnswered(false);
+      setShowAnswerConfirmation(false);
     }
   }, [timeUp]);
 
   const handleSelectAnswer = (index: number) => {
-    // Don't process if already answered or time is up
-    if (answered || timeUp) return;
+    console.log(`TriviaQuestion: handleSelectAnswer called with index: ${index}`);
+    console.log(`TriviaQuestion: Current state - answered: ${answered}, timeUp: ${timeUp}`);
     
-    console.log(`TriviaQuestion: Answer selected: ${index}`);
+    // Don't process if already answered or time is up
+    if (answered) {
+      console.log('TriviaQuestion: Already answered, ignoring selection');
+      return;
+    }
+    
+    if (timeUp) {
+      console.log('TriviaQuestion: Time is up, ignoring selection');
+      return;
+    }
+    
+    console.log(`TriviaQuestion: Processing answer selection: ${index}`);
     
     // Update local state
     setSelectedAnswer(index);
@@ -47,6 +61,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     
     // Notify parent component
     const isCorrect = index === question.correctAnswerIndex;
+    console.log(`TriviaQuestion: Notifying parent, isCorrect: ${isCorrect}, index: ${index}`);
     onAnswer(isCorrect, index);
     
     // Hide confirmation after 2 seconds
@@ -78,8 +93,11 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
                     ? 'bg-green-100 border-green-500'
                     : ''
                 } ${answered && selectedAnswer !== index ? 'opacity-70' : ''}`}
-                onClick={() => handleSelectAnswer(index)}
-                disabled={answered || timeUp}
+                onClick={() => {
+                  console.log(`TriviaQuestion: Button clicked for option ${index}: ${option}`);
+                  handleSelectAnswer(index);
+                }}
+                disabled={timeUp && answered}
               >
                 {option}
                 
