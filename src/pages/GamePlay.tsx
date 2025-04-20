@@ -1106,21 +1106,10 @@ const GamePlay: React.FC = () => {
                 </TableHeader>
                 <TableBody>
                   {players.map((player, idx) => (
-                    <TableRow 
-                      key={player.id} 
-                      className={player.name === playerName ? "bg-primary/10" : ""}
-                    >
+                    <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
                       <TableCell className="font-medium">{idx + 1}</TableCell>
                       <TableCell className="font-semibold">{player.name}</TableCell>
-                      <TableCell 
-                        className={`font-bold ${
-                          (player.score || 0) < 0 
-                            ? "text-red-500" 
-                            : ""
-                        }`}
-                      >
-                        {player.score || 0}
-                      </TableCell>
+                      <TableCell>{player.score}</TableCell>
                       <TableCell className="text-right">
                         {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
                         {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
