@@ -540,7 +540,7 @@ const GamePlay: React.FC = () => {
     }, 2000);
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
+      description: isCorrect ? "בחרת בתשובה הנכונה!\" : \"התשובה שגויה, נסה בפעם הבאה"
     });
     if (timeLeft <= 0) {
       submitAllAnswers();
@@ -859,4 +859,4 @@ const GamePlay: React.FC = () => {
                   <MusicNote type="note2" className="absolute top-10 left-0 text-secondary animate-float-alt" size={28} />
                   <MusicNote type="note3" className="absolute bottom-10 right-10 text-accent animate-float" size={36} />
                 </div>
-                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items
