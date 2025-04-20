@@ -939,6 +939,22 @@ const GamePlay: React.FC = () => {
               onPlaybackError={handleSongPlaybackError} 
             />
             
+            {currentRound && showYouTubeEmbed && (
+              <TriviaQuestion 
+                question={{
+                  question: "מה השיר?",
+                  options: currentRound.options.map(song => song.title || ''),
+                  correctAnswerIndex: currentRound.correctAnswerIndex
+                }}
+                onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)}
+                timeUp={timeLeft <= 0}
+                answerStartTime={gameStartTimeRef.current || Date.now()}
+                elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000}
+                showOptions={true}
+                isFinalPhase={false}
+              />
+            )}
+            
             <AppButton 
               variant="primary" 
               size="lg" 
@@ -976,7 +992,7 @@ const GamePlay: React.FC = () => {
           return (
             <div className="flex flex-col items-center py-6 space-y-6">
               <GameTimer 
-                initialSeconds={8}  // Changed from 30 to 8 seconds for trivia
+                initialSeconds={8} 
                 isActive={true} 
                 onTimeout={handleTimerTimeout} 
               />
@@ -1106,10 +1122,21 @@ const GamePlay: React.FC = () => {
                 </TableHeader>
                 <TableBody>
                   {players.map((player, idx) => (
-                    <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
+                    <TableRow 
+                      key={player.id} 
+                      className={player.name === playerName ? "bg-primary/10" : ""}
+                    >
                       <TableCell className="font-medium">{idx + 1}</TableCell>
                       <TableCell className="font-semibold">{player.name}</TableCell>
-                      <TableCell>{player.score}</TableCell>
+                      <TableCell 
+                        className={`font-bold ${
+                          (player.score || 0) < 0 
+                            ? "text-red-500" 
+                            : ""
+                        }`}
+                      >
+                        {player.score || 0}
+                      </TableCell>
                       <TableCell className="text-right">
                         {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
                         {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
