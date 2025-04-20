@@ -1006,12 +1006,7 @@ const GamePlay: React.FC = () => {
       </div>
       
       <div className="w-full max-w-4xl mx-auto p-4 mb-8">
-        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-6 border border-primary/20 relative overflow-hidden hover:shadow-xl transition-shadow duration-300">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 opacity-50 py-0"></div>
-          <div className="relative z-10 min-h-[100px] flex items-center justify-center my-0">
-            <div className="text-center text-gray-500">מקום לפרסומת</div>
-          </div>
-        </div>
+        
       </div>
     </div>;
 };
