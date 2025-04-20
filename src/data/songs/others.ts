@@ -28,8 +28,8 @@ export const otherSongs: Song[] = [
   {
     id: 70,
     title: "שקיעות אדומות - אגם בוחבוט",
-    embedUrl: "https://www.youtube.com/embed/t_Edi4npk3I?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://www.youtube.com/watch?v=t_Edi4npk3I"
+    embedUrl: "https://www.youtube.com/embed/thClZjnDjis?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://www.youtube.com/watch?v=thClZjnDjis"
   },
   {
     id: 100,
