@@ -37,16 +37,22 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
           {isTriviaRound ? 'הצג שאלת טריוויה' : 'התחל סיבוב חדש'}
           <Play className="mr-2" />
         </AppButton>
-        
-        <AppButton 
-          variant="secondary" 
-          size="lg" 
+
+        <a 
           onClick={onPlayFullSong} 
-          className="px-[43px] my-0 py-[34px] text-xl"
+          target="_blank" 
+          rel="noopener noreferrer" 
+          role="button"
         >
-          השמע שיר אחרון
-          <Youtube className="mr-2" />
-        </AppButton>
+          <AppButton 
+            variant="secondary" 
+            size="lg" 
+            className="px-[43px] my-0 py-[34px] text-xl"
+          >
+            השמע שיר אחרון
+            <Youtube className="mr-2" />
+          </AppButton>
+        </a>
       </div>
 
       {isWaitingPhase}
@@ -55,4 +61,3 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
 };
 
 export default GameHostControls;
-
