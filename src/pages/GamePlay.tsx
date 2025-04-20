@@ -19,6 +19,7 @@ import TriviaQuestion from '@/components/TriviaQuestion';
 import { triviaQuestions } from '@/data/triviaQuestions';
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
+
 interface Player {
   name: string;
   score: number;
@@ -31,11 +32,13 @@ interface Player {
   pendingAnswer?: number | null;
   pointsAwarded?: boolean;
 }
+
 interface GameRound {
   correctSong: Song;
   options: Song[];
   correctAnswerIndex: number;
 }
+
 interface SupabasePlayer {
   id: string;
   name: string;
@@ -45,6 +48,7 @@ interface SupabasePlayer {
   hasAnswered: boolean;
   isReady: boolean;
 }
+
 interface PendingAnswerUpdate {
   player_name: string;
   is_correct: boolean;
@@ -506,7 +510,7 @@ const GamePlay: React.FC = () => {
     }
     
     let points = 0;
-    const isFinalPhase = timeSinceStart > 8; // Final 4 seconds phase
+    const isFinalPhase = timeSinceStart > 8; // Final phase (after timer reached 0)
     
     if (isFinalPhase) {
       // Final phase scoring
@@ -602,7 +606,7 @@ const GamePlay: React.FC = () => {
       description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
     
-    if (timeLeft <= 0) {
+    if (timeLeft <= 0 || isFinalPhase) {
       submitAllAnswers();
     }
   };
@@ -687,45 +691,28 @@ const GamePlay: React.FC = () => {
       console.log('Player already answered or points already awarded, skipping timeout handler');
       return;
     }
+    
+    // When timer runs out and no answer was selected, enter the final phase
+    // with 50-50 elimination and 6 second timer
+    setTimerActive(true);
+    
     if (playerName && gameCode) {
-      const {
-        data
-      } = await supabase.from('players').select('hasAnswered').eq('game_code', gameCode).eq('name', playerName).maybeSingle();
-      if (data && data.hasAnswered) {
-        console.log(`Player ${playerName} already marked as answered, skipping timeout update`);
-        setCurrentPlayer(prev => ({
-          ...prev,
-          hasAnswered: true,
-          lastAnswerCorrect: false,
-          lastScore: 0,
-          pointsAwarded: true
-        }));
-        return;
+      // For trivia questions and song questions, we'll handle the same way
+      // Enter the final phase with 50-50 elimination
+      
+      // Set the game in final phase state - this will trigger the 50-50 option reduction
+      const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
+      setPhase('answerOptions');
+      
+      // Reset timer for final 6 seconds
+      setTimeLeft(6);
+      
+      // Don't mark as having answered yet since player gets a second chance
+      if (isHost) {
+        // Only host can change the game phase to final
+        console.log('Setting game to final answer phase with 50-50 elimination');
       }
-      const pendingUpdate: PendingAnswerUpdate = {
-        player_name: playerName,
-        is_correct: false,
-        points: 0
-      };
-      setPendingAnswers([pendingUpdate]);
-      setCurrentPlayer(prev => ({
-        ...prev,
-        hasAnswered: true,
-        lastAnswerCorrect: false,
-        lastScore: 0,
-        pointsAwarded: true
-      }));
-      await batchUpdatePlayerScores([pendingUpdate]);
-      toast({
-        title: "אוי! נגמר הזמן",
-        description: "לא הספקת לענות בזמן",
-        variant: "destructive"
-      });
     }
-    if (isHost) {
-      updateGameState('results');
-    }
-    setPhase('scoringFeedback');
   };
 
   const resetPlayersAnsweredStatus = async () => {
@@ -814,7 +801,7 @@ const GamePlay: React.FC = () => {
     if (phase === 'scoringFeedback') {
       const timer = setTimeout(() => {
         setPhase('leaderboard');
-      }, 4000);
+      }, 6000); // Changed to 6 seconds
       return () => clearTimeout(timer);
     }
   }, [phase, isHost]);
@@ -891,7 +878,7 @@ const GamePlay: React.FC = () => {
     }
     
     let points = 0;
-    const isFinalPhase = timeSinceStart > 8; // Final 4 seconds phase
+    const isFinalPhase = timeSinceStart > 8; // Final 50-50 phase
     
     if (isFinalPhase) {
       points = isCorrect ? 4 : -2;
@@ -940,6 +927,10 @@ const GamePlay: React.FC = () => {
       title: isCorrect ? "כל הכבוד!" : "אופס!",
       description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
+    
+    if (isFinalPhase) {
+      submitAllAnswers();
+    }
   };
 
   const renderPhase = () => {
@@ -1008,7 +999,7 @@ const GamePlay: React.FC = () => {
         );
       case 'answerOptions':
         const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
-        const isFinalPhase = timeSinceStart > 8;
+        const isFinalPhase = timeSinceStart > 8; // Final phase with 50-50
         const showOptions = timeSinceStart >= 1.5;
         
         return (
