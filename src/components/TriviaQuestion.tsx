@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import AppButton from '@/components/AppButton';
 import { CheckCircle2, XCircle } from 'lucide-react';
@@ -17,15 +17,42 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
+  const [showAnswerConfirmation, setShowAnswerConfirmation] = useState(false);
+
+  // Reset state when question changes
+  useEffect(() => {
+    setSelectedAnswer(null);
+    setAnswered(false);
+    setShowAnswerConfirmation(false);
+  }, [question]);
+
+  // Reset when timeUp changes to false (new question)
+  useEffect(() => {
+    if (!timeUp) {
+      setSelectedAnswer(null);
+      setAnswered(false);
+    }
+  }, [timeUp]);
 
   const handleSelectAnswer = (index: number) => {
+    // Don't process if already answered or time is up
     if (answered || timeUp) return;
     
+    console.log(`TriviaQuestion: Answer selected: ${index}`);
+    
+    // Update local state
     setSelectedAnswer(index);
     setAnswered(true);
+    setShowAnswerConfirmation(true);
     
+    // Notify parent component
     const isCorrect = index === question.correctAnswerIndex;
     onAnswer(isCorrect, index);
+    
+    // Hide confirmation after 2 seconds
+    setTimeout(() => {
+      setShowAnswerConfirmation(false);
+    }, 2000);
   };
 
   return (
@@ -64,6 +91,12 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
                   <XCircle className="ml-auto text-red-500" />
                 )}
               </AppButton>
+              
+              {selectedAnswer === index && showAnswerConfirmation && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 rounded-md animate-fade-in">
+                  ✓ הבחירה שלך נקלטה!
+                </div>
+              )}
             </div>
           ))}
         </div>
