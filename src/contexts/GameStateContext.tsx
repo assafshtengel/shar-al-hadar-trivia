@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
@@ -89,25 +90,6 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     }
   }, [gamePhase, isHost]);
-
-  useEffect(() => {
-    const logTouchEvent = (e: TouchEvent) => {
-      console.log('Touch event detected:', {
-        type: e.type,
-        touches: e.touches.length,
-        targetElement: e.target instanceof HTMLElement ? e.target.tagName : 'unknown',
-        timestamp: new Date().toISOString()
-      });
-    };
-
-    document.addEventListener('touchstart', logTouchEvent);
-    document.addEventListener('touchend', logTouchEvent);
-
-    return () => {
-      document.removeEventListener('touchstart', logTouchEvent);
-      document.removeEventListener('touchend', logTouchEvent);
-    };
-  }, []);
 
   useGameStateSubscription({
     gameCode,

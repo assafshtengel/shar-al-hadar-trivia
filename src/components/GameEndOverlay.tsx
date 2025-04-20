@@ -19,7 +19,6 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
   const overlayTimerRef = useRef<NodeJS.Timeout | null>(null);
   const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const visibilityChangesRef = useRef<number>(0);
-  const minimumDisplayTime = 20000; // 20 seconds minimum display time
   
   // Clean up timers on unmount
   useEffect(() => {
@@ -67,22 +66,37 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         console.log('Displaying game end overlay');
         setShowOverlay(true);
         overlayTimerRef.current = null;
-        
-        // Set up the automatic redirect timer after minimum display time
-        if (redirectTimerRef.current) {
-          clearTimeout(redirectTimerRef.current);
-        }
-        redirectTimerRef.current = setTimeout(() => {
-          console.log('Auto-redirecting to home after minimum display time');
-          handleCloseOverlay();
-        }, minimumDisplayTime);
-        
       }, 1000); // Longer delay to ensure all state updates are processed
     } else {
       console.log('Game end state cleared');
       setShowOverlay(false);
     }
   }, [isVisible]);
+  
+  useEffect(() => {
+    // The overlay should only be visible for 4 seconds before redirecting
+    if (showOverlay) {
+      // Clear any existing redirect timer
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = null;
+      }
+      
+      console.log('Overlay visible, scheduling redirect with delay');
+      redirectTimerRef.current = setTimeout(() => {
+        console.log('Auto-redirecting to home and clearing game data');
+        handleCloseOverlay();
+        redirectTimerRef.current = null;
+      }, 4000); // Changed from 8000 to 4000 (4 seconds)
+    }
+    
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = null;
+      }
+    };
+  }, [showOverlay]);
 
   const handleCloseOverlay = () => {
     console.log('Closing overlay, redirecting to home and clearing game data');
@@ -113,7 +127,7 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
           המשחק הסתיים. תחזרו לדף הבית להתחיל משחק חדש
         </p>
         <div className="text-sm text-gray-500 mb-3">
-          מועבר לדף הבית אוטומטית בעוד כמה שניות...
+          מועבר לדף הבית באופן אוטומטי...
         </div>
         
         <AppButton 

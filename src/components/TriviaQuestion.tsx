@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import AppButton from '@/components/AppButton';
 import { CheckCircle2, XCircle } from 'lucide-react';
@@ -17,66 +17,16 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
-  const [showAnswerConfirmation, setShowAnswerConfirmation] = useState(false);
-
-  // Reset state when question changes
-  useEffect(() => {
-    console.log('TriviaQuestion: Question changed, resetting state');
-    setSelectedAnswer(null);
-    setAnswered(false);
-    setShowAnswerConfirmation(false);
-  }, [question]);
-
-  // Reset when timeUp changes to false (new question)
-  useEffect(() => {
-    if (!timeUp) {
-      console.log('TriviaQuestion: timeUp changed to false, resetting state');
-      setSelectedAnswer(null);
-      setAnswered(false);
-      setShowAnswerConfirmation(false);
-    }
-  }, [timeUp]);
-
-  // Force reset state after component re-renders
-  useEffect(() => {
-    const resetTimer = setTimeout(() => {
-      if (!answered && selectedAnswer === null) {
-        console.log('TriviaQuestion: Force resetting state after delay');
-      }
-    }, 100);
-    
-    return () => clearTimeout(resetTimer);
-  }, [answered, selectedAnswer]);
 
   const handleSelectAnswer = (index: number) => {
-    console.log(`TriviaQuestion: handleSelectAnswer called with index: ${index}`);
-    console.log(`TriviaQuestion: Current state - answered: ${answered}, timeUp: ${timeUp}, selectedAnswer: ${selectedAnswer}`);
+    if (answered || timeUp) return;
     
-    // Don't allow selection if already answered
-    if (answered || selectedAnswer !== null) {
-      console.log('TriviaQuestion: Already answered, ignoring selection');
-      return;
-    }
-    
-    console.log(`TriviaQuestion: Processing answer selection: ${index}`);
-    
-    // Update local state
     setSelectedAnswer(index);
     setAnswered(true);
-    setShowAnswerConfirmation(true);
     
-    // Notify parent component
     const isCorrect = index === question.correctAnswerIndex;
-    console.log(`TriviaQuestion: Notifying parent, isCorrect: ${isCorrect}, index: ${index}`);
     onAnswer(isCorrect, index);
-    
-    // Hide confirmation after 2 seconds
-    setTimeout(() => {
-      setShowAnswerConfirmation(false);
-    }, 2000);
   };
-
-  console.log(`TriviaQuestion render: answered=${answered}, selectedAnswer=${selectedAnswer}, timeUp=${timeUp}`);
 
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4">
@@ -101,12 +51,8 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
                     ? 'bg-green-100 border-green-500'
                     : ''
                 } ${answered && selectedAnswer !== index ? 'opacity-70' : ''}`}
-                onClick={() => {
-                  console.log(`TriviaQuestion: Button clicked for option ${index}: ${option}`);
-                  handleSelectAnswer(index);
-                }}
-                // Only disable if this specific answer has been selected
-                disabled={answered}
+                onClick={() => handleSelectAnswer(index)}
+                disabled={answered || timeUp}
               >
                 {option}
                 
@@ -118,12 +64,6 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
                   <XCircle className="ml-auto text-red-500" />
                 )}
               </AppButton>
-              
-              {selectedAnswer === index && showAnswerConfirmation && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 text-white px-2 py-1 rounded-md animate-fade-in">
-                  ✓ הבחירה שלך נקלטה!
-                </div>
-              )}
             </div>
           ))}
         </div>
