@@ -27,10 +27,7 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
         <Play className="mr-2" />
       </AppButton>
       
-      {isWaitingPhase && <AppButton variant="secondary" size="default" onClick={onResetScores} className="text-sm">
-          איפוס ניקוד לכל השחקנים
-          <Award className="mr-2 h-4 w-4" />
-        </AppButton>}
+      {isWaitingPhase}
       
       
     </div>;
