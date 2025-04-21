@@ -155,8 +155,8 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         <>
           <iframe 
             ref={iframeRef}
-            width="100%" 
-            height="100%" 
+            width="0"
+            height="0"
             src={ensureEmbedParams(song.embedUrl)} 
             frameBorder="0" 
             allow="autoplay; encrypted-media" 
@@ -206,3 +206,4 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
 };
 
 export default SongPlayer;
+
