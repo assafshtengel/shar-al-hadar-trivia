@@ -681,7 +681,7 @@ const GamePlay: React.FC = () => {
     
     toast({
       title: "דילגת על השאלה",
-      description: `נותרו ${currentPlayer.skipsLeft - 1} דילו����ם`
+      description: `נותרו ${currentPlayer.skipsLeft - 1} דילו�����ם`
     });
   };
 
@@ -692,27 +692,12 @@ const GamePlay: React.FC = () => {
       return;
     }
     
-    // When timer runs out and no answer was selected, directly enter the final phase
-    // with 50-50 elimination and 6 second timer
-    if (playerName && gameCode) {
-      // Set the game in final phase state - this will trigger the 50-50 option reduction
-      const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
-      
-      // Skip the intermediate screen and directly enter final phase
-      // Reset timer for final 6 seconds
-      setTimeLeft(6);
-      setTimerActive(true);
-      
-      // IMPORTANT: Explicitly set isFinalPhase to true here to trigger the 50-50 option filtering
-      if (currentRound) {
-        // Make sure the player sees the 50-50 options immediately
-        console.log('Directly entering 50-50 final phase');
-        toast({
-          title: "הזדמנות אחרונה!",
-          description: "רק שתי אפשרויות נותרו, בחר תשובה נכונה"
-        });
-      }
-    }
+    // When timer runs out and no answer was selected, directly skip to results
+    // instead of going to 50-50 options
+    console.log('No answer selected after timeout, moving to results');
+    
+    // Submit all answers and transition to scoring feedback
+    submitAllAnswers();
   };
 
   const resetPlayersAnsweredStatus = async () => {
@@ -871,7 +856,7 @@ const GamePlay: React.FC = () => {
     console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${isCorrect}`);
     
     const currentTime = Date.now();
-    const timeSinceStart = (currentTime - (gameStartTimeRef.current || currentTime)) / 1000;
+    const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
     
     if (timeSinceStart <= 12) {
       setAnsweredEarly(true);
@@ -921,7 +906,7 @@ const GamePlay: React.FC = () => {
     
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "תשובה נכונה!" : "התשובה ��גויה, נסה בפעם הבאה"
+      description: isCorrect ? "תשובה נכונה!" : "התשובה ��גויה, נסה ב��עם הבאה"
     });
     
     if (isFinalPhase) {
@@ -1047,6 +1032,7 @@ const GamePlay: React.FC = () => {
                 showOptions={showOptions}
                 isFinalPhase={isFinalPhase}
                 hasAnsweredEarly={answeredEarly}
+                onTimeUp={() => submitAllAnswers()} // Add this for automatic transition
               />
             ) : currentRound ? (
               <TriviaQuestion 
@@ -1062,6 +1048,7 @@ const GamePlay: React.FC = () => {
                 showOptions={showOptions}
                 isFinalPhase={isFinalPhase}
                 hasAnsweredEarly={answeredEarly}
+                onTimeUp={() => submitAllAnswers()} // Add this for automatic transition
               />
             ) : (
               <div className="text-lg text-gray-600 animate-pulse">
@@ -1083,7 +1070,7 @@ const GamePlay: React.FC = () => {
             
             {selectedAnswer !== null && (
               <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
-                הבחירה שלך נקלטה! ממתין לסיום ה��מן...
+                הבחירה שלך נקלטה! ממתין לסיום הזמן...
               </div>
             )}
           </div>
@@ -1203,13 +1190,13 @@ const GamePlay: React.FC = () => {
   };
 
   useEffect(() => {
-    if (phase === 'answerOptions' && timeLeft <= 0.11) { // קטן או שווה ל־0.1
-      // כדי שלא יתרחש שוב ושוב, יש להפעיל רק אם לא ענה
+    if (phase === 'answerOptions' && timeLeft <= 0.1) {
+      // If player hasn't answered, move to results
       if (!currentPlayer.hasAnswered && !currentPlayer.pointsAwarded) {
-        handleTimerTimeout();
+        console.log('Timer reached 0.1, triggering transition to results');
+        submitAllAnswers();
       }
     }
-    // אין צורך בתלותות נוספות, רק הערכים האלה
     // eslint-disable-next-line
   }, [phase, timeLeft]);
 

@@ -18,6 +18,7 @@ interface TriviaQuestionProps {
   isFinalPhase: boolean;
   hasAnsweredEarly?: boolean;
   showQuestion?: boolean; // Added to control visibility of question during song playback
+  onTimeUp?: () => void; // New callback for when time is up and no selection was made
 }
 
 const TriviaQuestion: React.FC<TriviaQuestionProps> = ({ 
@@ -29,7 +30,8 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   showOptions,
   isFinalPhase,
   hasAnsweredEarly = false,
-  showQuestion = true // Default to showing question
+  showQuestion = true, // Default to showing question
+  onTimeUp
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -59,6 +61,13 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
       setVisibleOptions(question.options);
     }
   }, [isFinalPhase, question.options, question.correctAnswerIndex, answered, hasAnsweredEarly]);
+
+  // Effect to handle time up and no selection
+  useEffect(() => {
+    if (timeUp && !answered && onTimeUp) {
+      onTimeUp();
+    }
+  }, [timeUp, answered, onTimeUp]);
 
   const handleSelectAnswer = (index: number) => {
     if (answered || timeUp) return;
