@@ -921,7 +921,7 @@ const GamePlay: React.FC = () => {
     
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה, נסה בפעם הבאה"
+      description: isCorrect ? "תשובה נכונה!" : "התשובה ��גויה, נסה בפעם הבאה"
     });
     
     if (isFinalPhase) {
@@ -1083,7 +1083,7 @@ const GamePlay: React.FC = () => {
             
             {selectedAnswer !== null && (
               <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
-                הבחירה שלך נקלטה! ממתין לסיום הזמן...
+                הבחירה שלך נקלטה! ממתין לסיום ה��מן...
               </div>
             )}
           </div>
@@ -1201,6 +1201,17 @@ const GamePlay: React.FC = () => {
         );
     }
   };
+
+  useEffect(() => {
+    if (phase === 'answerOptions' && timeLeft <= 0.11) { // קטן או שווה ל־0.1
+      // כדי שלא יתרחש שוב ושוב, יש להפעיל רק אם לא ענה
+      if (!currentPlayer.hasAnswered && !currentPlayer.pointsAwarded) {
+        handleTimerTimeout();
+      }
+    }
+    // אין צורך בתלותות נוספות, רק הערכים האלה
+    // eslint-disable-next-line
+  }, [phase, timeLeft]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
