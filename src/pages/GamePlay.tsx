@@ -603,55 +603,6 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  const handleTriviaAnswer = (isCorrect: boolean, selectedIndex: number) => {
-    if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
-      console.log("Already answered or points already awarded - ignoring selection");
-      return;
-    }
-    console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${isCorrect}`);
-    const currentTime = Date.now();
-    const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
-    if (timeSinceStart <= 12) {
-      setAnsweredEarly(true);
-    }
-    const isFinalPhase = timeSinceStart > 8;
-    const points = calculateScore(timeSinceStart, isCorrect, isFinalPhase);
-
-    setCurrentPlayer(prev => ({
-      ...prev,
-      hasAnswered: true,
-      lastAnswerCorrect: isCorrect,
-      lastScore: points,
-      score: prev.score + points,
-      pointsAwarded: true
-    }));
-    if (gameCode && playerName) {
-      try {
-        supabase.from('players').update({
-          hasAnswered: true,
-          score: currentPlayer.score + points
-        }).eq('game_code', gameCode).eq('name', playerName).then(({
-          error
-        }) => {
-          if (error) {
-            console.error('Error updating player after trivia answer:', error);
-          } else {
-            console.log(`Successfully updated ${playerName} score after trivia answer`);
-          }
-        });
-      } catch (err) {
-        console.error('Exception when updating player after trivia answer:', err);
-      }
-    }
-    toast({
-      title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה, נסה בפעם הבאה"
-    });
-    if (isFinalPhase) {
-      submitAllAnswers();
-    }
-  };
-
   const handleSkip = async () => {
     if (selectedAnswer !== null || currentPlayer.skipsLeft <= 0 || !currentRound || currentPlayer.pointsAwarded) {
       console.log("Cannot skip: Already answered, no skips left, missing round data, or points already awarded");
@@ -873,9 +824,281 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  const handleTriviaAnswer = (isCorrect: boolean, selectedIndex: number) => {
-    if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
-      console.log("Already answered or points already awarded - ignoring selection");
-      return;
-    }
-    console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${
+  return (
+    <div className="container mx-auto p-4 max-w-3xl min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center">
+          <MusicNote className="text-primary mr-2" />
+          <h1 className="text-2xl font-bold">שיר על הדרך</h1>
+        </div>
+        <div className="flex space-x-2">
+          {isHost && <EndGameButton gameCode={gameCode} />}
+          {!isHost && <LeaveGameButton gameCode={gameCode} playerName={playerName} />}
+        </div>
+      </div>
+
+      {/* Main content container */}
+      <div className="space-y-8">
+        {/* Player info */}
+        <div className="bg-card p-4 rounded-lg shadow-sm">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-sm text-gray-500">שחקן</p>
+              <p className="font-bold">{playerName || "אורח"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">הניקוד שלך</p>
+              <p className="font-bold text-xl text-primary">{currentPlayer.score}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">סיבוב</p>
+              <p className="font-bold">{roundCounter}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Game Stage Display */}
+        <div className="bg-card p-6 rounded-lg shadow-md text-center">
+          {phase === 'songPlayback' && !isTriviaRound && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold">השמעת השיר</h2>
+              <p className="text-gray-600">מאזינים לשיר...</p>
+              {isHost && (
+                <div className="mt-4">
+                  <GameHostControls
+                    onPlaySong={playSong}
+                    isPlaying={isPlaying}
+                    gameCode={gameCode}
+                    playerCount={players.length}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">כמנחה, אתה יכול להפעיל את השיר</p>
+                </div>
+              )}
+              {!isHost && !isPlaying && (
+                <div className="flex flex-col items-center space-y-4">
+                  <p className="text-gray-600">המנחה יפעיל את השיר בקרוב...</p>
+                  <div className="flex items-center justify-center">
+                    <MusicNote className="text-primary animate-pulse" size={48} />
+                  </div>
+                </div>
+              )}
+              {showYouTubeEmbed && currentSong && (
+                <SongPlayer 
+                  songUrl={currentSong.embedUrl || ""} 
+                  onEnded={handleSongPlaybackEnded} 
+                  onError={handleSongPlaybackError}
+                />
+              )}
+            </div>
+          )}
+
+          {phase === 'songPlayback' && isTriviaRound && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold">סיבוב טריוויה מוזיקלית!</h2>
+              {isHost && (
+                <div className="mt-4">
+                  <button
+                    onClick={nextRound}
+                    className="bg-primary text-white px-6 py-3 rounded-lg font-bold flex items-center justify-center space-x-2 mx-auto hover:bg-primary/80"
+                  >
+                    <span>התחל סיבוב טריוויה</span>
+                    <Play className="ml-2 h-5 w-5" />
+                  </button>
+                </div>
+              )}
+              {!isHost && (
+                <div className="flex flex-col items-center space-y-4">
+                  <p className="text-gray-600">סיבוב טריוויה מוזיקלית! המנחה יתחיל את הסיבוב בקרוב...</p>
+                  <div className="flex items-center justify-center">
+                    <Award className="text-primary animate-pulse" size={48} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Answer options display */}
+          {phase === 'answerOptions' && !isTriviaRound && currentRound && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold">בחר את שם השיר</h2>
+                {timerActive && (
+                  <GameTimer
+                    initialSeconds={answerTimeLimit}
+                    isActive={timerActive}
+                    onTimeout={handleTimerTimeout}
+                  />
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 gap-3 my-6">
+                {currentRound.options.map((song, index) => (
+                  <button
+                    key={index}
+                    disabled={currentPlayer.hasAnswered || selectedAnswer !== null}
+                    onClick={() => handleAnswer(index === currentRound.correctAnswerIndex, index)}
+                    className={`p-4 text-right rounded-lg font-medium text-lg transition-all 
+                      ${selectedAnswer === index 
+                        ? index === currentRound.correctAnswerIndex 
+                          ? 'bg-green-100 border-2 border-green-500 text-green-800' 
+                          : 'bg-red-100 border-2 border-red-500 text-red-800'
+                        : 'bg-white border-2 border-gray-200 hover:border-primary text-gray-800 hover:bg-primary/5'
+                      }
+                      ${currentPlayer.hasAnswered ? 'opacity-50 cursor-not-allowed' : ''}
+                    `}
+                  >
+                    {song.title}
+                    {showAnswerConfirmation && selectedAnswer === index && (
+                      <CheckCircle2 className="inline ml-2 text-green-500" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex justify-center">
+                <button
+                  onClick={handleSkip}
+                  disabled={selectedAnswer !== null || currentPlayer.skipsLeft <= 0 || currentPlayer.hasAnswered}
+                  className={`px-4 py-2 rounded-lg text-gray-600 border border-gray-300 text-sm 
+                    ${(selectedAnswer !== null || currentPlayer.skipsLeft <= 0 || currentPlayer.hasAnswered) 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : 'hover:bg-gray-100'
+                    }`}
+                >
+                  דלג על השאלה ({currentPlayer.skipsLeft} נותרו)
+                </button>
+              </div>
+            </div>
+          )}
+
+          {phase === 'answerOptions' && isTriviaRound && currentTriviaQuestion && (
+            <div className="space-y-4">
+              <TriviaQuestion 
+                question={currentTriviaQuestion} 
+                onAnswer={handleTriviaAnswer} 
+                disabled={currentPlayer.hasAnswered}
+                showTimer={true}
+                onTimerEnd={handleTimerTimeout}
+              />
+            </div>
+          )}
+
+          {/* Scoring feedback */}
+          {phase === 'scoringFeedback' && currentRound && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-bold">התשובה הנכונה</h2>
+              {!isTriviaRound && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="font-bold text-xl text-green-800">{currentRound.correctSong.title}</p>
+                  <p className="text-gray-600">{currentRound.correctSong.artist}</p>
+                </div>
+              )}
+              
+              {!isTriviaRound && currentPlayer.lastAnswer && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-gray-600">התשובה שלך:</p>
+                  <p className={`font-bold text-lg ${currentPlayer.lastAnswerCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentPlayer.lastAnswer}
+                    {currentPlayer.lastScore !== undefined && (
+                      <span className="mr-2">
+                        {currentPlayer.lastScore > 0 ? `+${currentPlayer.lastScore}` : currentPlayer.lastScore} נקודות
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {isHost && currentRound.correctSong.fullUrl && (
+                <div className="mt-4">
+                  <button
+                    onClick={playFullSong}
+                    className="bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2 rounded-lg font-bold flex items-center mx-auto"
+                  >
+                    <Youtube className="mr-2 h-5 w-5" />
+                    השמע את השיר המלא
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Leaderboard */}
+          {phase === 'leaderboard' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold">טבלת המובילים</h2>
+                {isHost && (
+                  <button 
+                    onClick={resetAllPlayerScores} 
+                    className="text-xs text-red-500 hover:text-red-700 flex items-center"
+                  >
+                    אפס ניקוד
+                  </button>
+                )}
+              </div>
+
+              <div className="overflow-hidden rounded-lg border border-gray-200">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">דירוג</TableHead>
+                      <TableHead className="text-right">שחקן</TableHead>
+                      <TableHead className="text-right">ניקוד</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {players.map((player, index) => (
+                      <TableRow key={player.id} className={player.name === playerName ? 'bg-primary/5' : ''}>
+                        <TableCell className="font-medium">
+                          {index === 0 && <Trophy className="inline text-yellow-500 mr-1" size={16} />}
+                          {index === 1 && <Trophy className="inline text-gray-400 mr-1" size={16} />}
+                          {index === 2 && <Trophy className="inline text-amber-700 mr-1" size={16} />}
+                          {index > 2 && (index + 1)}
+                        </TableCell>
+                        <TableCell className="font-bold">
+                          {player.name} {player.name === playerName && <span className="text-xs text-gray-500">(אתה)</span>}
+                        </TableCell>
+                        <TableCell>{player.score}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {isHost && (
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={nextRound}
+                    className="bg-primary text-white px-6 py-3 rounded-lg font-bold flex items-center justify-center space-x-2 mx-auto hover:bg-primary/80"
+                  >
+                    <span>סיבוב הבא</span>
+                    <SkipForward className="ml-2 h-5 w-5" />
+                  </button>
+                </div>
+              )}
+              
+              {!isHost && !playerReady && (
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={markPlayerReady}
+                    className="bg-primary text-white px-6 py-3 rounded-lg font-bold flex items-center justify-center space-x-2 mx-auto hover:bg-primary/80"
+                  >
+                    <span>אני מוכן לסיבוב הבא</span>
+                  </button>
+                </div>
+              )}
+              
+              {!isHost && playerReady && (
+                <div className="text-center mt-6">
+                  <p className="text-green-600 font-medium">אתה מוכן! ממתין לשחקנים נוספים...</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GamePlay;
