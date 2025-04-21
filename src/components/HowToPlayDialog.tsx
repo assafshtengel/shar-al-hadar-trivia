@@ -63,9 +63,35 @@ export const HowToPlayDialog = () => {
                 <li>מצב רוח טוב 🎶</li>
               </ul>
             </div>
+
+            <div>
+              <h3 className="font-bold text-lg mb-2 text-blue-700">שיטת הניקוד</h3>
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-blue-900">
+                <ul className="list-disc list-inside space-y-1">
+                  <li>
+                    <b>תשובה נכונה בין 0 ל-4 שניות:</b> 13 נקודות
+                  </li>
+                  <li>
+                    <b>תשובה נכונה בין 4 ל-7 שניות:</b> הניקוד יורד בהדרגה ל-10 נקודות
+                  </li>
+                  <li>
+                    <b>תשובה נכונה בין 7 ל-12 שניות:</b> הניקוד יורד עד מינימום של 6 נקודות
+                  </li>
+                  <li>
+                    <b>שלב 50-50 (אחרי שהטיימר נגמר):</b> תשובה נכונה מזכה ב-4 נקודות, תשובה שגויה מורידה 2 נקודות
+                  </li>
+                  <li>
+                    <b>תשובה שגויה בשלבים רגילים:</b> 0 נקודות
+                  </li>
+                </ul>
+                <p className="mt-2 text-xs text-gray-500">ככל שתענו מהר יותר – תרוויחו ניקוד גבוה יותר!</p>
+              </div>
+            </div>
+
           </div>
         </ScrollArea>
       </DialogContent>
     </Dialog>
   )
 }
+
