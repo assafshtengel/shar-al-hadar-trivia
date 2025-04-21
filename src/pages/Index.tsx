@@ -1,26 +1,40 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import { useToast } from '@/components/ui/use-toast';
-import { useGameState } from '@/contexts/GameStateContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import LiveStats from '@/components/LiveStats';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Info } from 'lucide-react';
 import { HowToPlayDialog } from "@/components/HowToPlayDialog";
 import { ImprovementDialog } from "@/components/ImprovementDialog";
+
+// Create a safe wrapper that doesn't directly use the context
+import { GameStateContext } from '@/contexts/GameStateContext';
+import { useContext } from 'react';
+
 const Index = () => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const navigate = useNavigate();
-  const {
-    clearGameData
-  } = useGameState();
-  const {
-    isIOS
-  } = useIsMobile();
+  const { isIOS } = useIsMobile();
+  
+  // Safely access GameState context
+  const gameStateContext = useContext(GameStateContext);
+  
+  const clearGameData = () => {
+    if (gameStateContext) {
+      gameStateContext.clearGameData();
+    } else {
+      // Handle the case where the context is not available
+      console.log('GameStateContext not available, clearing local storage manually');
+      localStorage.removeItem('gameCode');
+      localStorage.removeItem('playerName');
+      localStorage.removeItem('isHost');
+    }
+  };
+
   const handleCreateGame = () => {
     if (isIOS) {
       return;
@@ -28,16 +42,19 @@ const Index = () => {
     clearGameData();
     navigate('/host-setup');
   };
+  
   const handleJoinGame = () => {
     clearGameData();
     navigate('/join-game');
   };
+  
   const handleReportIssue = () => {
     toast({
       title: "תודה על הדיווח",
       description: "נבדוק את הנושא בהקדם"
     });
   };
+
   return <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10 flex flex-col">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <MusicNote type="note1" className="absolute top-[10%] right-[15%] opacity-20" size={40} animation="float" color="#6446D0" />
@@ -133,4 +150,5 @@ const Index = () => {
       </div>
     </div>;
 };
+
 export default Index;
