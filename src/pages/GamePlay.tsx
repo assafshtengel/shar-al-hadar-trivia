@@ -987,53 +987,70 @@ const GamePlay: React.FC = () => {
       
       case 'answerOptions': {
         const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
-        const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6; // Final phase with 50-50 (modified to include timeLeft <= 6)
+        const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6;
+
+        if (
+          isHost &&
+          currentPlayer.hasAnswered &&
+          isFinalPhase
+        ) {
+          return (
+            <div className="flex flex-col items-center py-6 space-y-6">
+              <GameTimer initialSeconds={6} isActive={true} onTimeout={handleTimerTimeout} />
+              <div className="text-xl font-semibold text-primary">
+                הבחירה שלך נקלטה! ממתין לשאר המשתתפים...
+              </div>
+              <div className="text-md text-gray-600 bg-gray-100 rounded-lg border p-5 max-w-xl mt-8 text-center">
+                לאחר שכל המשתתפים יענו או שייגמר הזמן, יעברו כל השחקנים לצפייה בתוצאה, ניקוד, ושם השיר הנכון כולל אפשרות להשמעתו.
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div className="flex flex-col items-center py-6 space-y-6">
             <GameTimer initialSeconds={6} isActive={true} onTimeout={handleTimerTimeout} />
-            
+
             <div className="text-xl font-semibold text-primary">
               הניקוד שלך בסיבוב זה: {currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}
             </div>
-            
+
             <div className="flex items-center">
               <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
               <SkipForward className="ml-2 text-secondary" />
             </div>
-            
+
             {isTriviaRound && currentTriviaQuestion ? (
-              <TriviaQuestion 
-                question={currentTriviaQuestion} 
-                onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} 
-                timeUp={timeLeft <= 0} 
-                answerStartTime={gameStartTimeRef.current || Date.now()} 
-                elapsedTime={timeSinceStart} 
-                showOptions={true} 
-                isFinalPhase={isFinalPhase} 
-                hasAnsweredEarly={answeredEarly} 
+              <TriviaQuestion
+                question={currentTriviaQuestion}
+                onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)}
+                timeUp={timeLeft <= 0}
+                answerStartTime={gameStartTimeRef.current || Date.now()}
+                elapsedTime={timeSinceStart}
+                showOptions={true}
+                isFinalPhase={isFinalPhase}
+                hasAnsweredEarly={answeredEarly}
                 onTimeUp={() => {
-                  // Only submit answers when we're in the final phase and time is up
                   if (isFinalPhase) {
                     submitAllAnswers();
                   }
-                }} 
+                }}
               />
             ) : currentRound ? (
-              <TriviaQuestion 
+              <TriviaQuestion
                 question={{
                   question: "מה השיר?",
                   options: currentRound.options.map(song => song.title || ''),
                   correctAnswerIndex: currentRound.correctAnswerIndex
-                }} 
-                onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} 
-                timeUp={timeLeft <= 0} 
-                answerStartTime={gameStartTimeRef.current || Date.now()} 
-                elapsedTime={timeSinceStart} 
-                showOptions={true} 
-                isFinalPhase={isFinalPhase} 
-                hasAnsweredEarly={answeredEarly} 
+                }}
+                onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)}
+                timeUp={timeLeft <= 0}
+                answerStartTime={gameStartTimeRef.current || Date.now()}
+                elapsedTime={timeSinceStart}
+                showOptions={true}
+                isFinalPhase={isFinalPhase}
+                hasAnsweredEarly={answeredEarly}
                 onTimeUp={() => {
-                  // Only submit answers when we're in the final phase and time is up
                   if (isFinalPhase) {
                     submitAllAnswers();
                   }
@@ -1044,14 +1061,14 @@ const GamePlay: React.FC = () => {
                 טוען אפשרויות...
               </div>
             )}
-            
+
             {!currentPlayer.hasAnswered && (
               <AppButton variant="secondary" className="mt-4 max-w-xs" disabled={selectedAnswer !== null || currentPlayer.skipsLeft <= 0} onClick={handleSkip}>
                 דלג ({currentPlayer.skipsLeft})
                 <SkipForward className="mr-2" />
               </AppButton>
             )}
-            
+
             {selectedAnswer !== null && (
               <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
                 הבחירה שלך נקלטה! ממתין לסיום הזמן...
