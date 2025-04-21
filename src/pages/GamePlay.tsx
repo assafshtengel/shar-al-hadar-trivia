@@ -908,7 +908,7 @@ const GamePlay: React.FC = () => {
                   timeUp={false} 
                   answerStartTime={gameStartTimeRef.current || Date.now()} 
                   elapsedTime={0} 
-                  showOptions={true} // Always show options during playback, regardless of host status
+                  showOptions={true}
                   isFinalPhase={false} 
                   showQuestion={true} 
                 />
@@ -945,7 +945,7 @@ const GamePlay: React.FC = () => {
                 timeUp={timeLeft <= 0} 
                 answerStartTime={gameStartTimeRef.current || Date.now()} 
                 elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} 
-                showOptions={showYouTubeEmbed} // Always show options during playback, regardless of host status
+                showOptions={true}
                 isFinalPhase={false} 
                 showQuestion={true} 
               />
@@ -985,7 +985,7 @@ const GamePlay: React.FC = () => {
           </div>
         );
       
-      case 'answerOptions':
+      case 'answerOptions': {
         const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
         const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6; // Final phase with 50-50 (modified to include timeLeft <= 6)
         return (
@@ -1017,29 +1017,32 @@ const GamePlay: React.FC = () => {
                     submitAllAnswers();
                   }
                 }} 
-              /> : currentRound ? (
-                <TriviaQuestion 
-                  question={{
-                    question: "מה השיר?",
-                    options: currentRound.options.map(song => song.title || ''),
-                    correctAnswerIndex: currentRound.correctAnswerIndex
-                  }} 
-                  onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} 
-                  timeUp={timeLeft <= 0} 
-                  answerStartTime={gameStartTimeRef.current || Date.now()} 
-                  elapsedTime={timeSinceStart} 
-                  showOptions={true} 
-                  isFinalPhase={isFinalPhase} 
-                  hasAnsweredEarly={answeredEarly} 
-                  onTimeUp={() => {
-                    // Only submit answers when we're in the final phase and time is up
-                    if (isFinalPhase) {
-                      submitAllAnswers();
-                    }
-                  }}
-                /> : <div className="text-lg text-gray-600 animate-pulse">
-                    טוען אפשרויות...
-                  </div>
+              />
+            ) : currentRound ? (
+              <TriviaQuestion 
+                question={{
+                  question: "מה השיר?",
+                  options: currentRound.options.map(song => song.title || ''),
+                  correctAnswerIndex: currentRound.correctAnswerIndex
+                }} 
+                onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} 
+                timeUp={timeLeft <= 0} 
+                answerStartTime={gameStartTimeRef.current || Date.now()} 
+                elapsedTime={timeSinceStart} 
+                showOptions={true} 
+                isFinalPhase={isFinalPhase} 
+                hasAnsweredEarly={answeredEarly} 
+                onTimeUp={() => {
+                  // Only submit answers when we're in the final phase and time is up
+                  if (isFinalPhase) {
+                    submitAllAnswers();
+                  }
+                }}
+              />
+            ) : (
+              <div className="text-lg text-gray-600 animate-pulse">
+                טוען אפשרויות...
+              </div>
             )}
             
             {!currentPlayer.hasAnswered && (
@@ -1056,11 +1059,13 @@ const GamePlay: React.FC = () => {
             )}
           </div>
         );
+      }
       
       case 'scoringFeedback':
         return (
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
-            {currentPlayer.lastAnswerCorrect !== undefined ? <>
+            {currentPlayer.lastAnswerCorrect !== undefined ? (
+              <>
                 <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text-center`}>
                   {currentPlayer.lastAnswerCorrect ? 'כל הכבוד! ענית נכון!' : 'אוי לא! טעית.'}
                 </div>
@@ -1071,14 +1076,20 @@ const GamePlay: React.FC = () => {
                   <span>נקודות</span>
                 </div>
                 
-                {currentPlayer.lastAnswer && <div className="text-lg">
+                {currentPlayer.lastAnswer && (
+                  <div className="text-lg">
                     {currentPlayer.lastAnswerCorrect ? 'תשובה נכונה:' : 'בחרת:'} {currentPlayer.lastAnswer}
-                  </div>}
+                  </div>
+                )}
                 
-                {!currentPlayer.lastAnswerCorrect && currentRound && !isTriviaRound && <div className="text-lg font-semibold text-green-500">
+                {!currentPlayer.lastAnswerCorrect && currentRound && !isTriviaRound && (
+                  <div className="text-lg font-semibold text-green-500">
                     התשובה הנכונה: {currentRound.correctSong.title}
-                  </div>}
-              </> : <>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
                 <div className="text-2xl font-bold text-secondary text-center">
                   דילגת על השאלה
                 </div>
@@ -1088,7 +1099,8 @@ const GamePlay: React.FC = () => {
                   <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
                   <span>נקודות</span>
                 </div>
-              </>}
+              </>
+            )}
             
             {isHost && currentRound && !isTriviaRound && (
               <AppButton 
