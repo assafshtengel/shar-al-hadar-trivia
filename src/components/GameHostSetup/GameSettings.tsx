@@ -24,13 +24,14 @@ const GameSettings: React.FC<GameSettingsProps> = ({
 }) => {
   const [showScoreLimit, setShowScoreLimit] = useState(!!settings.scoreLimit);
   const [showTimeLimit, setShowTimeLimit] = useState(!!settings.gameDuration);
-  const [songFilter, setSongFilter] = useState<"all" | "mashina" | "adam">("all");
+  const [songFilter, setSongFilter] = useState<"all" | "mashina" | "adam">(settings.songFilter || "all");
 
   const handleScoreLimitToggle = (checked: boolean) => {
     setShowScoreLimit(checked);
     onSettingsChange({
       ...settings,
-      scoreLimit: checked ? 100 : null
+      scoreLimit: checked ? 100 : null,
+      songFilter
     });
   };
 
@@ -38,26 +39,33 @@ const GameSettings: React.FC<GameSettingsProps> = ({
     setShowTimeLimit(checked);
     onSettingsChange({
       ...settings,
-      gameDuration: checked ? 20 : null
+      gameDuration: checked ? 20 : null,
+      songFilter
     });
   };
 
   const handleScoreLimitChange = (value: string) => {
     onSettingsChange({
       ...settings,
-      scoreLimit: parseInt(value)
+      scoreLimit: parseInt(value),
+      songFilter
     });
   };
 
   const handleTimeLimitChange = (value: string) => {
     onSettingsChange({
       ...settings,
-      gameDuration: parseInt(value)
+      gameDuration: parseInt(value),
+      songFilter
     });
   };
 
   const handleFilterChange = (value: string) => {
     setSongFilter(value as "all" | "mashina" | "adam");
+    onSettingsChange({
+      ...settings,
+      songFilter: value as "all" | "mashina" | "adam"
+    });
   };
 
   return (

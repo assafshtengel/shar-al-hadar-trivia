@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
@@ -11,6 +10,7 @@ type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
 export interface GameSettings {
   scoreLimit: number | null; // null means no limit
   gameDuration: number | null; // in minutes, null means no time limit
+  songFilter?: "all" | "mashina" | "adam"; // <-- נוספה אפשרות זו
 }
 
 interface GameStateContextType {

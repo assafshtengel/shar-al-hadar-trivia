@@ -17,6 +17,8 @@ import GameHostControls from '@/components/GameHostControls';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import TriviaQuestion from '@/components/TriviaQuestion';
 import { triviaQuestions } from '@/data/triviaQuestions';
+import { mashinaSongs } from "@/data/songs/mashina";
+import { adamSongs } from "@/data/songs/adam";
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 interface Player {
@@ -51,8 +53,6 @@ interface PendingAnswerUpdate {
   points: number;
 }
 
-const songs = defaultSongBank.filter(song => song.embedUrl || song.spotifyUrl);
-
 const GamePlay: React.FC = () => {
   const {
     toast
@@ -64,7 +64,8 @@ const GamePlay: React.FC = () => {
     playerName,
     isHost,
     gamePhase: serverGamePhase,
-    answerTimeLimit
+    answerTimeLimit,
+    gameSettings
   } = useGameState();
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
   const [timeLeft, setTimeLeft] = useState(6);
@@ -300,10 +301,21 @@ const GamePlay: React.FC = () => {
     }
   };
 
+  const getFilteredSongs = () => {
+    if (gameSettings?.songFilter === "mashina") {
+      return mashinaSongs;
+    }
+    if (gameSettings?.songFilter === "adam") {
+      return adamSongs;
+    }
+    return defaultSongBank;
+  };
+
   function createGameRound(): GameRound {
-    const randomIndex = Math.floor(Math.random() * songs.length);
-    const correctSong = songs[randomIndex];
-    const otherSongs = songs.filter(song => song.id !== correctSong.id && song.title);
+    const songList = getFilteredSongs().filter(song => song.embedUrl || song.spotifyUrl);
+    const randomIndex = Math.floor(Math.random() * songList.length);
+    const correctSong = songList[randomIndex];
+    const otherSongs = songList.filter(song => song.id !== correctSong.id && song.title);
     const shuffledWrongSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
     const allOptions = [correctSong, ...shuffledWrongSongs];
     const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
