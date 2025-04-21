@@ -84,67 +84,67 @@ export const mashinaSongs: Song[] = [
   {
     id: 63,
     title: "שלח לי מלאך - משינה (גרסה נוספת)",
-    embedUrl: "https://www.youtube.com/embed/xjZbKfp-f6g?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://youtu.be/xjZbKfp-f6g?si=9kJORRTczzwMPVg_"
+    embedUrl: "https://www.youtube.com/embed/UCH8WMIhvF4?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/UCH8WMIhvF4?si=iY7on5yP_I4kmtW5"
   },
   {
     id: 64,
     title: "להתראות נעורים שלום אהבה - משינה",
-    embedUrl: "https://www.youtube.com/embed/TfyPslrarWI?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://youtu.be/TfyPslrarWI?si=GN7w0Vu2FTXvsWu4"
+    embedUrl: "https://www.youtube.com/embed/xjZbKfp-f6g?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/xjZbKfp-f6g?si=9kJORRTczzwMPVg_"
   },
   {
     id: 65,
     title: "מכונית - משינה",
-    embedUrl: "https://www.youtube.com/embed/nJXRGfYm1xI?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://youtu.be/nJXRGfYm1xI?si=VFHu3oozZ5uOnbI8"
+    embedUrl: "https://www.youtube.com/embed/TfyPslrarWI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/TfyPslrarWI?si=GN7w0Vu2FTXvsWu4"
   },
   {
     id: 66,
     title: "אופטיקאי מדופלם - משינה",
-    embedUrl: "https://www.youtube.com/embed/cdUkQyQUhDU?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://youtu.be/cdUkQyQUhDU?si=szJu1g4KECNYvCcU"
+    embedUrl: "https://www.youtube.com/embed/nJXRGfYm1xI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/nJXRGfYm1xI?si=VFHu3oozZ5uOnbI8"
   },
   {
     id: 67,
     title: "את באה לבקר - משינה",
-    embedUrl: "https://www.youtube.com/embed/lG7Bu7_NeZU?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://youtu.be/lG7Bu7_NeZU?si=I4EN5K7NkdUxcwli"
+    embedUrl: "https://www.youtube.com/embed/cdUkQyQUhDU?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/cdUkQyQUhDU?si=szJu1g4KECNYvCcU"
   },
   {
     id: 68,
     title: "פחי שואו - משינה",
-    embedUrl: "https://www.youtube.com/embed/mdsOnQdlrik?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://youtu.be/mdsOnQdlrik?si=OBmT-Lfd87lMgYks"
+    embedUrl: "https://www.youtube.com/embed/lG7Bu7_NeZU?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/lG7Bu7_NeZU?si=I4EN5K7NkdUxcwli"
   },
   {
     id: 69,
     title: "רומנטיקה עתידנית - משינה",
-    embedUrl: "https://www.youtube.com/embed/TeQdfx92w1Y?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://youtu.be/TeQdfx92w1Y?si=cCfhAlnJ_bar4474"
+    embedUrl: "https://www.youtube.com/embed/mdsOnQdlrik?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/mdsOnQdlrik?si=OBmT-Lfd87lMgYks"
   },
   {
     id: 70,
     title: "ברחובות שלנו - משינה",
-    embedUrl: "https://www.youtube.com/embed/kK7DRYQEHNE?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://youtu.be/kK7DRYQEHNE?si=PozMn5hAlBe36l6X"
+    embedUrl: "https://www.youtube.com/embed/TeQdfx92w1Y?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/TeQdfx92w1Y?si=cCfhAlnJ_bar4474"
   },
   {
     id: 71,
     title: "הכל חולף - משינה",
-    embedUrl: "https://www.youtube.com/embed/V51_DpiU_PA?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://youtu.be/V51_DpiU_PA?si=Ba5qFx2LvTGFxR05"
+    embedUrl: "https://www.youtube.com/embed/kK7DRYQEHNE?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/kK7DRYQEHNE?si=PozMn5hAlBe36l6X"
   },
   {
     id: 72,
     title: "אני כל כך שמח - משינה",
-    embedUrl: "https://www.youtube.com/embed/5ZQpn6pQrz8?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://youtu.be/5ZQpn6pQrz8?si=FAUovKH-onmBwVl7"
+    embedUrl: "https://www.youtube.com/embed/V51_DpiU_PA?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/V51_DpiU_PA?si=Ba5qFx2LvTGFxR05"
   },
   {
     id: 73,
     title: "כולם אומרים לי תיזהר - משינה",
-    embedUrl: "",
-    fullUrl: ""
+    embedUrl: "https://www.youtube.com/embed/5ZQpn6pQrz8?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/5ZQpn6pQrz8?si=FAUovKH-onmBwVl7"
   }
 ];
