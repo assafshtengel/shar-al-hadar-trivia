@@ -649,6 +649,124 @@ const GamePlay: React.FC = () => {
     }
   };
 
+  const handleTriviaAnswer = (isCorrect: boolean, selectedIndex: number) => {
+    if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
+      console.log("Already answered or points already awarded - ignoring trivia selection");
+      return;
+    }
+    
+    console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${isCorrect}`);
+    const currentTime = Date.now();
+    const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
+    
+    if (timeSinceStart <= 12) {
+      setAnsweredEarly(true);
+    }
+    
+    let points = 0;
+    const isFinalPhase = timeSinceStart > 8;
+    
+    if (isFinalPhase) {
+      points = isCorrect ? 4 : -2;
+    } else {
+      if (timeSinceStart <= 3) {
+        points = 13;
+      } else if (timeSinceStart <= 8) {
+        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
+      }
+    }
+    
+    setSelectedAnswer(selectedIndex);
+    setCurrentPlayer(prev => ({
+      ...prev,
+      hasAnswered: true,
+      lastAnswerCorrect: isCorrect,
+      lastScore: points,
+      score: prev.score + points,
+      pointsAwarded: true
+    }));
+    
+    setShowAnswerConfirmation(true);
+    
+    // Update the player's score in the database
+    if (gameCode && playerName) {
+      (async () => {
+        try {
+          const { error } = await supabase
+            .from('players')
+            .update({
+              hasAnswered: true,
+              score: currentPlayer.score + points
+            })
+            .eq('game_code', gameCode)
+            .eq('name', playerName);
+          
+          if (error) {
+            throw error;
+          }
+          console.log("Trivia score updated successfully");
+        } catch (err) {
+          console.error('Error updating player score after trivia answer:', err);
+        }
+      })();
+    }
+    
+    toast({
+      title: isCorrect ? "כל הכבוד!" : "אופס!",
+      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה"
+    });
+  };
+
+  const submitAllAnswers = async () => {
+    console.log('Timer ended, submitting all answers');
+    if (!currentRound || !gameCode) {
+      console.error('Missing current round data or game code');
+      return;
+    }
+    
+    // Check if all players have answered and proceed to results phase
+    const allAnswered = await checkAllPlayersAnswered();
+    if (allAnswered || isHost) {
+      console.log('All players have answered or host is forcing results');
+      updateGameState('results');
+    }
+    
+    // Calculate and update player scores if not already done
+    if (!currentPlayer.pointsAwarded && playerName && selectedAnswer !== null) {
+      const isCorrect = selectedAnswer === currentRound.correctAnswerIndex;
+      let points = isCorrect ? 4 : -2; // Basic points for final phase
+      
+      setCurrentPlayer(prev => ({
+        ...prev,
+        lastAnswerCorrect: isCorrect,
+        lastScore: points,
+        score: prev.score + points,
+        pointsAwarded: true
+      }));
+      
+      // Update the player's score in the database
+      if (gameCode) {
+        try {
+          const { error } = await supabase
+            .from('players')
+            .update({
+              score: currentPlayer.score + points
+            })
+            .eq('game_code', gameCode)
+            .eq('name', playerName);
+          
+          if (error) {
+            console.error('Error updating player score during submitAllAnswers:', error);
+          } else {
+            console.log('Score updated during bulk submission');
+          }
+        } catch (err) {
+          console.error('Exception during submission score update:', err);
+        }
+      }
+    }
+  };
+
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
@@ -927,6 +1045,22 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  const submitAllAnswers = async () => {
-    console.log('Timer ended, submitting all answers');
-    if (!currentRound || !gameCode)
+  return (
+    <div className="relative w-full min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-4">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-primary">מה השיר?</h1>
+          <p className="text-sm text-gray-600">סיבוב {roundCounter} {isTriviaRound && "- טריוויה"}</p>
+        </div>
+        <div className="flex gap-2">
+          <LeaveGameButton />
+          {isHost && <EndGameButton />}
+        </div>
+      </div>
+      
+      {renderPhase()}
+    </div>
+  );
+};
+
+export default GamePlay;
