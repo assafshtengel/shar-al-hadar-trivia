@@ -1,4 +1,5 @@
 
+
 import { Song } from './types';
 
 export const otherSongs: Song[] = [
@@ -14,19 +15,13 @@ export const otherSongs: Song[] = [
     embedUrl: "https://www.youtube.com/embed/YjVvGGEV-w0?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=YjVvGGEV-w0"
   },
-  {
-    id: 68,
-    title: "בא לי להיות - אליעד",
-    embedUrl: "https://www.youtube.com/embed/Ft55K7l_KDs?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://www.youtube.com/watch?v=Ft55K7l_KDs"
-  },
+  // השיר של אליעד (id: 68) הוסר
   {
     id: 69,
     title: "מי זאת - עדן חסון",
     embedUrl: "https://www.youtube.com/embed/K3B99JmVHwE?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=K3B99JmVHwE"
   },
-  // השיר עם id: 70 ("שקיעות אדומות - אגם בוחבוט") נמחק לבקשתך
   {
     id: 100,
     title: "מנשהו ממני - הראל סקעת",
@@ -77,7 +72,7 @@ export const otherSongs: Song[] = [
   },
   {
     id: 108,
-    title: "רק שלך - עומר א��ם",
+    title: "רק שלך - עומר אדם",
     embedUrl: "https://www.youtube.com/embed/Jw02uPan7RU?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=Jw02uPan7RU"
   },
@@ -179,8 +174,9 @@ export const otherSongs: Song[] = [
   },
   {
     id: 176,
-    title: "ארץ האבות - ��ודו אהרון",
+    title: "ארץ האבות - דודו אהרון",
     embedUrl: "https://www.youtube.com/embed/LVjQizmCC-g?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=LVjQizmCC-g"
   }
 ];
+
