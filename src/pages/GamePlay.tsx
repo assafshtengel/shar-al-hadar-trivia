@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -97,26 +96,23 @@ const GamePlay: React.FC = () => {
   const gameStartTimeRef = useRef<number | null>(null);
   const [answeredEarly, setAnsweredEarly] = useState(false);
   
-  // Add new state for phase timers
   const [phaseTimerActive, setPhaseTimerActive] = useState(false);
   
-  // Function to get timer duration based on current phase
   const getTimerDurationForPhase = (phase: GamePhase): number => {
     switch (phase) {
       case 'songPlayback':
-        return 9.5; // 9.5 seconds for song playback phase
+        return 9.5;
       case 'answerOptions':
-        return 8.0; // 8 seconds for answer options phase
+        return 8.0;
       case 'scoringFeedback':
-        return 9.0; // 9 seconds for scoring feedback phase
+        return 9.0;
       case 'leaderboard':
-        return 0; // No timer for leaderboard phase
+        return 0;
       default:
         return 0;
     }
   };
   
-  // Function to handle automatic phase transitions when timer ends
   const handlePhaseTimeout = () => {
     console.log(`Phase timer ended for ${phase} phase`);
     
@@ -141,9 +137,7 @@ const GamePlay: React.FC = () => {
     setPhaseTimerActive(false);
   };
   
-  // Effect to activate phase timer when phase changes
   useEffect(() => {
-    // Don't start timer for leaderboard phase
     if (phase === 'leaderboard') return;
     
     const duration = getTimerDurationForPhase(phase);
@@ -392,9 +386,9 @@ const GamePlay: React.FC = () => {
         setShowYouTubeEmbed(false);
         setIsPlaying(false);
         if (isHost) {
-          updateGameState('answering');
+          updateGameState('results');
         }
-        setPhase('answerOptions');
+        setPhase('scoringFeedback');
         if (!isHost) {
           console.log('Setting timer active after YouTube embed finishes (non-host)');
           setTimerActive(true);
@@ -631,7 +625,6 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  // Function to render current phase content
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
@@ -659,6 +652,35 @@ const GamePlay: React.FC = () => {
                 <h3 className="text-xl font-semibold">מה השיר?</h3>
               </div>
             </div>
+            
+            {currentRound && (
+              <div className="mt-6 w-full">
+                <TriviaQuestion
+                  question={{
+                    question: "מה השיר?",
+                    options: currentRound.options.map(s => s.title || ""),
+                    correctAnswerIndex: currentRound.correctAnswerIndex
+                  }}
+                  onAnswer={(isCorrect, selectedIndex) => 
+                    handleAnswer(isCorrect, selectedIndex)
+                  }
+                  timeUp={!phaseTimerActive}
+                  showOptions={true}
+                  isFinalPhase={false}
+                  hasAnsweredEarly={answeredEarly}
+                />
+                
+                {!currentPlayer.hasAnswered && currentPlayer.skipsLeft > 0 && (
+                  <AppButton 
+                    variant="outline" 
+                    className="mt-4" 
+                    onClick={handleSkip}
+                  >
+                    דלג ({currentPlayer.skipsLeft} נותרו) <SkipForward className="mr-2 h-4 w-4" />
+                  </AppButton>
+                )}
+              </div>
+            )}
           </div>
         );
         
@@ -845,9 +867,9 @@ const GamePlay: React.FC = () => {
     setShowYouTubeEmbed(false);
     setIsPlaying(false);
     if (isHost) {
-      updateGameState('answering');
+      updateGameState('results');
     }
-    setPhase('answerOptions');
+    setPhase('scoringFeedback');
     if (!isHost) {
       console.log('Setting timer active after YouTube embed finishes (non-host)');
       setTimerActive(true);
@@ -1004,17 +1026,15 @@ const GamePlay: React.FC = () => {
       setAnsweredEarly(true);
     }
     let points = 0;
-    const isFinalPhase = timeSinceStart > 8; // Final phase (after timer reached 0)
+    const isFinalPhase = timeSinceStart > 8;
 
     if (isFinalPhase) {
-      // Final phase scoring
       points = isCorrect ? 4 : -2;
     } else {
-      // Dynamic scoring based on time
       if (timeSinceStart <= 3) {
-        points = 13; // Maximum points for quick answers
+        points = 13;
       } else if (timeSinceStart <= 8) {
-        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5); // Decreasing points
+        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
       }
     }
     if (!isCorrect) {
