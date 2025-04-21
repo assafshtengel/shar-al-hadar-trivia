@@ -1032,21 +1032,20 @@ const GamePlay: React.FC = () => {
               </Table>
             </div>
 
-            <div className="text-sm text-gray-500 mb-3 mt-4">
-              המשחק הסתיים! תועבר אוטומטית לדף הבית בעוד 10 שניות, או לחץ על כפתור היציאה.
-            </div>
-            <AppButton
-              variant="primary"
-              size="lg"
-              className="mt-3"
-              onClick={() => {
-                if (typeof window !== "undefined") {
-                  navigate("/");
-                }
-              }}
-            >
-              יציאה וחזרה לדף הבית
-            </AppButton>
+            {isHost ? (
+              <AppButton 
+                variant="primary" 
+                size="lg" 
+                className="mt-4" 
+                onClick={nextRound}
+              >
+                התחל סיבוב חדש
+              </AppButton>
+            ) : (
+              <div className="text-sm text-gray-500 mt-4">
+                המתן למארח להתחיל סיבוב חדש
+              </div>
+            )}
           </div>
         );
       default:

@@ -85,8 +85,8 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       previousGamePhaseRef.current = gamePhase;
       
       if (gamePhase === 'end' && !isHost) {
-        toast('המשחק הסתיים', {
-          description: 'המארח סיים את המשחק',
+        toast('סיבוב הסתיים', {
+          description: 'המארח מציג את טבלת המובילים',
         });
       }
     }

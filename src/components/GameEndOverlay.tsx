@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameState } from '@/contexts/GameStateContext';
@@ -16,11 +17,13 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
   const [showOverlay, setShowOverlay] = useState(false);
   const [players, setPlayers] = useState<{id: string, name: string, score: number}[]>([]);
   const navigate = useNavigate();
-  const { clearGameData } = useGameState();
+  const { clearGameData, gameSettings } = useGameState();
   const lastVisibilityChange = useRef<number>(Date.now());
   const overlayTimerRef = useRef<NodeJS.Timeout | null>(null);
   const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const visibilityChangesRef = useRef<number>(0);
+  const [isScoreLimitReached, setIsScoreLimitReached] = useState(false);
+  const [isTimeLimitReached, setIsTimeLimitReached] = useState(false);
   
   useEffect(() => {
     return () => {
@@ -53,6 +56,12 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         if (data) {
           console.log('Final game scores:', data);
           setPlayers(data);
+          
+          // Check if score limit reached
+          if (gameSettings.scoreLimit && data.length > 0) {
+            const highestScore = data[0].score;
+            setIsScoreLimitReached(highestScore >= gameSettings.scoreLimit);
+          }
         }
       } catch (err) {
         console.error('Exception fetching final scores:', err);
@@ -62,7 +71,7 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
     if (showOverlay) {
       fetchFinalScores();
     }
-  }, [showOverlay]);
+  }, [showOverlay, gameSettings]);
   
   useEffect(() => {
     const currentTime = Date.now();
@@ -105,10 +114,14 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         clearTimeout(redirectTimerRef.current);
         redirectTimerRef.current = null;
       }
-      redirectTimerRef.current = setTimeout(() => {
-        handleCloseOverlay();
-        redirectTimerRef.current = null;
-      }, 10000);
+      
+      // Only setup auto-redirect for final game end
+      if (isScoreLimitReached || isTimeLimitReached) {
+        redirectTimerRef.current = setTimeout(() => {
+          handleCloseOverlay();
+          redirectTimerRef.current = null;
+        }, 10000);
+      }
     }
     return () => {
       if (redirectTimerRef.current) {
@@ -116,7 +129,7 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         redirectTimerRef.current = null;
       }
     };
-  }, [showOverlay]);
+  }, [showOverlay, isScoreLimitReached, isTimeLimitReached]);
 
   const handleCloseOverlay = () => {
     toast('המשחק הסתיים', {
@@ -125,6 +138,37 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
     clearGameData();
     navigate('/');
     setShowOverlay(false);
+  };
+  
+  const handleNextRound = async () => {
+    console.log('Starting next round');
+    setShowOverlay(false);
+    
+    if (isHost) {
+      // Update game state to start a new round
+      try {
+        const { gameCode } = useGameState();
+        if (!gameCode) return;
+        
+        const { error } = await supabase
+          .from('game_state')
+          .update({ game_phase: 'playing' })
+          .eq('game_code', gameCode);
+          
+        if (error) {
+          console.error('Error updating game state for next round:', error);
+          toast('שגיאה בהתחלת סיבוב חדש', {
+            description: 'אירעה שגיאה בהתחלת סיבוב חדש',
+          });
+        } else {
+          toast('מתחיל סיבוב חדש', {
+            description: 'סיבוב חדש מתחיל עכשיו',
+          });
+        }
+      } catch (err) {
+        console.error('Exception when starting next round:', err);
+      }
+    }
   };
   
   if (!showOverlay) return null;
@@ -140,7 +184,7 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
           <X size={20} />
         </button>
 
-        <h2 className="text-2xl font-bold text-primary mb-4">המשחק הסתיים</h2>
+        <h2 className="text-2xl font-bold text-primary mb-4">טבלת המובילים</h2>
 
         <div className="w-full mb-6">
           <Table>
@@ -174,17 +218,21 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         <div className="text-sm text-gray-500 mb-3">
           {players.length > 0 && `המנצח: ${players[0].name} עם ${players[0].score} נקודות`}
         </div>
-        <div className="text-sm text-gray-500 mb-3">
-          המשחק הסתיים! תועבר אוטומטית לדף הבית בעוד 10 שניות.
-        </div>
-        <AppButton 
-          variant="primary" 
-          size="lg"
-          className="mt-4"
-          onClick={handleCloseOverlay}
-        >
-          יציאה מהמשחק ולחזור לדף הבית
-        </AppButton>
+        
+        {isHost ? (
+          <AppButton 
+            variant="primary" 
+            size="lg"
+            className="mt-4"
+            onClick={handleNextRound}
+          >
+            התחל סיבוב חדש
+          </AppButton>
+        ) : (
+          <div className="text-sm text-gray-500 mb-3">
+            המתן למנחה להתחיל סיבוב חדש
+          </div>
+        )}
       </div>
     </div>
   );
