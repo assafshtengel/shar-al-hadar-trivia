@@ -499,7 +499,7 @@ const GamePlay: React.FC = () => {
     
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "תשובה נכונה!\" : \"התשובה שגויה"
+      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה"
     });
   };
 
