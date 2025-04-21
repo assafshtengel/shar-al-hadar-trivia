@@ -941,7 +941,7 @@ const GamePlay: React.FC = () => {
                 timeUp={timeLeft <= 0} 
                 answerStartTime={gameStartTimeRef.current || Date.now()} 
                 elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} 
-                showOptions={showYouTubeEmbed} // תמיד מציג אפשרויות בתזמון השמעה
+                showOptions={true} // Always show all 4 options during song playback
                 isFinalPhase={false} 
                 showQuestion={true} 
               />
