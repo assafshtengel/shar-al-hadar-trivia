@@ -407,12 +407,14 @@ const GamePlay: React.FC = () => {
   const handleTimerTimeout = () => {
     console.log('Timer timeout handler called');
     if (selectedAnswer === null && !currentPlayer.hasAnswered) {
-      if (timeLeft <= 0 && phase === 'answerOptions') {
+      if (phase === 'answerOptions') {
+        console.log('Timer ended and no answer selected - handling timeout now');
         handleTimeout();
       } else {
-        console.log('Timer ended but not submitting answers yet - showing 50-50 options');
+        console.log('Timer ended but not in answer options phase');
       }
     } else {
+      console.log('Timer ended but user already answered - submitting answers');
       submitAllAnswers();
     }
   };
@@ -423,6 +425,7 @@ const GamePlay: React.FC = () => {
       console.error('Missing current round data or game code');
       return;
     }
+    
     if (!currentPlayer.pointsAwarded && playerName && selectedAnswer !== null) {
       console.log(`Processing answer for ${playerName} - points not yet awarded`);
       const isCorrect = selectedAnswer === currentRound.correctAnswerIndex;
@@ -447,12 +450,36 @@ const GamePlay: React.FC = () => {
         };
       });
       await batchUpdatePlayerScores([pendingUpdate]);
+    } else if (!currentPlayer.pointsAwarded && playerName) {
+      console.log(`Player ${playerName} didn't select an answer - no points awarded`);
+      setCurrentPlayer(prev => ({
+        ...prev,
+        hasAnswered: true,
+        lastAnswer: undefined,
+        lastAnswerCorrect: false,
+        lastScore: 0,
+        pointsAwarded: true
+      }));
+      
+      if (gameCode && playerName) {
+        const { error } = await supabase
+          .from('players')
+          .update({ hasAnswered: true })
+          .eq('game_code', gameCode)
+          .eq('name', playerName);
+          
+        if (error) {
+          console.error('Error updating player timeout status:', error);
+        }
+      }
     } else {
-      console.log(`Skipping answer processing for ${playerName} - points already awarded or no answer selected`);
+      console.log(`Skipping answer processing for ${playerName} - points already awarded or no player name`);
     }
+    
     if (isHost) {
       updateGameState('results');
     }
+    
     setPhase('scoringFeedback');
   };
 
@@ -1191,6 +1218,7 @@ const GamePlay: React.FC = () => {
 
   useEffect(() => {
     if (phase === 'answerOptions' && timeLeft <= 0.1) {
+      console.log('Time reached zero in answerOptions phase - forcing transition');
       submitAllAnswers();
     }
   }, [phase, timeLeft]);
