@@ -25,7 +25,8 @@ interface GameStateContextType {
   updateGameSettings: (settings: GameSettings) => void;
 }
 
-const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
+// Create and export the context
+export const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
 
 export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();

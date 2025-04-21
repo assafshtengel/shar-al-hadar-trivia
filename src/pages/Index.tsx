@@ -11,7 +11,7 @@ import { Info } from 'lucide-react';
 import { HowToPlayDialog } from "@/components/HowToPlayDialog";
 import { ImprovementDialog } from "@/components/ImprovementDialog";
 
-// Create a safe wrapper that doesn't directly use the context
+// Import the GameStateContext and useContext
 import { GameStateContext } from '@/contexts/GameStateContext';
 import { useContext } from 'react';
 
