@@ -95,6 +95,7 @@ const GamePlay: React.FC = () => {
   const [currentTriviaQuestion, setCurrentTriviaQuestion] = useState<TriviaQuestionType | null>(null);
   const gameStartTimeRef = useRef<number | null>(null);
   const [answeredEarly, setAnsweredEarly] = useState(false);
+  const [userSkippedQuestion, setUserSkippedQuestion] = useState(false);
 
   const checkAllPlayersAnswered = useCallback(async () => {
     if (!gameCode) return false;
@@ -509,6 +510,10 @@ const GamePlay: React.FC = () => {
       console.log("Already answered or missing round data or points already awarded - ignoring selection");
       return;
     }
+    
+    // בעת בחירת תשובה, מסמן שהמשתמש לא דילג על השאלה
+    setUserSkippedQuestion(false);
+    
     console.log(`Player ${playerName} selected answer: ${selectedIndex}`);
     setSelectedAnswer(selectedIndex);
     const currentTime = Date.now();
@@ -610,6 +615,10 @@ const GamePlay: React.FC = () => {
       console.log("Cannot skip: Already answered, no skips left, missing round data, or points already awarded");
       return;
     }
+    
+    // מסמן שהמשתמש דילג על השאלה
+    setUserSkippedQuestion(true);
+    
     const skipPoints = 3;
     let currentScore = 0;
     let hasAlreadyAnswered = false;
@@ -783,6 +792,7 @@ const GamePlay: React.FC = () => {
     setSelectedAnswer(null);
     setTimerActive(false);
     setPlayerReady(false);
+    setUserSkippedQuestion(false);
     setRoundCounter(prev => prev + 1);
     const newRoundCounter = roundCounter + 1;
     const newIsTriviaRound = newRoundCounter % 5 === 0;
@@ -831,6 +841,10 @@ const GamePlay: React.FC = () => {
       console.log("Already answered or points already awarded - ignoring selection");
       return;
     }
+    
+    // בעת בחירת תשובה בטריוויה, מסמן שהמשתמש לא דילג על השאלה
+    setUserSkippedQuestion(false);
+    
     console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${isCorrect}`);
     const currentTime = Date.now();
     const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
@@ -921,7 +935,7 @@ const GamePlay: React.FC = () => {
                   timeUp={false} 
                   answerStartTime={gameStartTimeRef.current || Date.now()} 
                   elapsedTime={0} 
-                  showOptions={true}
+                  showOptions={false}
                   isFinalPhase={false} 
                   showQuestion={true} 
                 />
@@ -956,7 +970,7 @@ const GamePlay: React.FC = () => {
                 timeUp={timeLeft <= 0} 
                 answerStartTime={gameStartTimeRef.current || Date.now()} 
                 elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} 
-                showOptions={true} // Always show all 4 options during song playback
+                showOptions={false} // Don't show options during song playback
                 isFinalPhase={false} 
                 showQuestion={true} 
               />
@@ -1077,7 +1091,19 @@ const GamePlay: React.FC = () => {
       case 'scoringFeedback':
         return (
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
-            {currentPlayer.lastAnswerCorrect !== undefined ? (
+            {userSkippedQuestion ? (
+              <>
+                <div className="text-2xl font-bold text-secondary text-center">
+                  דילגת על השאלה
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-xl">
+                  <span>קיבלת</span>
+                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
+                  <span>נקודות</span>
+                </div>
+              </>
+            ) : currentPlayer.lastAnswerCorrect !== undefined ? (
               <>
                 <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text-center`}>
                   {currentPlayer.lastAnswerCorrect ? 'כל הכבוד! ענית נכון!' : 'אוי לא! טעית.'}
@@ -1102,17 +1128,9 @@ const GamePlay: React.FC = () => {
                 )}
               </>
             ) : (
-              <>
-                <div className="text-2xl font-bold text-secondary text-center">
-                  דילגת על השאלה
-                </div>
-                
-                <div className="flex items-center justify-center gap-2 text-xl">
-                  <span>קיבלת</span>
-                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
-                  <span>נקודות</span>
-                </div>
-              </>
+              <div className="text-lg text-gray-600 text-center">
+                ממתין לתוצאות...
+              </div>
             )}
             
             {isHost && currentRound && !isTriviaRound && (

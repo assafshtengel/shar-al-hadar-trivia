@@ -39,7 +39,6 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 
   // Always show all options for trivia questions, regardless of showOptions prop
   const isTrivia = question.question !== "מה השיר?";
-  const shouldShowOptions = isTrivia || showOptions;
 
   useEffect(() => {
     if (isFinalPhase && !answered && !hasAnsweredEarly) {
@@ -109,7 +108,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4">
-      {question.question !== "מה השיר?" && (
+      {isTrivia && (
         <h2 className="text-2xl font-bold text-primary mb-6 text-center">
           שאלת טריוויה במוזיקה ישראלית
         </h2>
@@ -118,7 +117,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
       <div className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg w-full mb-6 border-2 border-primary/20">
         <p className="text-xl font-medium mb-6 text-center">{question.question}</p>
         
-        {shouldShowOptions && (
+        {(showOptions || isTrivia) && (
           <div className="grid grid-cols-1 gap-4">
             {visibleOptions.map((item, index) => (
               <div key={index} className="relative">
