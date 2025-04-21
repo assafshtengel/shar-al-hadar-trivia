@@ -95,6 +95,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     return null;
   }
 
+  // If player has already answered during early phase, don't show 50/50 options in final phase
   if (hasAnsweredEarly && isFinalPhase) {
     return (
       <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4">
