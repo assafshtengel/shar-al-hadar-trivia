@@ -877,45 +877,95 @@ const GamePlay: React.FC = () => {
     switch (phase) {
       case 'songPlayback':
         if (isTriviaRound && currentTriviaQuestion) {
-          return <div className="flex flex-col items-center justify-center py-6 space-y-6">
+          return (
+            <div className="flex flex-col items-center justify-center py-6 space-y-6">
               <h2 className="text-2xl font-bold text-primary">שאלת טריוויה במוזיקה</h2>
               
-              {isHost ? <AppButton variant="primary" size="lg" onClick={() => {
-              updateGameState('answering');
-              setPhase('answerOptions');
-              gameStartTimeRef.current = Date.now(); // Set start time for trivia question
-            }} className="max-w-xs">
+              {isHost ? (
+                <AppButton 
+                  variant="primary" 
+                  size="lg" 
+                  onClick={() => {
+                    updateGameState('answering');
+                    setPhase('answerOptions');
+                    gameStartTimeRef.current = Date.now(); // Set start time for trivia question
+                  }} 
+                  className="max-w-xs"
+                >
                   הצג שאלת טריוויה
                   <Play className="mr-2" />
-                </AppButton> : <div className="text-lg text-gray-600 text-center">
+                </AppButton>
+              ) : (
+                <div className="text-lg text-gray-600 text-center">
                   המתן למנהל המשחק להציג את שאלת הטריוויה
-                </div>}
+                </div>
+              )}
               
-              {currentTriviaQuestion && <TriviaQuestion question={currentTriviaQuestion} onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} timeUp={false} answerStartTime={gameStartTimeRef.current || Date.now()} elapsedTime={0} showOptions={true} // תמיד להציג אפשרויות בשאלות טריוויה
-            isFinalPhase={false} showQuestion={true} />}
-            </div>;
+              {currentTriviaQuestion && (
+                <TriviaQuestion 
+                  question={currentTriviaQuestion} 
+                  onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} 
+                  timeUp={false} 
+                  answerStartTime={gameStartTimeRef.current || Date.now()} 
+                  elapsedTime={0} 
+                  showOptions={true} // Always show options during playback, regardless of host status
+                  isFinalPhase={false} 
+                  showQuestion={true} 
+                />
+              )}
+            </div>
+          );
         }
-        return <div className="flex flex-col items-center justify-center py-6 space-y-6">
+        
+        return (
+          <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
             
-            <SongPlayer song={currentSong} isPlaying={isPlaying && showYouTubeEmbed} onPlaybackEnded={handleSongPlaybackEnded} onPlaybackError={handleSongPlaybackError} onPlaybackStarted={() => {
-            if (currentRound) {
-              gameStartTimeRef.current = Date.now();
-            }
-          }} showOverlay={true} />
+            <SongPlayer 
+              song={currentSong} 
+              isPlaying={isPlaying && showYouTubeEmbed} 
+              onPlaybackEnded={handleSongPlaybackEnded} 
+              onPlaybackError={handleSongPlaybackError} 
+              onPlaybackStarted={() => {
+                if (currentRound) {
+                  gameStartTimeRef.current = Date.now();
+                }
+              }} 
+              showOverlay={true}
+            />
             
-            {currentRound && <TriviaQuestion question={{
-            question: "מה השיר?",
-            options: currentRound.options.map(song => song.title || ''),
-            correctAnswerIndex: currentRound.correctAnswerIndex
-          }} onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} timeUp={timeLeft <= 0} answerStartTime={gameStartTimeRef.current || Date.now()} elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} showOptions={isPlaying && showYouTubeEmbed} isFinalPhase={false} showQuestion={true} />}
+            {currentRound && (
+              <TriviaQuestion 
+                question={{
+                  question: "מה השיר?",
+                  options: currentRound.options.map(song => song.title || ''),
+                  correctAnswerIndex: currentRound.correctAnswerIndex
+                }} 
+                onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} 
+                timeUp={timeLeft <= 0} 
+                answerStartTime={gameStartTimeRef.current || Date.now()} 
+                elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} 
+                showOptions={showYouTubeEmbed} // Always show options during playback, regardless of host status
+                isFinalPhase={false} 
+                showQuestion={true} 
+              />
+            )}
             
-            {isHost && <AppButton variant="primary" size="lg" onClick={playSong} className="max-w-xs" disabled={isPlaying}>
+            {isHost && (
+              <AppButton 
+                variant="primary" 
+                size="lg" 
+                onClick={playSong} 
+                className="max-w-xs" 
+                disabled={isPlaying}
+              >
                 {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
                 <Play className="mr-2 py-[26px]" />
-              </AppButton>}
+              </AppButton>
+            )}
             
-            {isPlaying && !showYouTubeEmbed && <div className="relative w-40 h-40 flex items-center justify-center">
+            {isPlaying && !showYouTubeEmbed && (
+              <div className="relative w-40 h-40 flex items-center justify-center">
                 <div className="absolute w-full h-full">
                   <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
                   <MusicNote type="note2" className="absolute top-10 left-0 text-secondary animate-float-alt" size={28} />
@@ -924,16 +974,22 @@ const GamePlay: React.FC = () => {
                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
                   <Music className="w-10 h-10 text-primary" />
                 </div>
-              </div>}
+              </div>
+            )}
             
-            {!isHost && !isPlaying && <div className="text-lg text-gray-600 text-center">
+            {!isHost && !isPlaying && (
+              <div className="text-lg text-gray-600 text-center">
                 המתן למנהל המשחק להשמיע את השיר הבא
-              </div>}
-          </div>;
+              </div>
+            )}
+          </div>
+        );
+      
       case 'answerOptions':
         const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
         const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6; // Final phase with 50-50 (modified to include timeLeft <= 6)
-        return <div className="flex flex-col items-center py-6 space-y-6">
+        return (
+          <div className="flex flex-col items-center py-6 space-y-6">
             <GameTimer initialSeconds={6} isActive={true} onTimeout={handleTimerTimeout} />
             
             <div className="text-xl font-semibold text-primary">
@@ -945,55 +1001,65 @@ const GamePlay: React.FC = () => {
               <SkipForward className="ml-2 text-secondary" />
             </div>
             
-            {isTriviaRound && currentTriviaQuestion ? <TriviaQuestion 
-              question={currentTriviaQuestion} 
-              onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} 
-              timeUp={timeLeft <= 0} 
-              answerStartTime={gameStartTimeRef.current || Date.now()} 
-              elapsedTime={timeSinceStart} 
-              showOptions={true} 
-              isFinalPhase={isFinalPhase} 
-              hasAnsweredEarly={answeredEarly} 
-              onTimeUp={() => {
-                // Only submit answers when we're in the final phase and time is up
-                if (isFinalPhase) {
-                  submitAllAnswers();
-                }
-              }} 
-            /> : currentRound ? <TriviaQuestion 
-              question={{
-                question: "מה השיר?",
-                options: currentRound.options.map(song => song.title || ''),
-                correctAnswerIndex: currentRound.correctAnswerIndex
-              }} 
-              onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} 
-              timeUp={timeLeft <= 0} 
-              answerStartTime={gameStartTimeRef.current || Date.now()} 
-              elapsedTime={timeSinceStart} 
-              showOptions={true} 
-              isFinalPhase={isFinalPhase} 
-              hasAnsweredEarly={answeredEarly} 
-              onTimeUp={() => {
-                // Only submit answers when we're in the final phase and time is up
-                if (isFinalPhase) {
-                  submitAllAnswers();
-                }
-              }}
-            /> : <div className="text-lg text-gray-600 animate-pulse">
-                טוען אפשרויות...
-              </div>}
+            {isTriviaRound && currentTriviaQuestion ? (
+              <TriviaQuestion 
+                question={currentTriviaQuestion} 
+                onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} 
+                timeUp={timeLeft <= 0} 
+                answerStartTime={gameStartTimeRef.current || Date.now()} 
+                elapsedTime={timeSinceStart} 
+                showOptions={true} 
+                isFinalPhase={isFinalPhase} 
+                hasAnsweredEarly={answeredEarly} 
+                onTimeUp={() => {
+                  // Only submit answers when we're in the final phase and time is up
+                  if (isFinalPhase) {
+                    submitAllAnswers();
+                  }
+                }} 
+              /> : currentRound ? (
+                <TriviaQuestion 
+                  question={{
+                    question: "מה השיר?",
+                    options: currentRound.options.map(song => song.title || ''),
+                    correctAnswerIndex: currentRound.correctAnswerIndex
+                  }} 
+                  onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} 
+                  timeUp={timeLeft <= 0} 
+                  answerStartTime={gameStartTimeRef.current || Date.now()} 
+                  elapsedTime={timeSinceStart} 
+                  showOptions={true} 
+                  isFinalPhase={isFinalPhase} 
+                  hasAnsweredEarly={answeredEarly} 
+                  onTimeUp={() => {
+                    // Only submit answers when we're in the final phase and time is up
+                    if (isFinalPhase) {
+                      submitAllAnswers();
+                    }
+                  }}
+                /> : <div className="text-lg text-gray-600 animate-pulse">
+                    טוען אפשרויות...
+                  </div>
+            )}
             
-            {!currentPlayer.hasAnswered && <AppButton variant="secondary" className="mt-4 max-w-xs" disabled={selectedAnswer !== null || currentPlayer.skipsLeft <= 0} onClick={handleSkip}>
+            {!currentPlayer.hasAnswered && (
+              <AppButton variant="secondary" className="mt-4 max-w-xs" disabled={selectedAnswer !== null || currentPlayer.skipsLeft <= 0} onClick={handleSkip}>
                 דלג ({currentPlayer.skipsLeft})
                 <SkipForward className="mr-2" />
-              </AppButton>}
+              </AppButton>
+            )}
             
-            {selectedAnswer !== null && <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
+            {selectedAnswer !== null && (
+              <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
                 הבחירה שלך נקלטה! ממתין לסיום הזמן...
-              </div>}
-          </div>;
+              </div>
+            )}
+          </div>
+        );
+      
       case 'scoringFeedback':
-        return <div className="flex flex-col items-center justify-center py-8 space-y-6">
+        return (
+          <div className="flex flex-col items-center justify-center py-8 space-y-6">
             {currentPlayer.lastAnswerCorrect !== undefined ? <>
                 <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text-center`}>
                   {currentPlayer.lastAnswerCorrect ? 'כל הכבוד! ענית נכון!' : 'אוי לא! טעית.'}
@@ -1024,11 +1090,20 @@ const GamePlay: React.FC = () => {
                 </div>
               </>}
             
-            {isHost && currentRound && !isTriviaRound && <AppButton variant="secondary" size="lg" onClick={playFullSong} className="max-w-xs mt-4">
+            {isHost && currentRound && !isTriviaRound && (
+              <AppButton 
+                variant="secondary" 
+                size="lg" 
+                onClick={playFullSong} 
+                className="max-w-xs mt-4"
+              >
                 השמע את השיר המלא
                 <Youtube className="mr-2" />
-              </AppButton>}
-          </div>;
+              </AppButton>
+            )}
+          </div>
+        );
+      
       case 'leaderboard':
         return (
           <div className="flex flex-col items-center justify-center py-8">
@@ -1080,12 +1155,15 @@ const GamePlay: React.FC = () => {
             )}
           </div>
         );
+      
       default:
-        return <div className="flex flex-col items-center justify-center h-full">
+        return (
+          <div className="flex flex-col items-center justify-center h-full">
             <div className="text-lg text-gray-600 animate-pulse">
               טוען...
             </div>
-          </div>;
+          </div>
+        );
     }
   };
 
@@ -1098,7 +1176,8 @@ const GamePlay: React.FC = () => {
     }
   }, [phase, timeLeft]);
 
-  return <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
       <div className="container mx-auto px-4 py-6 relative z-10">
         <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6 bg-white/50 backdrop-blur-sm p-4 rounded-lg shadow-sm">
           <div className="flex items-center gap-2 order-1 md:order-none">
@@ -1129,7 +1208,8 @@ const GamePlay: React.FC = () => {
       <div className="w-full max-w-4xl mx-auto p-4 mb-8">
         
       </div>
-    </div>;
+    </div>
+  );
 };
 
 export default GamePlay;
