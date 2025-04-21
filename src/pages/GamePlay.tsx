@@ -941,6 +941,19 @@ const GamePlay: React.FC = () => {
                   המתן למנהל המשחק להציג את שאלת הטריוויה
                 </div>
               )}
+              
+              {currentTriviaQuestion && (
+                <TriviaQuestion 
+                  question={currentTriviaQuestion}
+                  onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)}
+                  timeUp={false}
+                  answerStartTime={gameStartTimeRef.current || Date.now()}
+                  elapsedTime={0}
+                  showOptions={false} // Hide options initially
+                  isFinalPhase={false}
+                  showQuestion={true}
+                />
+              )}
             </div>
           );
         }
@@ -955,12 +968,11 @@ const GamePlay: React.FC = () => {
               onPlaybackEnded={handleSongPlaybackEnded} 
               onPlaybackError={handleSongPlaybackError} 
               onPlaybackStarted={() => {
-                // Trigger the same behavior for non-host players as for host
                 if (currentRound) {
                   gameStartTimeRef.current = Date.now();
                 }
               }}
-              showOverlay={true} // Always show black overlay to hide video
+              showOverlay={true}
             />
             
             {currentRound && 
@@ -974,9 +986,9 @@ const GamePlay: React.FC = () => {
                 timeUp={timeLeft <= 0} 
                 answerStartTime={gameStartTimeRef.current || Date.now()} 
                 elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} 
-                showOptions={isPlaying && showYouTubeEmbed} // הצג תשובות רק כשהשיר מתחיל
+                showOptions={isPlaying && showYouTubeEmbed} 
                 isFinalPhase={false}
-                showQuestion={true} // Show question during song playback for all players
+                showQuestion={true}
               />
             }
             
@@ -1191,13 +1203,11 @@ const GamePlay: React.FC = () => {
 
   useEffect(() => {
     if (phase === 'answerOptions' && timeLeft <= 0.1) {
-      // If player hasn't answered, move to results
       if (!currentPlayer.hasAnswered && !currentPlayer.pointsAwarded) {
         console.log('Timer reached 0.1, triggering transition to results');
         submitAllAnswers();
       }
     }
-    // eslint-disable-next-line
   }, [phase, timeLeft]);
 
   return (

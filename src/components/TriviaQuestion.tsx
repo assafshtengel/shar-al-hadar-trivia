@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import AppButton from '@/components/AppButton';
@@ -35,7 +34,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
-  const [visibleOptions, setVisibleOptions] = useState(question.options);
+  const [visibleOptions, setVisibleOptions] = useState<{option: string, originalIndex: number}[]>([]);
 
   useEffect(() => {
     if (isFinalPhase && !answered && !hasAnsweredEarly) {
@@ -43,26 +42,30 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
         .map((_, index) => index)
         .filter(index => index !== question.correctAnswerIndex);
       
-      // Only remove two answers if we have at least 3 options
       if (wrongAnswerIndices.length >= 2) {
         const indicesToRemove = wrongAnswerIndices
           .sort(() => Math.random() - 0.5)
           .slice(0, 2);
         
-        const filteredOptions = question.options.map((option, index) => 
-          indicesToRemove.includes(index) ? null : option
-        ).filter(option => option !== null) as string[];
+        const remainingOptions = question.options
+          .map((option, index) => ({ option, originalIndex: index }))
+          .filter(item => !indicesToRemove.includes(item.originalIndex));
         
-        setVisibleOptions(filteredOptions);
+        setVisibleOptions(remainingOptions.sort(() => Math.random() - 0.5));
       } else {
-        setVisibleOptions(question.options);
+        setVisibleOptions(question.options.map((option, index) => ({ 
+          option, 
+          originalIndex: index 
+        })));
       }
     } else {
-      setVisibleOptions(question.options);
+      setVisibleOptions(question.options.map((option, index) => ({ 
+        option, 
+        originalIndex: index 
+      })));
     }
   }, [isFinalPhase, question.options, question.correctAnswerIndex, answered, hasAnsweredEarly]);
 
-  // Effect to handle time up and no selection
   useEffect(() => {
     if (timeUp && !answered && onTimeUp) {
       onTimeUp();
@@ -108,38 +111,34 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
         
         {showOptions && (
           <div className="grid grid-cols-1 gap-4">
-            {visibleOptions.map((option, index) => {
-              // Find the original index of this option in the full options list
-              const originalIndex = question.options.indexOf(option);
-              return (
-                <div key={index} className="relative">
-                  <AppButton
-                    variant={selectedAnswer === originalIndex ? 'primary' : 'secondary'}
-                    className={`w-full justify-start px-4 py-3 ${
-                      answered && originalIndex !== question.correctAnswerIndex && selectedAnswer === originalIndex
-                        ? 'bg-red-100 border-red-500'
-                        : ''
-                    } ${
-                      answered && originalIndex === question.correctAnswerIndex
-                        ? 'bg-green-100 border-green-500'
-                        : ''
-                    } ${answered && selectedAnswer !== originalIndex ? 'opacity-70' : ''}`}
-                    onClick={() => handleSelectAnswer(originalIndex)}
-                    disabled={answered || timeUp}
-                  >
-                    {option}
-                    
-                    {answered && originalIndex === question.correctAnswerIndex && (
-                      <CheckCircle2 className="ml-auto text-green-500" />
-                    )}
-                    
-                    {answered && selectedAnswer === originalIndex && originalIndex !== question.correctAnswerIndex && (
-                      <XCircle className="ml-auto text-red-500" />
-                    )}
-                  </AppButton>
-                </div>
-              );
-            })}
+            {visibleOptions.map((item, index) => (
+              <div key={index} className="relative">
+                <AppButton
+                  variant={selectedAnswer === item.originalIndex ? 'primary' : 'secondary'}
+                  className={`w-full justify-start px-4 py-3 ${
+                    answered && item.originalIndex !== question.correctAnswerIndex && selectedAnswer === item.originalIndex
+                      ? 'bg-red-100 border-red-500'
+                      : ''
+                  } ${
+                    answered && item.originalIndex === question.correctAnswerIndex
+                      ? 'bg-green-100 border-green-500'
+                      : ''
+                  } ${answered && selectedAnswer !== item.originalIndex ? 'opacity-70' : ''}`}
+                  onClick={() => handleSelectAnswer(item.originalIndex)}
+                  disabled={answered || timeUp}
+                >
+                  {item.option}
+                  
+                  {answered && item.originalIndex === question.correctAnswerIndex && (
+                    <CheckCircle2 className="ml-auto text-green-500" />
+                  )}
+                  
+                  {answered && selectedAnswer === item.originalIndex && item.originalIndex !== question.correctAnswerIndex && (
+                    <XCircle className="ml-auto text-red-500" />
+                  )}
+                </AppButton>
+              </div>
+            ))}
           </div>
         )}
       </div>
