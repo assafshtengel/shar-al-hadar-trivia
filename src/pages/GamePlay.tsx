@@ -96,26 +96,23 @@ const GamePlay: React.FC = () => {
   const gameStartTimeRef = useRef<number | null>(null);
   const [answeredEarly, setAnsweredEarly] = useState(false);
   
-  // Add new state for phase timers
   const [phaseTimerActive, setPhaseTimerActive] = useState(false);
   
-  // Function to get timer duration based on current phase
   const getTimerDurationForPhase = (phase: GamePhase): number => {
     switch (phase) {
       case 'songPlayback':
-        return 9.5; // 9.5 seconds for song playback phase
+        return 9.5;
       case 'answerOptions':
-        return 8.0; // 8 seconds for answer options phase
+        return 8.0;
       case 'scoringFeedback':
-        return 9.0; // 9 seconds for scoring feedback phase
+        return 9.0;
       case 'leaderboard':
-        return 0; // No timer for leaderboard phase
+        return 0;
       default:
         return 0;
     }
   };
   
-  // Function to handle automatic phase transitions when timer ends
   const handlePhaseTimeout = () => {
     console.log(`Phase timer ended for ${phase} phase`);
     
@@ -140,9 +137,7 @@ const GamePlay: React.FC = () => {
     setPhaseTimerActive(false);
   };
   
-  // Effect to activate phase timer when phase changes
   useEffect(() => {
-    // Don't start timer for leaderboard phase
     if (phase === 'leaderboard') return;
     
     const duration = getTimerDurationForPhase(phase);
@@ -229,7 +224,7 @@ const GamePlay: React.FC = () => {
           updateGameState('results');
         }
       }
-    }, 2000); // Check every 2 seconds
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [gameCode, phase, timerActive, checkAllPlayersAnswered, isHost]);
@@ -368,7 +363,7 @@ const GamePlay: React.FC = () => {
     return defaultSongBank;
   };
 
-  function createGameRound(): GameRound {
+  const createGameRound = () => {
     const songList = getFilteredSongs().filter(song => song.embedUrl || song.spotifyUrl);
     const randomIndex = Math.floor(Math.random() * songList.length);
     const correctSong = songList[randomIndex];
@@ -383,7 +378,7 @@ const GamePlay: React.FC = () => {
       options: shuffledOptions,
       correctAnswerIndex: correctIndex
     };
-  }
+  };
 
   useEffect(() => {
     if (showYouTubeEmbed) {
@@ -398,7 +393,7 @@ const GamePlay: React.FC = () => {
           console.log('Setting timer active after YouTube embed finishes (non-host)');
           setTimerActive(true);
         }
-      }, 12000); // Changed to 12 seconds
+      }, 12000);
       return () => clearTimeout(timer);
     }
   }, [showYouTubeEmbed, isHost]);
@@ -414,7 +409,7 @@ const GamePlay: React.FC = () => {
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     setAllPlayersAnswered(false);
-    gameStartTimeRef.current = Date.now(); // Set start time for scoring
+    gameStartTimeRef.current = Date.now();
     const roundDataString = JSON.stringify(gameRound);
     const {
       error
@@ -450,7 +445,7 @@ const GamePlay: React.FC = () => {
       setAnsweredEarly(true);
     }
     let points = 0;
-    const isFinalPhase = timeSinceStart > 8; // Final 50-50 phase
+    const isFinalPhase = timeSinceStart > 8;
 
     if (isFinalPhase) {
       points = isCorrect ? 4 : -2;
@@ -630,7 +625,6 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  // Function to render current phase content
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
@@ -778,67 +772,66 @@ const GamePlay: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-      );
-      
-    case 'leaderboard':
-      return (
-        <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold mb-6 text-center">טבלת המובילים</h2>
-          <div className="w-full bg-white/80 backdrop-blur-md rounded-xl shadow-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">דירוג</TableHead>
-                  <TableHead className="text-right">שם</TableHead>
-                  <TableHead className="text-right">ניקוד</TableHead>
-                  <TableHead className="text-right">השיב</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {players.map((player, index) => (
-                  <TableRow key={player.id} className={
-                    player.name === playerName ? "bg-primary/10" : ""
-                  }>
-                    <TableCell className="font-medium">
-                      {index === 0 && <Trophy className="inline mr-1 text-yellow-500" size={16} />}
-                      {index === 1 && <Trophy className="inline mr-1 text-gray-400" size={16} />}
-                      {index === 2 && <Trophy className="inline mr-1 text-amber-700" size={16} />}
-                      {index > 2 && `${index + 1}`}
-                    </TableCell>
-                    <TableCell className="font-medium">{player.name}</TableCell>
-                    <TableCell>{player.score}</TableCell>
-                    <TableCell>
-                      {player.hasAnswered ? (
-                        <CheckCircle2 className="text-green-500" size={16} />
-                      ) : (
-                        <span>-</span>
-                      )}
-                    </TableCell>
+        );
+        
+      case 'leaderboard':
+        return (
+          <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6 text-center">טבלת המובילים</h2>
+            <div className="w-full bg-white/80 backdrop-blur-md rounded-xl shadow-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">דירוג</TableHead>
+                    <TableHead className="text-right">שם</TableHead>
+                    <TableHead className="text-right">ניקוד</TableHead>
+                    <TableHead className="text-right">השיב</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          
-          {isHost && (
-            <div className="mt-6">
-              <GameHostControls
-                roundCounter={roundCounter}
-                isTriviaRound={isTriviaRound}
-                onPlayNext={nextRound}
-                onResetScores={resetAllPlayerScores}
-                gamePhase={serverGamePhase}
-              />
+                </TableHeader>
+                <TableBody>
+                  {players.map((player, index) => (
+                    <TableRow key={player.id} className={
+                      player.name === playerName ? "bg-primary/10" : ""
+                    }>
+                      <TableCell className="font-medium">
+                        {index === 0 && <Trophy className="inline mr-1 text-yellow-500" size={16} />}
+                        {index === 1 && <Trophy className="inline mr-1 text-gray-400" size={16} />}
+                        {index === 2 && <Trophy className="inline mr-1 text-amber-700" size={16} />}
+                        {index > 2 && `${index + 1}`}
+                      </TableCell>
+                      <TableCell className="font-medium">{player.name}</TableCell>
+                      <TableCell>{player.score}</TableCell>
+                      <TableCell>
+                        {player.hasAnswered ? (
+                          <CheckCircle2 className="text-green-500" size={16} />
+                        ) : (
+                          <span>-</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-          )}
-        </div>
-      );
-      
-    default:
-      return <div>לא נמצא שלב תקין</div>;
-  }
-};
+            
+            {isHost && (
+              <div className="mt-6">
+                <GameHostControls
+                  roundCounter={roundCounter}
+                  isTriviaRound={isTriviaRound}
+                  onPlayNext={nextRound}
+                  onResetScores={resetAllPlayerScores}
+                  gamePhase={serverGamePhase}
+                />
+              </div>
+            )}
+          </div>
+        );
+        
+      default:
+        return <div>לא נמצא שלב תקין</div>;
+    }
+  };
 
   const handleSongPlaybackEnded = () => {
     setShowYouTubeEmbed(false);
@@ -909,4 +902,112 @@ const GamePlay: React.FC = () => {
         };
       });
       await batchUpdatePlayerScores([pendingUpdate]);
-    } else if (!currentPlayer.pointsAwarded && playerName
+    } else if (!currentPlayer.pointsAwarded && playerName) {
+      console.log(`Player ${playerName} didn't select an answer - no points awarded`);
+      setCurrentPlayer(prev => ({
+        ...prev,
+        hasAnswered: true,
+        lastAnswer: undefined,
+        lastAnswerCorrect: false,
+        lastScore: 0,
+        pointsAwarded: true
+      }));
+      
+      if (gameCode && playerName) {
+        const { error } = await supabase
+          .from('players')
+          .update({ hasAnswered: true })
+          .eq('game_code', gameCode)
+          .eq('name', playerName);
+          
+        if (error) {
+          console.error('Error updating player timeout status:', error);
+        }
+      }
+    } else {
+      console.log(`Skipping answer processing for ${playerName} - points already awarded or no player name`);
+    }
+    
+    if (isHost) {
+      updateGameState('results');
+    }
+    
+    setPhase('scoringFeedback');
+  };
+
+  const batchUpdatePlayerScores = async (updates: PendingAnswerUpdate[]) => {
+    if (!gameCode) return;
+    const {
+      error
+    } = await supabase.from('players').update(updates).eq('game_code', gameCode);
+    if (error) {
+      console.error('Error updating player scores:', error);
+      toast({
+        title: "שגיאה בעדכון ניקוד השחקנים",
+        description: "אירעה שגיאה בעדכון ניקוד השחקנים",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAnswer = (isCorrect: boolean, selectedIndex: number) => {
+    if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
+      console.log("Already answered or points already awarded - ignoring selection");
+      return;
+    }
+    console.log(`Player ${playerName} selected answer: ${selectedIndex}, correct: ${isCorrect}`);
+    const currentTime = Date.now();
+    const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
+    if (timeSinceStart <= 12) {
+      setAnsweredEarly(true);
+    }
+    let points = 0;
+    const isFinalPhase = timeSinceStart > 8;
+
+    if (isFinalPhase) {
+      points = isCorrect ? 4 : -2;
+    } else {
+      if (timeSinceStart <= 3) {
+        points = 13;
+      } else if (timeSinceStart <= 8) {
+        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
+      }
+    }
+    setCurrentPlayer(prev => ({
+      ...prev,
+      hasAnswered: true,
+      lastAnswerCorrect: isCorrect,
+      lastScore: points,
+      score: prev.score + points,
+      pointsAwarded: true
+    }));
+    if (gameCode && playerName) {
+      try {
+        console.log(`Updating score for player ${playerName} after answer`);
+        supabase.from('players').update({
+          hasAnswered: true,
+          score: currentPlayer.score + points
+        }).eq('game_code', gameCode).eq('name', playerName).then(() => {
+          console.log("Score updated successfully");
+        }).catch(err => {
+          console.error('Error updating player score after answer:', err);
+        });
+      } catch (err) {
+        console.error('Error updating player score after answer:', err);
+      }
+    }
+    
+    toast({
+      title: isCorrect ? "כל הכבוד!" : "אופס!",
+      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה"
+    });
+  };
+
+  return (
+    <div className="relative min-h-screen w-full bg-gradient-to-tl from-primary/10 to-background pb-16">
+      {renderPhase()}
+    </div>
+  );
+};
+
+export default GamePlay;
