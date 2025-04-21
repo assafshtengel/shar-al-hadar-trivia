@@ -595,7 +595,7 @@ const GamePlay: React.FC = () => {
           .update({
             hasAnswered: true
           })
-          .eq('game_code', game_code)
+          .eq('game_code', gameCode)
           .eq('name', playerName);
           
         if (error) {
@@ -925,4 +925,4 @@ const GamePlay: React.FC = () => {
       return;
     }
     
-    if (!currentPlayer.pointsAwarded && playerName && selectedAnswer
+    if (!currentPlayer.pointsAwarded && playerName && selectedAnswer !==
