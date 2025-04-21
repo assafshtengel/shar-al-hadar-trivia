@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -96,23 +97,26 @@ const GamePlay: React.FC = () => {
   const gameStartTimeRef = useRef<number | null>(null);
   const [answeredEarly, setAnsweredEarly] = useState(false);
   
+  // Add new state for phase timers
   const [phaseTimerActive, setPhaseTimerActive] = useState(false);
   
+  // Function to get timer duration based on current phase
   const getTimerDurationForPhase = (phase: GamePhase): number => {
     switch (phase) {
       case 'songPlayback':
-        return 9.5;
+        return 9.5; // 9.5 seconds for song playback phase
       case 'answerOptions':
-        return 8.0;
+        return 8.0; // 8 seconds for answer options phase
       case 'scoringFeedback':
-        return 9.0;
+        return 9.0; // 9 seconds for scoring feedback phase
       case 'leaderboard':
-        return 0;
+        return 0; // No timer for leaderboard phase
       default:
         return 0;
     }
   };
   
+  // Function to handle automatic phase transitions when timer ends
   const handlePhaseTimeout = () => {
     console.log(`Phase timer ended for ${phase} phase`);
     
@@ -137,7 +141,9 @@ const GamePlay: React.FC = () => {
     setPhaseTimerActive(false);
   };
   
+  // Effect to activate phase timer when phase changes
   useEffect(() => {
+    // Don't start timer for leaderboard phase
     if (phase === 'leaderboard') return;
     
     const duration = getTimerDurationForPhase(phase);
@@ -625,6 +631,7 @@ const GamePlay: React.FC = () => {
     }
   };
 
+  // Function to render current phase content
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
@@ -749,31 +756,32 @@ const GamePlay: React.FC = () => {
                       onClick={playFullSong}
                     >
                       השמע שיר מלא <Youtube className="mr-2 h-4 w-4" />
-                  </AppButton>
-                )}
-              </div>
-            )}
-            
-            <div className="mt-4">
-              <h3 className="text-lg font-medium mb-4 text-center">התוצאות שלך</h3>
-              <div className={`p-4 rounded-lg ${
-                currentPlayer.lastAnswerCorrect ? 'bg-green-100' : 'bg-red-100'
-              }`}>
-                <p className="text-center mb-2">
-                  {currentPlayer.lastAnswerCorrect 
-                    ? "כל הכבוד! ענית נכון" 
-                    : "לא נורא, פעם הבאה תצליח"}
-                </p>
-                <p className="text-center font-bold">
-                  {currentPlayer.lastScore !== undefined 
-                    ? `${currentPlayer.lastScore > 0 ? '+' : ''}${currentPlayer.lastScore} נקודות` 
-                    : "לא נוספו נקודות"}
-                </p>
+                    </AppButton>
+                  )}
+                </div>
+              )}
+              
+              <div className="mt-4">
+                <h3 className="text-lg font-medium mb-4 text-center">התוצאות שלך</h3>
+                <div className={`p-4 rounded-lg ${
+                  currentPlayer.lastAnswerCorrect ? 'bg-green-100' : 'bg-red-100'
+                }`}>
+                  <p className="text-center mb-2">
+                    {currentPlayer.lastAnswerCorrect 
+                      ? "כל הכבוד! ענית נכון" 
+                      : "לא נורא, פעם הבאה תצליח"}
+                  </p>
+                  <p className="text-center font-bold">
+                    {currentPlayer.lastScore !== undefined 
+                      ? `${currentPlayer.lastScore > 0 ? '+' : ''}${currentPlayer.lastScore} נקודות` 
+                      : "לא נוספו נקודות"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         );
-        
+      
       case 'leaderboard':
         return (
           <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto">
@@ -827,7 +835,7 @@ const GamePlay: React.FC = () => {
             )}
           </div>
         );
-        
+      
       default:
         return <div>לא נמצא שלב תקין</div>;
     }
@@ -936,71 +944,152 @@ const GamePlay: React.FC = () => {
   };
 
   const batchUpdatePlayerScores = async (updates: PendingAnswerUpdate[]) => {
-    if (!gameCode) return;
-    const {
-      error
-    } = await supabase.from('players').update(updates).eq('game_code', gameCode);
-    if (error) {
-      console.error('Error updating player scores:', error);
+    if (!gameCode || updates.length === 0) {
+      return;
+    }
+    console.log('Batch updating player scores:', updates);
+    try {
+      for (const update of updates) {
+        const {
+          data: playerData,
+          error: fetchError
+        } = await supabase.from('players').select('score, hasAnswered').eq('game_code', gameCode).eq('name', update.player_name).maybeSingle();
+        if (fetchError) {
+          console.error(`Error fetching player ${update.player_name}:`, fetchError);
+          continue;
+        }
+        if (!playerData) {
+          console.error(`Player ${update.player_name} not found`);
+          continue;
+        }
+        if (playerData.hasAnswered) {
+          console.log(`Player ${update.player_name} has already answered this round. Skipping score update.`);
+          continue;
+        }
+        const currentScore = playerData.score || 0;
+        const newScore = currentScore + update.points;
+        console.log(`Player ${update.player_name}: Current score=${currentScore}, adding ${update.points}, new score=${newScore}`);
+        const {
+          error: updateError
+        } = await supabase.from('players').update({
+          score: newScore,
+          hasAnswered: true
+        }).eq('game_code', gameCode).eq('name', update.player_name);
+        if (updateError) {
+          console.error(`Error updating player ${update.player_name}:`, updateError);
+        } else {
+          console.log(`Successfully updated player ${update.player_name} score to ${newScore}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error in batchUpdatePlayerScores:', error);
       toast({
-        title: "שגיאה בעדכון ניקוד השחקנים",
-        description: "אירעה שגיאה בעדכון ניקוד השחקנים",
+        title: "שגיאה בעדכון הניקוד",
+        description: "אירעה שגיאה בעדכון הניקוד",
         variant: "destructive"
       });
     }
   };
 
-  const handleAnswer = (isCorrect: boolean, selectedIndex: number) => {
-    if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
-      console.log("Already answered or points already awarded - ignoring selection");
+  const handleAnswer = async (isCorrect: boolean, selectedIndex: number) => {
+    if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound || currentPlayer.pointsAwarded) {
+      console.log("Already answered or missing round data or points already awarded - ignoring selection");
       return;
     }
-    console.log(`Player ${playerName} selected answer: ${selectedIndex}, correct: ${isCorrect}`);
+    console.log(`Player ${playerName} selected answer: ${selectedIndex}`);
+    setSelectedAnswer(selectedIndex);
     const currentTime = Date.now();
-    const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
+    const timeSinceStart = (currentTime - (gameStartTimeRef.current || currentTime)) / 1000;
     if (timeSinceStart <= 12) {
       setAnsweredEarly(true);
     }
     let points = 0;
-    const isFinalPhase = timeSinceStart > 8;
+    const isFinalPhase = timeSinceStart > 8; // Final phase (after timer reached 0)
 
     if (isFinalPhase) {
+      // Final phase scoring
       points = isCorrect ? 4 : -2;
     } else {
+      // Dynamic scoring based on time
       if (timeSinceStart <= 3) {
-        points = 13;
+        points = 13; // Maximum points for quick answers
       } else if (timeSinceStart <= 8) {
-        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
+        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5); // Decreasing points
       }
     }
+    if (!isCorrect) {
+      points = isFinalPhase ? -2 : 0;
+    }
+    let currentScore = 0;
+    let hasAlreadyAnswered = false;
+    if (gameCode && playerName) {
+      try {
+        const {
+          data
+        } = await supabase.from('players').select('score, hasAnswered').eq('game_code', gameCode).eq('name', playerName).maybeSingle();
+        if (data) {
+          currentScore = data.score || 0;
+          hasAlreadyAnswered = data.hasAnswered || false;
+          if (hasAlreadyAnswered) {
+            console.log(`Player ${playerName} has already answered this round. Not updating score.`);
+            setCurrentPlayer(prev => ({
+              ...prev,
+              hasAnswered: true,
+              lastAnswer: currentRound.options[selectedIndex].title,
+              lastAnswerCorrect: isCorrect,
+              lastScore: points,
+              pendingAnswer: selectedIndex,
+              pointsAwarded: true
+            }));
+            setShowAnswerConfirmation(true);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error getting current player score:', err);
+      }
+    }
+    const updatedScore = currentScore + points;
+    console.log(`Calculating new score: ${currentScore} + ${points} = ${updatedScore}`);
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
+      lastAnswer: currentRound.options[selectedIndex].title,
       lastAnswerCorrect: isCorrect,
       lastScore: points,
-      score: prev.score + points,
+      pendingAnswer: selectedIndex,
+      score: updatedScore,
       pointsAwarded: true
     }));
+    setShowAnswerConfirmation(true);
     if (gameCode && playerName) {
       try {
-        console.log(`Updating score for player ${playerName} after answer`);
-        supabase.from('players').update({
+        console.log(`Updating hasAnswered status and storing answer for player ${playerName}`);
+        const {
+          error
+        } = await supabase.from('players').update({
           hasAnswered: true,
-          score: currentPlayer.score + points
-        }).eq('game_code', gameCode).eq('name', playerName).then(() => {
-          console.log("Score updated successfully");
-        }).catch(err => {
-          console.error('Error updating player score after answer:', err);
-        });
+          score: updatedScore
+        }).eq('game_code', gameCode).eq('name', playerName);
+        if (error) {
+          console.error('Error updating player answer status:', error);
+        } else {
+          console.log(`Successfully marked ${playerName} as having answered and updated score to ${updatedScore}`);
+        }
       } catch (err) {
-        console.error('Error updating player score after answer:', err);
+        console.error('Exception when updating player answer status:', err);
       }
     }
-    
+    setTimeout(() => {
+      setShowAnswerConfirmation(false);
+    }, 2000);
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה"
+      description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
+    if (timeLeft <= 0 || isFinalPhase) {
+      submitAllAnswers();
+    }
   };
 
   return (
