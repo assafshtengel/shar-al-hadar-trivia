@@ -60,5 +60,59 @@ export const adamSongs: Song[] = [
     title: "שתי טיפות - עומר אדם",
     embedUrl: "https://www.youtube.com/embed/RLDJs7i9qjo?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://youtu.be/RLDJs7i9qjo?si=nieoOSpjpuP8pmE4"
+  },
+  {
+    id: 115,
+    title: "רוקנרול - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/IG57i19tmcA?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/IG57i19tmcA?si=BPuKbkcw98PKRljN"
+  },
+  {
+    id: 116,
+    title: "אוהבת לא אוהבת - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/d2sULea7Q3U?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/d2sULea7Q3U?si=R2VkMfNUNk309Boh"
+  },
+  {
+    id: 117,
+    title: "לילה - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/i4HmxqSXTy0?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/i4HmxqSXTy0?si=1mU12dJ5HkeHmozo"
+  },
+  {
+    id: 118,
+    title: "שווארמה ודמעה - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/U-_xakmyIcQ?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/U-_xakmyIcQ?si=FQcB-29iV09SfGL1"
+  },
+  {
+    id: 119,
+    title: "פינו נואר - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/bgjVNXJ0hEo?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/bgjVNXJ0hEo?si=mIowrRjBGjjLeQR5"
+  },
+  {
+    id: 120,
+    title: "נרקומן של בדידות - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/C3MTKYn6lhI?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/C3MTKYn6lhI?si=of4mVfpWPgqbABLj"
+  },
+  {
+    id: 121,
+    title: "רק שלך - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/Jw02uPan7RU?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/Jw02uPan7RU?si=bCBUgUm_ggc8cjhY"
+  },
+  {
+    id: 122,
+    title: "לילות וקללות - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/isCbysjdcQ0?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/isCbysjdcQ0?si=8FrKNJ4Rcydt6-9Z"
+  },
+  {
+    id: 123,
+    title: "אקדח - עומר אדם",
+    embedUrl: "https://www.youtube.com/embed/_QvqhSbvzdE?autoplay=1&controls=0&modestbranding=1&rel=0",
+    fullUrl: "https://youtu.be/_QvqhSbvzdE?si=dPLVwm23sq5Ed631"
   }
 ];
