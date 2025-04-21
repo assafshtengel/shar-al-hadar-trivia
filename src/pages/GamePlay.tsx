@@ -692,25 +692,25 @@ const GamePlay: React.FC = () => {
       return;
     }
     
-    // When timer runs out and no answer was selected, enter the final phase
+    // When timer runs out and no answer was selected, directly enter the final phase
     // with 50-50 elimination and 6 second timer
-    setTimerActive(true);
-    
     if (playerName && gameCode) {
-      // For trivia questions and song questions, we'll handle the same way
-      // Enter the final phase with 50-50 elimination
-      
       // Set the game in final phase state - this will trigger the 50-50 option reduction
       const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
-      setPhase('answerOptions');
       
+      // Skip the intermediate screen and directly enter final phase
       // Reset timer for final 6 seconds
       setTimeLeft(6);
+      setTimerActive(true);
       
-      // Don't mark as having answered yet since player gets a second chance
-      if (isHost) {
-        // Only host can change the game phase to final
-        console.log('Setting game to final answer phase with 50-50 elimination');
+      // IMPORTANT: Explicitly set isFinalPhase to true here to trigger the 50-50 option filtering
+      if (currentRound) {
+        // Make sure the player sees the 50-50 options immediately
+        console.log('Directly entering 50-50 final phase');
+        toast({
+          title: "הזדמנות אחרונה!",
+          description: "רק שתי אפשרויות נותרו, בחר תשובה נכונה"
+        });
       }
     }
   };
@@ -1021,7 +1021,7 @@ const GamePlay: React.FC = () => {
       
       case 'answerOptions':
         const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
-        const isFinalPhase = timeSinceStart > 8; // Final phase with 50-50
+        const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6; // Final phase with 50-50 (modified to include timeLeft <= 6)
         const showOptions = timeSinceStart >= 1.5;
         
         return (

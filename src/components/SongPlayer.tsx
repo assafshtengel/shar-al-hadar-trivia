@@ -206,4 +206,3 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
 };
 
 export default SongPlayer;
-

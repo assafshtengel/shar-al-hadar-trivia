@@ -47,9 +47,9 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
           .sort(() => Math.random() - 0.5)
           .slice(0, 2);
         
-        const filteredOptions = question.options.filter((_, index) => 
-          !indicesToRemove.includes(index)
-        );
+        const filteredOptions = question.options.map((option, index) => 
+          indicesToRemove.includes(index) ? null : option
+        ).filter(option => option !== null) as string[];
         
         setVisibleOptions(filteredOptions);
       } else {
@@ -100,6 +100,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
         {showOptions && (
           <div className="grid grid-cols-1 gap-4">
             {visibleOptions.map((option, index) => {
+              // Find the original index of this option in the full options list
               const originalIndex = question.options.indexOf(option);
               return (
                 <div key={index} className="relative">
