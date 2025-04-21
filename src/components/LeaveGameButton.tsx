@@ -11,15 +11,17 @@ import { useGameState } from '@/contexts/GameStateContext';
 interface LeaveGameButtonProps {
   gameCode: string;
   isHost?: boolean;
+  playerName?: string; // Add playerName as an optional prop
 }
 
-const LeaveGameButton: React.FC<LeaveGameButtonProps> = ({ gameCode, isHost = false }) => {
+const LeaveGameButton: React.FC<LeaveGameButtonProps> = ({ gameCode, isHost = false, playerName }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { clearGameData, playerName } = useGameState();
+  const { clearGameData } = useGameState();
+  const effectivePlayerName = playerName || useGameState().playerName;
   
   const handleLeaveGame = async () => {
-    if (!gameCode || !playerName) {
+    if (!gameCode || !effectivePlayerName) {
       toast({
         title: "שגיאה",
         description: "מידע חסר, לא ניתן לעזוב את המשחק",
@@ -75,7 +77,7 @@ const LeaveGameButton: React.FC<LeaveGameButtonProps> = ({ gameCode, isHost = fa
           .from('players')
           .delete()
           .eq('game_code', gameCode)
-          .eq('name', playerName);
+          .eq('name', effectivePlayerName);
           
         if (error) {
           throw error;

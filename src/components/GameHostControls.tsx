@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import AppButton from '@/components/AppButton';
-import { Play, AlertCircle, Award } from 'lucide-react';
+import { Play, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -20,6 +20,11 @@ interface GameHostControlsProps {
   onPlayNext: () => void;
   onResetScores: () => void;
   gamePhase: string | null;
+  // New props
+  onPlaySong?: () => Promise<void>;
+  isPlaying?: boolean;
+  gameCode?: string;
+  playerCount?: number;
 }
 
 const GameHostControls: React.FC<GameHostControlsProps> = ({
@@ -27,7 +32,10 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
   isTriviaRound,
   onPlayNext,
   onResetScores,
-  gamePhase
+  gamePhase,
+  onPlaySong,
+  isPlaying,
+  playerCount
 }) => {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const isPlayingPhase = gamePhase === 'playing';
@@ -43,8 +51,28 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
     });
   };
 
+  // Add handler for play song button if provided
+  const handlePlaySong = () => {
+    if (onPlaySong) {
+      onPlaySong();
+    }
+  };
+
   return (
     <div className="flex flex-col items-center gap-4 mt-4">
+      {onPlaySong && (
+        <AppButton 
+          variant="primary" 
+          size="lg" 
+          onClick={handlePlaySong} 
+          className="max-w-xs px-[43px] my-0 py-[34px] text-xl" 
+          disabled={isPlaying}
+        >
+          השמע שיר
+          <Play className="mr-2" />
+        </AppButton>
+      )}
+      
       <AppButton 
         variant="primary" 
         size="lg" 

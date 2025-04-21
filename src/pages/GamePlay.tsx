@@ -833,7 +833,7 @@ const GamePlay: React.FC = () => {
         </div>
         <div className="flex space-x-2">
           {isHost && <EndGameButton gameCode={gameCode} />}
-          {!isHost && <LeaveGameButton gameCode={gameCode} playerName={playerName} />}
+          {!isHost && <LeaveGameButton gameCode={gameCode} />}
         </div>
       </div>
 
@@ -866,6 +866,11 @@ const GamePlay: React.FC = () => {
               {isHost && (
                 <div className="mt-4">
                   <GameHostControls
+                    roundCounter={roundCounter}
+                    isTriviaRound={isTriviaRound}
+                    onPlayNext={nextRound}
+                    onResetScores={resetAllPlayerScores}
+                    gamePhase={serverGamePhase}
                     onPlaySong={playSong}
                     isPlaying={isPlaying}
                     gameCode={gameCode}
@@ -884,9 +889,10 @@ const GamePlay: React.FC = () => {
               )}
               {showYouTubeEmbed && currentSong && (
                 <SongPlayer 
-                  songUrl={currentSong.embedUrl || ""} 
-                  onEnded={handleSongPlaybackEnded} 
-                  onError={handleSongPlaybackError}
+                  song={currentSong}
+                  isPlaying={true}
+                  onPlaybackEnded={handleSongPlaybackEnded}
+                  onPlaybackError={handleSongPlaybackError}
                 />
               )}
             </div>
@@ -975,7 +981,7 @@ const GamePlay: React.FC = () => {
             <div className="space-y-4">
               <TriviaQuestion 
                 question={currentTriviaQuestion} 
-                onAnswer={handleTriviaAnswer} 
+                onAnswer={handleAnswer} 
                 disabled={currentPlayer.hasAnswered}
                 showTimer={true}
                 onTimerEnd={handleTimerTimeout}

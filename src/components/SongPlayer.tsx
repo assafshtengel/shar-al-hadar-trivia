@@ -7,23 +7,29 @@ import MusicNote from './MusicNote';
 import AppButton from './AppButton';
 
 interface SongPlayerProps {
-  song: Song | null;
-  isPlaying: boolean;
-  onPlaybackEnded: () => void;
+  song?: Song | null;
+  isPlaying?: boolean;
+  onPlaybackEnded?: () => void;
   onPlaybackStarted?: () => void;
   onPlaybackError?: () => void;
   duration?: number;
   showOverlay?: boolean;
+  songUrl?: string; // Added to support direct URL
+  onEnded?: () => void; // Added to support callback
+  onError?: () => void; // Added to support error callback
 }
 
 const SongPlayer: React.FC<SongPlayerProps> = ({
   song,
-  isPlaying,
+  isPlaying = false,
   onPlaybackEnded,
   onPlaybackStarted,
   onPlaybackError,
   duration = 8000,
-  showOverlay = true
+  showOverlay = true,
+  songUrl = '', // Initialize with empty string
+  onEnded, // This will be used if provided
+  onError // This will be used if provided
 }) => {
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +37,10 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const [manualPlayNeeded, setManualPlayNeeded] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Use the callback that's provided
+  const handlePlaybackEnded = onEnded || onPlaybackEnded;
+  const handlePlaybackError = onError || onPlaybackError;
 
   const ensureEmbedParams = (url: string | undefined): string => {
     if (!url) return '';
@@ -71,38 +81,41 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       timeoutRef.current = null;
     }
 
-    if (isPlaying && song) {
-      if (song.embedUrl) {
-        console.log('Starting song playback:', song.title);
-        
-        if (isIOS) {
-          setManualPlayNeeded(true);
-          setShowYouTubeEmbed(true);
-          setError(null);
-        } else {
-          setShowYouTubeEmbed(true);
-          setError(null);
-          
-          if (onPlaybackStarted) {
-            onPlaybackStarted();
-          }
-          
-          timeoutRef.current = setTimeout(() => {
-            console.log('Song playback ended:', song.title);
-            setShowYouTubeEmbed(false);
-            onPlaybackEnded();
-          }, duration);
-        }
+    // Get the effective embed URL (either from song object or direct songUrl prop)
+    const effectiveEmbedUrl = songUrl || (song?.embedUrl || '');
+
+    if (isPlaying && (effectiveEmbedUrl || (song && song.embedUrl))) {
+      console.log('Starting song playback:', song?.title || 'Direct URL');
+      
+      if (isIOS) {
+        setManualPlayNeeded(true);
+        setShowYouTubeEmbed(true);
+        setError(null);
       } else {
-        console.error('Song has no embed URL:', song);
-        setError('לשיר זה אין קישור השמעה זמין');
-        if (onPlaybackError) {
-          onPlaybackError();
+        setShowYouTubeEmbed(true);
+        setError(null);
+        
+        if (onPlaybackStarted) {
+          onPlaybackStarted();
         }
-        toast.error('לא ניתן להשמיע את השיר', {
-          description: 'אין קישור השמעה זמין לשיר זה'
-        });
+        
+        timeoutRef.current = setTimeout(() => {
+          console.log('Song playback ended:', song?.title || 'Direct URL');
+          setShowYouTubeEmbed(false);
+          if (handlePlaybackEnded) {
+            handlePlaybackEnded();
+          }
+        }, duration);
       }
+    } else if (isPlaying && !effectiveEmbedUrl && !song?.embedUrl) {
+      console.error('Song has no embed URL:', song);
+      setError('לשיר זה אין קישור השמעה זמין');
+      if (handlePlaybackError) {
+        handlePlaybackError();
+      }
+      toast.error('לא ניתן להשמיע את השיר', {
+        description: 'אין קישור השמעה זמין לשיר זה'
+      });
     } else {
       setShowYouTubeEmbed(false);
       setManualPlayNeeded(false);
@@ -114,7 +127,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         timeoutRef.current = null;
       }
     };
-  }, [isPlaying, song, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError, isIOS]);
+  }, [isPlaying, song, songUrl, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError, isIOS, handlePlaybackEnded, handlePlaybackError]);
 
   const handleManualPlay = () => {
     setManualPlayNeeded(false);
@@ -124,9 +137,11 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     }
     
     timeoutRef.current = setTimeout(() => {
-      console.log('Song playback ended (iOS):', song?.title);
+      console.log('Song playback ended (iOS):', song?.title || 'Direct URL');
       setShowYouTubeEmbed(false);
-      onPlaybackEnded();
+      if (handlePlaybackEnded) {
+        handlePlaybackEnded();
+      }
     }, duration);
     
     toast.success('השיר מתנגן', {
@@ -134,7 +149,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     });
   };
 
-  if (!song || !isPlaying) {
+  if ((!song && !songUrl) || !isPlaying) {
     return null;
   }
 
@@ -149,22 +164,25 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     );
   }
 
+  // Get the effective embed URL (either from song object or direct songUrl prop)
+  const effectiveEmbedUrl = songUrl || (song?.embedUrl || '');
+
   return (
     <div className="relative w-full h-40">
-      {showYouTubeEmbed && song.embedUrl ? (
+      {showYouTubeEmbed && effectiveEmbedUrl ? (
         <>
           <iframe 
             ref={iframeRef}
             width="0"
             height="0"
-            src={ensureEmbedParams(song.embedUrl)} 
+            src={ensureEmbedParams(effectiveEmbedUrl)} 
             frameBorder="0" 
             allow="autoplay; encrypted-media" 
             allowFullScreen 
             className="absolute top-0 left-0 z-10"
             onError={() => {
               setError('שגיאה בטעינת השיר');
-              if (onPlaybackError) onPlaybackError();
+              if (handlePlaybackError) handlePlaybackError();
             }}
           />
           

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import AppButton from '@/components/AppButton';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import GameTimer from '@/components/GameTimer';
 
 interface TriviaQuestionProps {
   question: TriviaQuestionType | {
@@ -11,27 +12,33 @@ interface TriviaQuestionProps {
     correctAnswerIndex: number;
   };
   onAnswer: (isCorrect: boolean, selectedIndex: number) => void;
-  timeUp: boolean;
+  timeUp?: boolean;
   answerStartTime?: number;
   elapsedTime?: number;
-  showOptions: boolean;
-  isFinalPhase: boolean;
+  showOptions?: boolean;
+  isFinalPhase?: boolean;
   hasAnsweredEarly?: boolean;
   showQuestion?: boolean; // Added to control visibility of question during song playback
   onTimeUp?: () => void; // Callback for when time is up and no selection was made
+  showTimer?: boolean; // Added to show/hide timer
+  onTimerEnd?: () => void; // Callback for when timer ends
+  disabled?: boolean; // Added to disable question
 }
 
 const TriviaQuestion: React.FC<TriviaQuestionProps> = ({ 
   question, 
   onAnswer,
-  timeUp,
+  timeUp = false,
   answerStartTime = 0,
   elapsedTime = 0,
-  showOptions,
-  isFinalPhase,
+  showOptions = true,
+  isFinalPhase = false,
   hasAnsweredEarly = false,
   showQuestion = true, // Default to showing question
-  onTimeUp
+  onTimeUp,
+  showTimer = false,
+  onTimerEnd,
+  disabled = false
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -82,7 +89,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   }, [timeUp, answered, onTimeUp, isFinalPhase]);
 
   const handleSelectAnswer = (index: number) => {
-    if (answered || timeUp) return;
+    if (answered || timeUp || disabled) return;
     
     setSelectedAnswer(index);
     setAnswered(true);
@@ -115,9 +122,20 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
         </h2>
       )}
       
+      <div className="flex justify-between items-center w-full mb-4">
+        <div>
+          <p className="text-xl font-medium">{question.question}</p>
+        </div>
+        {showTimer && onTimerEnd && (
+          <GameTimer
+            initialSeconds={12}
+            isActive={true}
+            onTimeout={onTimerEnd}
+          />
+        )}
+      </div>
+      
       <div className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg w-full mb-6 border-2 border-primary/20">
-        <p className="text-xl font-medium mb-6 text-center">{question.question}</p>
-        
         {shouldShowOptions && (
           <div className="grid grid-cols-1 gap-4">
             {visibleOptions.map((item, index) => (
@@ -134,7 +152,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
                       : ''
                   } ${answered && selectedAnswer !== item.originalIndex ? 'opacity-70' : ''}`}
                   onClick={() => handleSelectAnswer(item.originalIndex)}
-                  disabled={answered || timeUp}
+                  disabled={answered || timeUp || disabled}
                 >
                   {item.option}
                   
