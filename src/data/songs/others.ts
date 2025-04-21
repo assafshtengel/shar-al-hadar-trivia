@@ -1,3 +1,4 @@
+
 import { Song } from './types';
 
 export const otherSongs: Song[] = [
@@ -25,12 +26,7 @@ export const otherSongs: Song[] = [
     embedUrl: "https://www.youtube.com/embed/K3B99JmVHwE?autoplay=1&controls=0&modestbranding=1&rel=0",
     fullUrl: "https://www.youtube.com/watch?v=K3B99JmVHwE"
   },
-  {
-    id: 70,
-    title: "שקיעות אדומות - אגם בוחבוט",
-    embedUrl: "https://www.youtube.com/embed/t_Edi4npk3I?autoplay=1&controls=0&modestbranding=1&rel=0",
-    fullUrl: "https://www.youtube.com/watch?v=t_Edi4npk3I"
-  },
+  // השיר עם id: 70 ("שקיעות אדומות - אגם בוחבוט") נמחק לבקשתך
   {
     id: 100,
     title: "מנשהו ממני - הראל סקעת",
