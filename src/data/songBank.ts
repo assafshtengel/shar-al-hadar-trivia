@@ -45,3 +45,16 @@ export const defaultSongBank: Song[] = [
   ...aharonSongs,
   ...hanochSongs
 ];
+
+// פונקציה לסינון שירים לפי קטגוריה
+export const getSongsByCategory = (category: string): Song[] => {
+  switch (category) {
+    case 'adam':
+      return [...adamSongs];
+    case 'mashina':
+      return [...mashinaSongs];
+    case 'all':
+    default:
+      return [...defaultSongBank];
+  }
+};

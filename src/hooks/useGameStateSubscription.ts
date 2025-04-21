@@ -12,7 +12,7 @@ interface UseGameStateSubscriptionProps {
   setHostReady: (ready: boolean) => void;
   clearGameData: () => void;
   navigate: (path: string) => void;
-  gameSettings?: GameSettings; // Add game settings
+  gameSettings?: GameSettings; // Make sure gameSettings is included
 }
 
 export const useGameStateSubscription = ({

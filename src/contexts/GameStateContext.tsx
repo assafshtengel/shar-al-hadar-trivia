@@ -1,131 +1,99 @@
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
-import GameEndOverlay from '@/components/GameEndOverlay';
-import { useGamePhaseNavigation } from '@/hooks/useGamePhaseNavigation';
-import { toast } from 'sonner';
-
-type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export interface GameSettings {
-  scoreLimit: number | null; // null means no limit
-  gameDuration: number | null; // in minutes, null means no time limit
+  scoreLimit: number;
+  gameDuration: number;
+  answerTimeLimit: number;
+  category?: string;
+}
+
+interface GameData {
+  gameCode: string | null;
+  playerName: string | null;
+  isHost: boolean;
+  gameSettings: GameSettings;
+  gamePhase: string | null;
+  hostReady: boolean;
 }
 
 interface GameStateContextType {
   gameCode: string | null;
   playerName: string | null;
-  gamePhase: GamePhase | null;
   isHost: boolean;
-  setGameData: (data: { gameCode: string; playerName: string; isHost?: boolean }) => void;
-  clearGameData: () => void;
-  answerTimeLimit: number;
   gameSettings: GameSettings;
+  gamePhase: string | null;
+  hostReady: boolean;
+  scoreLimit: number;
+  gameDuration: number;
+  answerTimeLimit: number;
+  category?: string;
+  setGameData: (data: Partial<GameData>) => void;
   updateGameSettings: (settings: GameSettings) => void;
+  setGamePhase: (phase: string | null) => void;
+  setHostReady: (ready: boolean) => void;
+  clearGameData: () => void;
 }
 
-// Create and export the context
-export const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
+const defaultSettings: GameSettings = {
+  scoreLimit: 100,
+  gameDuration: 20,
+  answerTimeLimit: 30,
+  category: 'all'
+};
 
-export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const navigate = useNavigate();
-  const [gameCode, setGameCode] = useState<string | null>(
-    localStorage.getItem('gameCode') || null
-  );
-  const [playerName, setPlayerName] = useState<string | null>(
-    localStorage.getItem('playerName') || null
-  );
-  const [gamePhase, setGamePhase] = useState<GamePhase | null>(null);
-  const [isHost, setIsHost] = useState<boolean>(
-    localStorage.getItem('isHost') === 'true'
-  );
-  const [hostReady, setHostReady] = useState<boolean>(false);
-  const previousGamePhaseRef = useRef<GamePhase | null>(null);
-  const answerTimeLimit = 30; // Increased from 21 to 30 seconds to give more time to answer
-  
-  const [gameSettings, setGameSettings] = useState<GameSettings>(() => {
-    const savedSettings = localStorage.getItem('gameSettings');
-    return savedSettings 
-      ? JSON.parse(savedSettings) 
-      : { scoreLimit: null, gameDuration: null };
-  });
-  
+const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
+
+export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [gameCode, setGameCode] = useState<string | null>(null);
+  const [playerName, setPlayerName] = useState<string | null>(null);
+  const [isHost, setIsHost] = useState(false);
+  const [gameSettings, setGameSettings] = useState<GameSettings>(defaultSettings);
+  const [gamePhase, setGamePhase] = useState<string | null>(null);
+  const [hostReady, setHostReady] = useState(false);
+
+  const setGameData = (data: Partial<GameData>) => {
+    if (data.gameCode !== undefined) setGameCode(data.gameCode);
+    if (data.playerName !== undefined) setPlayerName(data.playerName);
+    if (data.isHost !== undefined) setIsHost(data.isHost);
+    if (data.gameSettings !== undefined) setGameSettings(data.gameSettings);
+    if (data.gamePhase !== undefined) setGamePhase(data.gamePhase);
+    if (data.hostReady !== undefined) setHostReady(data.hostReady);
+  };
+
   const updateGameSettings = (settings: GameSettings) => {
     setGameSettings(settings);
-    localStorage.setItem('gameSettings', JSON.stringify(settings));
-  };
-  
-  const setGameData = (data: { gameCode: string; playerName: string; isHost?: boolean }) => {
-    setGameCode(data.gameCode);
-    setPlayerName(data.playerName);
-    setIsHost(data.isHost || false);
-    
-    localStorage.setItem('gameCode', data.gameCode);
-    localStorage.setItem('playerName', data.playerName);
-    localStorage.setItem('isHost', (data.isHost || false).toString());
   };
 
   const clearGameData = () => {
-    console.log("Clearing game data");
     setGameCode(null);
     setPlayerName(null);
     setIsHost(false);
+    setGameSettings(defaultSettings);
     setGamePhase(null);
     setHostReady(false);
-    
-    localStorage.removeItem('gameCode');
-    localStorage.removeItem('playerName');
-    localStorage.removeItem('isHost');
   };
-
-  useEffect(() => {
-    if (previousGamePhaseRef.current !== gamePhase) {
-      console.log(`Game phase changed: ${previousGamePhaseRef.current} -> ${gamePhase}`);
-      previousGamePhaseRef.current = gamePhase;
-      
-      if (gamePhase === 'end' && !isHost) {
-        toast('סיבוב הסתיים', {
-          description: 'המארח מציג את טבלת המובילים',
-        });
-      }
-    }
-  }, [gamePhase, isHost]);
-
-  useGameStateSubscription({
-    gameCode,
-    isHost,
-    setGamePhase,
-    setHostReady,
-    clearGameData,
-    navigate,
-    gameSettings
-  });
-
-  const { isRedirecting } = useGamePhaseNavigation({
-    gamePhase,
-    isHost,
-    clearGameData
-  });
 
   return (
     <GameStateContext.Provider
       value={{
         gameCode,
         playerName,
-        gamePhase,
         isHost,
-        setGameData,
-        clearGameData,
-        answerTimeLimit,
         gameSettings,
-        updateGameSettings
+        gamePhase,
+        hostReady,
+        scoreLimit: gameSettings.scoreLimit,
+        gameDuration: gameSettings.gameDuration,
+        answerTimeLimit: gameSettings.answerTimeLimit,
+        category: gameSettings.category,
+        setGameData,
+        updateGameSettings,
+        setGamePhase,
+        setHostReady,
+        clearGameData,
       }}
     >
-      <GameEndOverlay 
-        isVisible={gamePhase === 'end'} 
-        isHost={isHost} 
-      />
       {children}
     </GameStateContext.Provider>
   );
