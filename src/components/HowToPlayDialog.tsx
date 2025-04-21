@@ -9,6 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { HelpCircle, Award, Star, CircleHelp, SkipForward } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const HowToPlayDialog = () => {
   const [open, setOpen] = React.useState(false);
@@ -29,6 +30,8 @@ const HowToPlayDialog = () => {
             <HelpCircle className="w-6 h-6 text-primary" />
             איך לשחק ב"שיר על הדרך"?
           </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="max-h-[60vh] mt-2 pr-0.5">
           <DialogDescription>
             <div className="text-right leading-7 space-y-6 text-base">
               <div>
@@ -87,10 +90,11 @@ const HowToPlayDialog = () => {
               </div>
             </div>
           </DialogDescription>
-        </DialogHeader>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
 };
 
 export default HowToPlayDialog;
+
