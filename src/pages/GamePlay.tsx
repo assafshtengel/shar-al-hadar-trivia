@@ -435,20 +435,23 @@ const GamePlay: React.FC = () => {
     });
   };
 
-  const handleTriviaAnswer = (isCorrect: boolean, selectedIndex: number) => {
+  const handleAnswer = (isCorrect: boolean, selectedIndex: number) => {
     if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
       console.log("Already answered or points already awarded - ignoring selection");
       return;
     }
-    console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${isCorrect}`);
+    
+    console.log(`Player ${playerName} selected answer: ${selectedIndex}, correct: ${isCorrect}`);
     const currentTime = Date.now();
     const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
+    
     if (timeSinceStart <= 12) {
       setAnsweredEarly(true);
     }
+    
     let points = 0;
     const isFinalPhase = timeSinceStart > 8;
-
+    
     if (isFinalPhase) {
       points = isCorrect ? 4 : -2;
     } else {
@@ -458,6 +461,8 @@ const GamePlay: React.FC = () => {
         points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
       }
     }
+    
+    setSelectedAnswer(selectedIndex);
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
@@ -466,6 +471,10 @@ const GamePlay: React.FC = () => {
       score: prev.score + points,
       pointsAwarded: true
     }));
+    
+    setShowAnswerConfirmation(true);
+    
+    // Update the player's score in the database
     if (gameCode && playerName) {
       (async () => {
         try {
@@ -483,7 +492,7 @@ const GamePlay: React.FC = () => {
           }
           console.log("Score updated successfully");
         } catch (err) {
-          console.error('Error updating player score after trivia answer:', err);
+          console.error('Error updating player score after answer:', err);
         }
       })();
     }
@@ -921,8 +930,3 @@ const GamePlay: React.FC = () => {
   const submitAllAnswers = async () => {
     console.log('Timer ended, submitting all answers');
     if (!currentRound || !gameCode) {
-      console.error('Missing current round data or game code');
-      return;
-    }
-    
-    if (!currentPlayer.pointsAwarded && playerName && selectedAnswer !==
