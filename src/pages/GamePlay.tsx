@@ -880,7 +880,6 @@ const GamePlay: React.FC = () => {
           return (
             <div className="flex flex-col items-center justify-center py-6 space-y-6">
               <h2 className="text-2xl font-bold text-primary">שאלת טריוויה במוזיקה</h2>
-              
               {isHost ? (
                 <AppButton 
                   variant="primary" 
@@ -900,7 +899,6 @@ const GamePlay: React.FC = () => {
                   המתן למנהל המשחק להציג את שאלת הטריוויה
                 </div>
               )}
-              
               {currentTriviaQuestion && (
                 <TriviaQuestion 
                   question={currentTriviaQuestion} 
@@ -916,11 +914,10 @@ const GamePlay: React.FC = () => {
             </div>
           );
         }
-        
+
         return (
           <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
-            
             <SongPlayer 
               song={currentSong} 
               isPlaying={isPlaying && showYouTubeEmbed} 
@@ -933,7 +930,6 @@ const GamePlay: React.FC = () => {
               }} 
               showOverlay={true}
             />
-            
             {currentRound && (
               <TriviaQuestion 
                 question={{
@@ -945,25 +941,11 @@ const GamePlay: React.FC = () => {
                 timeUp={timeLeft <= 0} 
                 answerStartTime={gameStartTimeRef.current || Date.now()} 
                 elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} 
-                showOptions={true}
+                showOptions={showYouTubeEmbed} // תמיד מציג אפשרויות בתזמון השמעה
                 isFinalPhase={false} 
                 showQuestion={true} 
               />
             )}
-            
-            {isHost && (
-              <AppButton 
-                variant="primary" 
-                size="lg" 
-                onClick={playSong} 
-                className="max-w-xs" 
-                disabled={isPlaying}
-              >
-                {isPlaying ? "שיר מתנגן..." : "השמע שיר"}
-                <Play className="mr-2 py-[26px]" />
-              </AppButton>
-            )}
-            
             {isPlaying && !showYouTubeEmbed && (
               <div className="relative w-40 h-40 flex items-center justify-center">
                 <div className="absolute w-full h-full">
@@ -976,7 +958,6 @@ const GamePlay: React.FC = () => {
                 </div>
               </div>
             )}
-            
             {!isHost && !isPlaying && (
               <div className="text-lg text-gray-600 text-center">
                 המתן למנהל המשחק להשמיע את השיר הבא
@@ -984,7 +965,7 @@ const GamePlay: React.FC = () => {
             )}
           </div>
         );
-      
+
       case 'answerOptions': {
         const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
         const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6;
@@ -1204,6 +1185,13 @@ const GamePlay: React.FC = () => {
       }
     }
   }, [phase, timeLeft]);
+
+  useEffect(() => {
+    if (isHost && serverGamePhase === "playing") {
+      playSong();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, serverGamePhase]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
