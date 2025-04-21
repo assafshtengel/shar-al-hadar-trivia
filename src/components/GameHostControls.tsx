@@ -15,27 +15,36 @@ import {
 } from "@/components/ui/alert-dialog"
 
 interface GameHostControlsProps {
-  roundCounter: number;
-  isTriviaRound: boolean;
-  onPlayNext: () => void;
-  onResetScores: () => void;
-  gamePhase: string | null;
+  gameCode: string | null;
+  currentPhase: string;
+  onUpdatePhase: (newPhase: string) => void;
+  roundCounter?: number;
+  isTriviaRound?: boolean;
+  onPlayNext?: () => void;
+  onResetScores?: () => void;
+  gamePhase?: string | null;
 }
 
 const GameHostControls: React.FC<GameHostControlsProps> = ({
-  roundCounter,
-  isTriviaRound,
+  gameCode,
+  currentPhase,
+  onUpdatePhase,
+  roundCounter = 1,
+  isTriviaRound = false,
   onPlayNext,
   onResetScores,
-  gamePhase
+  gamePhase = null
 }) => {
   const [showResetDialog, setShowResetDialog] = useState(false);
-  const isPlayingPhase = gamePhase === 'playing';
-  const isWaitingPhase = gamePhase === 'waiting' || gamePhase === 'results' || gamePhase === 'end';
-  const nextRoundType = (roundCounter + 1) % 5 === 0 ? 'טריוויה' : 'שיר';
+  const isPlayingPhase = gamePhase === 'playing' || currentPhase === 'songPlayback';
+  const isWaitingPhase = gamePhase === 'waiting' || gamePhase === 'results' || gamePhase === 'end' || 
+                        currentPhase === 'scoringFeedback' || currentPhase === 'leaderboard';
+  const nextRoundType = ((roundCounter || 1) + 1) % 5 === 0 ? 'טריוויה' : 'שיר';
 
   const handleResetConfirm = () => {
-    onResetScores();
+    if (onResetScores) {
+      onResetScores();
+    }
     setShowResetDialog(false);
     toast('הניקוד אופס', {
       description: 'ניקוד כל השחקנים אופס בהצלחה',
@@ -43,12 +52,21 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
     });
   };
 
+  const handlePlayNext = () => {
+    if (onPlayNext) {
+      onPlayNext();
+    } else {
+      // Fallback to using onUpdatePhase
+      onUpdatePhase('playing');
+    }
+  };
+
   return (
     <div className="flex flex-col items-center gap-4 mt-4">
       <AppButton 
         variant="primary" 
         size="lg" 
-        onClick={onPlayNext} 
+        onClick={handlePlayNext} 
         className="max-w-xs px-[43px] my-0 py-[34px] text-xl" 
         disabled={isPlayingPhase}
       >

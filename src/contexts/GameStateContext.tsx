@@ -42,7 +42,8 @@ const defaultSettings: GameSettings = {
   category: 'all'
 };
 
-const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
+// Make the context export a named export
+export const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
 
 export const GameStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [gameCode, setGameCode] = useState<string | null>(null);
