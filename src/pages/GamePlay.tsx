@@ -681,7 +681,7 @@ const GamePlay: React.FC = () => {
     
     toast({
       title: "דילגת על השאלה",
-      description: `נותרו ${currentPlayer.skipsLeft - 1} דילו�����ם`
+      description: `נותרו ${currentPlayer.skipsLeft - 1} דילו������ם`
     });
   };
 
@@ -974,7 +974,7 @@ const GamePlay: React.FC = () => {
                 timeUp={timeLeft <= 0} 
                 answerStartTime={gameStartTimeRef.current || Date.now()} 
                 elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} 
-                showOptions={false} // Important: Do NOT show options during song playback phase!
+                showOptions={isPlaying && showYouTubeEmbed} // הצג תשובות רק כשהשיר מתחיל
                 isFinalPhase={false}
                 showQuestion={true} // Show question during song playback for all players
               />
