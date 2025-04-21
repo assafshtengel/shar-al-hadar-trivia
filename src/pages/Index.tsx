@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppButton from '@/components/AppButton';
@@ -10,17 +11,28 @@ import { Info } from 'lucide-react';
 import HowToPlayDialog from "@/components/HowToPlayDialog";
 import { ImprovementDialog } from "@/components/ImprovementDialog";
 
-import { useGameState } from '@/contexts/GameStateContext';
+// Import the GameStateContext and useContext
+import { GameStateContext } from '@/contexts/GameStateContext';
+import { useContext } from 'react';
 
 const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isIOS } = useIsMobile();
   
-  const gameState = useGameState();
+  // Safely access GameState context
+  const gameStateContext = useContext(GameStateContext);
   
   const clearGameData = () => {
-    gameState.clearGameData();
+    if (gameStateContext) {
+      gameStateContext.clearGameData();
+    } else {
+      // Handle the case where the context is not available
+      console.log('GameStateContext not available, clearing local storage manually');
+      localStorage.removeItem('gameCode');
+      localStorage.removeItem('playerName');
+      localStorage.removeItem('isHost');
+    }
   };
 
   const handleCreateGame = () => {

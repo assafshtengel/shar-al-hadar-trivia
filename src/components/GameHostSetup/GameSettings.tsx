@@ -1,131 +1,145 @@
 
-import React from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { GameSettings as GameSettingsType } from '@/contexts/GameStateContext';
-import { Users, User, Music } from 'lucide-react';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import React, { useState } from 'react';
+import { Settings, Trophy, Clock } from 'lucide-react';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import type { GameSettings as GameSettingsType } from '@/contexts/GameStateContext';
 
-interface CategoryOption {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-}
-
-const categories: CategoryOption[] = [
-  { id: 'all', name: 'הכל', icon: <Music className="h-4 w-4" /> },
-  { id: 'adam', name: 'עומר אדם', icon: <User className="h-4 w-4" /> },
-  { id: 'mashina', name: 'משינה', icon: <Users className="h-4 w-4" /> },
-];
-
-type GameSettingsProps = {
+interface GameSettingsProps {
   settings: GameSettingsType;
   onSettingsChange: (settings: GameSettingsType) => void;
   disabled?: boolean;
-};
+}
 
-const GameSettings: React.FC<GameSettingsProps> = ({
-  settings,
+const GameSettings: React.FC<GameSettingsProps> = ({ 
+  settings, 
   onSettingsChange,
-  disabled = false,
+  disabled = false
 }) => {
-  const handleChangeScoreLimit = (value: number) => {
-    onSettingsChange({ ...settings, scoreLimit: value });
+  const [showScoreLimit, setShowScoreLimit] = useState(!!settings.scoreLimit);
+  const [showTimeLimit, setShowTimeLimit] = useState(!!settings.gameDuration);
+
+  const handleScoreLimitToggle = (checked: boolean) => {
+    setShowScoreLimit(checked);
+    onSettingsChange({
+      ...settings,
+      scoreLimit: checked ? 100 : null
+    });
   };
 
-  const handleChangeGameDuration = (value: number) => {
-    onSettingsChange({ ...settings, gameDuration: value });
+  const handleTimeLimitToggle = (checked: boolean) => {
+    setShowTimeLimit(checked);
+    onSettingsChange({
+      ...settings,
+      gameDuration: checked ? 20 : null
+    });
   };
 
-  const handleChangeAnswerTimeLimit = (value: number) => {
-    onSettingsChange({ ...settings, answerTimeLimit: value });
+  const handleScoreLimitChange = (value: string) => {
+    onSettingsChange({
+      ...settings,
+      scoreLimit: parseInt(value)
+    });
   };
 
-  const handleCategoryChange = (value: string) => {
-    onSettingsChange({ ...settings, category: value });
+  const handleTimeLimitChange = (value: string) => {
+    onSettingsChange({
+      ...settings,
+      gameDuration: parseInt(value)
+    });
   };
 
   return (
-    <div className="w-full space-y-4 p-4 bg-white/70 backdrop-blur-sm rounded-lg shadow-sm mb-4">
-      <h3 className="text-lg font-semibold text-primary mb-2">הגדרות משחק</h3>
+    <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 mb-4 shadow-md">
+      <div className="flex items-center mb-3 gap-2">
+        <Settings className="h-5 w-5 text-primary" />
+        <h3 className="text-lg font-medium text-primary">הגדרות משחק</h3>
+      </div>
       
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="category">קטגוריה</Label>
-          <ToggleGroup
-            type="single"
-            value={settings.category || 'all'}
-            onValueChange={handleCategoryChange}
-            disabled={disabled}
-            className="justify-center"
-          >
-            {categories.map((category) => (
-              <ToggleGroupItem
-                key={category.id}
-                value={category.id}
-                aria-label={`קטגוריה ${category.name}`}
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+              <Trophy className="h-4 w-4 text-amber-500" />
+              <Label htmlFor="score-limit">הגבלת ניקוד</Label>
+            </div>
+            <Switch 
+              id="enable-score" 
+              checked={showScoreLimit}
+              onCheckedChange={handleScoreLimitToggle}
+              disabled={disabled}
+            />
+          </div>
+          
+          {showScoreLimit && (
+            <div className="mt-2">
+              <Select 
+                value={settings.scoreLimit?.toString() || "100"} 
+                onValueChange={handleScoreLimitChange}
                 disabled={disabled}
-                className="flex items-center gap-1 px-3"
               >
-                {category.icon}
-                <span>{category.name}</span>
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="בחר ניקוד" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="50">50 נקודות</SelectItem>
+                  <SelectItem value="100">100 נקודות</SelectItem>
+                  <SelectItem value="150">150 נקודות</SelectItem>
+                  <SelectItem value="200">200 נקודות</SelectItem>
+                  <SelectItem value="300">300 נקודות</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <Label htmlFor="scoreLimit">מגבלת ניקוד</Label>
-            <span className="text-sm font-medium">{settings.scoreLimit}</span>
+        
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+              <Clock className="h-4 w-4 text-blue-500" />
+              <Label htmlFor="time-limit">הגבלת זמן</Label>
+            </div>
+            <Switch 
+              id="enable-time" 
+              checked={showTimeLimit}
+              onCheckedChange={handleTimeLimitToggle}
+              disabled={disabled}
+            />
           </div>
-          <Slider
-            id="scoreLimit"
-            min={20}
-            max={200}
-            step={10}
-            value={[settings.scoreLimit]}
-            onValueChange={(values) => handleChangeScoreLimit(values[0])}
-            disabled={disabled}
-          />
-          <p className="text-xs text-gray-500">המשחק מסתיים כאשר שחקן מגיע לניקוד זה</p>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <Label htmlFor="gameDuration">זמן משחק (דקות)</Label>
-            <span className="text-sm font-medium">{settings.gameDuration}</span>
-          </div>
-          <Slider
-            id="gameDuration"
-            min={5}
-            max={60}
-            step={5}
-            value={[settings.gameDuration]}
-            onValueChange={(values) => handleChangeGameDuration(values[0])}
-            disabled={disabled}
-          />
-          <p className="text-xs text-gray-500">המשחק מסתיים אחרי זמן זה</p>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <Label htmlFor="answerTimeLimit">זמן לתשובה (שניות)</Label>
-            <span className="text-sm font-medium">{settings.answerTimeLimit}</span>
-          </div>
-          <Slider
-            id="answerTimeLimit"
-            min={10}
-            max={60}
-            step={5}
-            value={[settings.answerTimeLimit]}
-            onValueChange={(values) => handleChangeAnswerTimeLimit(values[0])}
-            disabled={disabled}
-          />
-          <p className="text-xs text-gray-500">זמן מקסימלי לענות על שאלה</p>
+          
+          {showTimeLimit && (
+            <div className="mt-2">
+              <Select 
+                value={settings.gameDuration?.toString() || "20"} 
+                onValueChange={handleTimeLimitChange}
+                disabled={disabled}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="בחר זמן" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 דקות</SelectItem>
+                  <SelectItem value="15">15 דקות</SelectItem>
+                  <SelectItem value="20">20 דקות</SelectItem>
+                  <SelectItem value="30">30 דקות</SelectItem>
+                  <SelectItem value="45">45 דקות</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
+      
+      <p className="text-xs text-gray-500 mt-3 text-center">
+        מצב ברירת מחדל: משחק פתוח ללא הגבלות
+      </p>
     </div>
   );
 };

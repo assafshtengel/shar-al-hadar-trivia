@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import AppButton from '@/components/AppButton';
 import { CheckCircle2, XCircle } from 'lucide-react';
 
-export interface TriviaQuestionProps {
+interface TriviaQuestionProps {
   question: TriviaQuestionType | {
     question: string;
     options: string[];
@@ -36,6 +37,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   const [answered, setAnswered] = useState(false);
   const [visibleOptions, setVisibleOptions] = useState<{option: string, originalIndex: number}[]>([]);
 
+  // Always show all options for trivia questions, regardless of showOptions prop
   const isTrivia = question.question !== "מה השיר?";
   const shouldShowOptions = isTrivia || showOptions;
 
@@ -71,6 +73,8 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 
   useEffect(() => {
     if (timeUp && !answered && onTimeUp) {
+      // Don't auto-call onTimeUp here, as we need to show 50-50 options first
+      // This will be handled by the parent component based on isFinalPhase
       if (isFinalPhase) {
         onTimeUp();
       }
