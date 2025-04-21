@@ -1,71 +1,96 @@
 
+import * as React from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { MessageSquare } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
+} from "@/components/ui/dialog";
+import { HelpCircle, Award, Star, QuestionMarkCircle, SkipForward } from "lucide-react";
 
-export const HowToPlayDialog = () => {
+const HowToPlayDialog = () => {
+  const [open, setOpen] = React.useState(false);
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="secondary" className="flex items-center gap-2">
-          <MessageSquare className="h-4 w-4" />
+        <button
+          className="flex items-center gap-2 rounded-lg border px-4 py-2 bg-primary text-white hover:bg-primary/90 transition"
+        >
+          <HelpCircle className="w-5 h-5" />
           איך משחקים?
-        </Button>
+        </button>
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-primary mb-4">
-            איך משחקים ב"שיר על הדרך"?
+          <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-primary mb-2">
+            <HelpCircle className="w-6 h-6 text-primary" />
+            איך לשחק ב"שיר על הדרך"?
           </DialogTitle>
-        </DialogHeader>
-        <ScrollArea className="h-[400px] pr-4">
-          <div className="space-y-4 text-right">
-            <p className="text-lg font-medium text-gray-700">
-              שיר על הדרך הוא משחק מוזיקלי מהיר, תחרותי וכיפי – מושלם לנסיעות משפחתיות ומפגשים חברתיים!
-            </p>
-            
-            <div>
-              <h3 className="font-bold text-lg mb-2">מהלך המשחק:</h3>
-              <ul className="list-disc list-inside space-y-2 text-gray-700">
-                <li>אחד המשתתפים מקים משחק (מהטלפון שלו – רק באנדרואיד כרגע)</li>
-                <li>השאר מצטרפים עם קוד מהטלפונים האישיים שלהם</li>
-                <li>המנחה לוחץ על "השמע שיר" – ומתנגן שיר קצר</li>
-                <li>כל משתתף מקבל 4 תשובות לבחירה – עליהם לבחור במהירות</li>
-                <li>ככל שתענו מהר יותר – תקבלו ניקוד גבוה יותר</li>
-                <li>מוצג ניקוד אישי + טבלת מובילים – ואז ממשיכים לשיר הבא!</li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-lg mb-2 text-amber-600">חשוב לדעת:</h3>
-              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                <p className="font-bold">⚠️ משתמשי אייפון לא יכולים להיות מנחים</p>
-                <p className="text-amber-700">
-                  עקב הגבלות של אפל, השמעה אוטומטית של שירים אינה מתאפשרת.
-                  משתמשי אייפון יכולים להצטרף למשחק כרגיל – אך לא להפעיל שירים.
-                </p>
+          <DialogDescription>
+            <div className="text-right leading-7 space-y-6 text-base">
+              <div>
+                <span className="font-semibold text-lg flex items-center gap-2 mb-1"><Award className="w-5 h-5 text-yellow-500" /> ניקוד</span>
+                <ul className="list-disc mr-5 space-y-1">
+                  <li>
+                    <strong>ניקוד מהיר = יותר נקודות:</strong> ענה כמה שיותר מהר כדי להרוויח&nbsp;
+                    <span className="inline-flex items-center"><Star className="w-4 h-4 text-amber-500 inline mr-1" />13 נקודות</span> (בתוך 3 שניות).
+                  </li>
+                  <li>
+                    <strong>ניקוד יורד:</strong> ככל שעובר הזמן מקבלים פחות (מינימום 5 נקודות עד 8 שניות).
+                  </li>
+                  <li>
+                    <strong>בשלב 50-50 או בתשובה אחרי 8 שניות:</strong>
+                    תקבל&nbsp;
+                    <span className="font-medium text-green-600">4 נקודות על תשובה נכונה</span>
+                    &nbsp;ו-<span className="font-medium text-red-600">-2 נקודות על תשובה שגויה</span>.
+                  </li>
+                  <li>
+                    <strong>על דילוג: </strong>
+                    <span className="font-medium text-cyan-700">3&nbsp;נקודות</span> ותעבור לשאלה הבאה.
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <span className="font-semibold text-lg flex items-center gap-2 mb-1"><QuestionMarkCircle className="w-5 h-5 text-violet-600" /> שלבי המשחק</span>
+                <ol className="list-decimal mr-5 space-y-1">
+                  <li>מקשיבים לשיר ומנסים לזהות אותו.</li>
+                  <li>בוחרים תשובה נכונה מהר ככל האפשר מהאפשרויות המוצגות.</li>
+                  <li>כל חמישה סיבובים מופיעה שאלת <span className="inline-flex items-center text-sky-700 font-medium">טריוויה מוזיקלית</span> (&quot;שאלת בונוס&quot;).</li>
+                  <li>בטריוויה – ככל שתענו מהר יותר, כך תקבלו יותר נקודות, ובשלב הסופי האפשרויות יצטמצמו ל-2.</li>
+                </ol>
+              </div>
+              <div>
+                <span className="font-semibold text-lg flex items-center gap-2 mb-1"><SkipForward className="w-5 h-5 text-cyan-600" /> כפתור דלג</span>
+                <ul className="list-disc mr-5 space-y-1">
+                  <li>
+                    לכל שחקן&nbsp;
+                    <span className="font-medium text-primary">3 דילוגים בלבד</span>&nbsp;למשחק.
+                  </li>
+                  <li>
+                    השתמש בדילוג כאשר אינך מזהה את השיר ותרצה לעבור ישר לסיבוב הבא ולקבל 3 נק'.
+                  </li>
+                  <li>
+                    סיים את הדילוגים? תצטרך לבחור תשובה בכל סיבוב.
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <span className="font-semibold text-lg flex items-center gap-2 mb-1"><Star className="w-5 h-5 text-amber-600" /> טיפים</span>
+                <ul className="list-disc mr-5 space-y-1">
+                  <li>בשלב ה-50-50 אם לא בחרת תשובה, תוצגנה רק שתי אפשרויות (אחת נכונה ואחת שגויה).</li>
+                  <li>הניקוד הגבוה ביותר יזכה בסיום לשבחים וטבלת מובילים.</li>
+                  <li>אל תשכחו להנות ולפצח כמה שיותר שירים וטריוויה!</li>
+                </ul>
               </div>
             </div>
-
-            <div>
-              <h3 className="font-bold text-lg mb-2">מה צריך?</h3>
-              <ul className="list-disc list-inside space-y-1 text-gray-700">
-                <li>טלפון לכל משתתף</li>
-                <li>אינטרנט</li>
-                <li>שירים בעברית בלב</li>
-                <li>מצב רוח טוב 🎶</li>
-              </ul>
-            </div>
-          </div>
-        </ScrollArea>
+          </DialogDescription>
+        </DialogHeader>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
+
+export default HowToPlayDialog;
