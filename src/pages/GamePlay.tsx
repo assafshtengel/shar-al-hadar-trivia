@@ -990,7 +990,7 @@ const GamePlay: React.FC = () => {
 
         return (
           <div className="flex flex-col items-center py-6 space-y-6">
-            <GameTimer initialSeconds={6} isActive={true} onTimeout={handleTimerTimeout} />
+            <GameTimer initialSeconds={30} isActive={timerActive} onTimeout={handleTimerTimeout} />
 
             <div className="text-xl font-semibold text-primary">
               הניקוד שלך בסיבוב זה: {currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase, checkPlayerExists } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
