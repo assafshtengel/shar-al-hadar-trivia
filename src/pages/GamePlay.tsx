@@ -974,7 +974,7 @@ const GamePlay: React.FC = () => {
                 timeUp={timeLeft <= 0} 
                 answerStartTime={gameStartTimeRef.current || Date.now()} 
                 elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} 
-                showOptions={true} 
+                showOptions={false} // Important: Do NOT show options during song playback phase!
                 isFinalPhase={false}
                 showQuestion={true} // Show question during song playback for all players
               />
