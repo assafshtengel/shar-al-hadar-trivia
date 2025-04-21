@@ -467,14 +467,20 @@ const GamePlay: React.FC = () => {
     if (gameCode && playerName) {
       try {
         console.log(`Updating score for player ${playerName} after trivia answer`);
-        supabase.from('players').update({
-          hasAnswered: true,
-          score: currentPlayer.score + points
-        }).eq('game_code', gameCode).eq('name', playerName).then(() => {
-          console.log("Score updated successfully");
-        }).catch(err => {
-          console.error('Error updating player score after trivia answer:', err);
-        });
+        supabase
+          .from('players')
+          .update({
+            hasAnswered: true,
+            score: currentPlayer.score + points
+          })
+          .eq('game_code', gameCode)
+          .eq('name', playerName)
+          .then(() => {
+            console.log("Score updated successfully");
+          })
+          .catch(err => {
+            console.error('Error updating player score after trivia answer:', err);
+          });
       } catch (err) {
         console.error('Error updating player score after trivia answer:', err);
       }
@@ -944,7 +950,9 @@ const GamePlay: React.FC = () => {
       }));
       
       if (gameCode && playerName) {
-        const { error } = await supabase
+        const {
+          error
+        } = await supabase
           .from('players')
           .update({ hasAnswered: true })
           .eq('game_code', gameCode)
