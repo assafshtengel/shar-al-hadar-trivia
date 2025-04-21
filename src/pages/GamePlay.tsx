@@ -898,10 +898,9 @@ const GamePlay: React.FC = () => {
                 showQuestion={true}
               />
               <GameTimer 
-                timeLeft={timeLeft} 
-                totalTime={answerTimeLimit || 12} 
-                isRunning={timerActive} 
-                onTimeout={handleTimerTimeout} 
+                initialSeconds={answerTimeLimit || 12}
+                isActive={timerActive}
+                onTimeout={handleTimerTimeout}
               />
             </div>
           );
@@ -919,10 +918,9 @@ const GamePlay: React.FC = () => {
               בחירת תשובה
             </h2>
             <GameTimer 
-              timeLeft={timeLeft} 
-              totalTime={answerTimeLimit || 12} 
-              isRunning={timerActive} 
-              onTimeout={handleTimerTimeout} 
+              initialSeconds={answerTimeLimit || 12}
+              isActive={timerActive}
+              onTimeout={handleTimerTimeout}
             />
           </div>
         );
