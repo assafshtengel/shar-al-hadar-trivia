@@ -1179,13 +1179,10 @@ const GamePlay: React.FC = () => {
 
   useEffect(() => {
     if (phase === 'answerOptions' && timeLeft <= 0.1) {
-      if (!currentPlayer.hasAnswered && !currentPlayer.pointsAwarded) {
-        console.log('Timer reached 0.1, triggering transition to results');
-        submitAllAnswers();
-      }
+      submitAllAnswers();
     }
   }, [phase, timeLeft]);
-
+  
   useEffect(() => {
     if (isHost && serverGamePhase === "playing") {
       playSong();
