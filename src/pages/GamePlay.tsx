@@ -17,6 +17,7 @@ import GameHostControls from '@/components/GameHostControls';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import TriviaQuestion from '@/components/TriviaQuestion';
 import { triviaQuestions } from '@/data/triviaQuestions';
+
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 interface Player {
   name: string;
@@ -49,7 +50,9 @@ interface PendingAnswerUpdate {
   is_correct: boolean;
   points: number;
 }
+
 const songs = defaultSongBank.filter(song => song.embedUrl || song.spotifyUrl);
+
 const GamePlay: React.FC = () => {
   const {
     toast
@@ -91,6 +94,7 @@ const GamePlay: React.FC = () => {
   const [currentTriviaQuestion, setCurrentTriviaQuestion] = useState<TriviaQuestionType | null>(null);
   const gameStartTimeRef = useRef<number | null>(null);
   const [answeredEarly, setAnsweredEarly] = useState(false);
+
   const checkAllPlayersAnswered = useCallback(async () => {
     if (!gameCode) return false;
     const {
@@ -99,6 +103,7 @@ const GamePlay: React.FC = () => {
     if (!data) return false;
     return data.every(player => player.hasAnswered === true);
   }, [gameCode]);
+
   const checkAllPlayersReady = useCallback(async () => {
     if (!gameCode) return false;
     const {
@@ -107,11 +112,13 @@ const GamePlay: React.FC = () => {
     if (!data) return false;
     return data.every(player => player.isReady === true);
   }, [gameCode]);
+
   useEffect(() => {
     if (!gameCode) {
       navigate('/');
     }
   }, [gameCode, navigate]);
+
   useEffect(() => {
     return () => {
       if (timerRef.current) {
@@ -121,6 +128,7 @@ const GamePlay: React.FC = () => {
       }
     };
   }, []);
+
   useEffect(() => {
     if (!serverGamePhase) return;
     console.log('Server game phase changed:', serverGamePhase);
@@ -153,6 +161,7 @@ const GamePlay: React.FC = () => {
         break;
     }
   }, [serverGamePhase, isHost]);
+
   useEffect(() => {
     if (!gameCode || phase !== 'answerOptions' || !timerActive) return;
     const interval = setInterval(async () => {
@@ -168,6 +177,7 @@ const GamePlay: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [gameCode, phase, timerActive, checkAllPlayersAnswered, isHost]);
+
   useEffect(() => {
     if (!gameCode) return;
     const fetchPlayers = async () => {
@@ -220,6 +230,7 @@ const GamePlay: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, [gameCode, toast, playerName]);
+
   useEffect(() => {
     if (!gameCode) return;
     const fetchGameRoundData = async () => {
@@ -273,6 +284,7 @@ const GamePlay: React.FC = () => {
       supabase.removeChannel(gameStateChannel);
     };
   }, [gameCode]);
+
   const updateGameState = async (phase: string) => {
     if (!isHost || !gameCode) return;
     const {
@@ -289,6 +301,7 @@ const GamePlay: React.FC = () => {
       });
     }
   };
+
   function createGameRound(): GameRound {
     const randomIndex = Math.floor(Math.random() * songs.length);
     const correctSong = songs[randomIndex];
@@ -304,6 +317,7 @@ const GamePlay: React.FC = () => {
       correctAnswerIndex: correctIndex
     };
   }
+
   useEffect(() => {
     if (showYouTubeEmbed) {
       const timer = setTimeout(() => {
@@ -321,6 +335,7 @@ const GamePlay: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [showYouTubeEmbed, isHost]);
+
   const playSong = async () => {
     if (!isHost) return;
     await resetPlayersReadyStatus();
@@ -355,6 +370,7 @@ const GamePlay: React.FC = () => {
       description: "מנגן כעת, האזן בקשב"
     });
   };
+
   const handleSongPlaybackEnded = () => {
     setShowYouTubeEmbed(false);
     setIsPlaying(false);
@@ -367,6 +383,7 @@ const GamePlay: React.FC = () => {
       setTimerActive(true);
     }
   };
+
   const handleSongPlaybackError = () => {
     toast({
       title: "שגיאה בהשמעת השיר",
@@ -376,6 +393,7 @@ const GamePlay: React.FC = () => {
     setIsPlaying(false);
     setShowYouTubeEmbed(false);
   };
+
   const handleTimerTimeout = () => {
     console.log('Timer timeout handler called');
     if (selectedAnswer === null && !currentPlayer.hasAnswered) {
@@ -384,6 +402,7 @@ const GamePlay: React.FC = () => {
       submitAllAnswers();
     }
   };
+
   const submitAllAnswers = async () => {
     console.log('Timer ended, submitting all answers');
     if (!currentRound || !gameCode) {
@@ -422,6 +441,7 @@ const GamePlay: React.FC = () => {
     }
     setPhase('scoringFeedback');
   };
+
   const batchUpdatePlayerScores = async (updates: PendingAnswerUpdate[]) => {
     if (!gameCode || updates.length === 0) {
       return;
@@ -469,6 +489,7 @@ const GamePlay: React.FC = () => {
       });
     }
   };
+
   const handleAnswer = async (isCorrect: boolean, selectedIndex: number) => {
     if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound || currentPlayer.pointsAwarded) {
       console.log("Already answered or missing round data or points already awarded - ignoring selection");
@@ -569,6 +590,7 @@ const GamePlay: React.FC = () => {
       submitAllAnswers();
     }
   };
+
   const handleSkip = async () => {
     if (selectedAnswer !== null || currentPlayer.skipsLeft <= 0 || !currentRound || currentPlayer.pointsAwarded) {
       console.log("Cannot skip: Already answered, no skips left, missing round data, or points already awarded");
@@ -634,6 +656,7 @@ const GamePlay: React.FC = () => {
       description: `נותרו ${currentPlayer.skipsLeft - 1} דילו������ם`
     });
   };
+
   const handleTimeout = async () => {
     console.log('Timeout reached without selection');
     if (selectedAnswer !== null || currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
@@ -648,6 +671,7 @@ const GamePlay: React.FC = () => {
     // Submit all answers and transition to scoring feedback
     submitAllAnswers();
   };
+
   const resetPlayersAnsweredStatus = async () => {
     if (!isHost || !gameCode) return;
     const {
@@ -666,6 +690,7 @@ const GamePlay: React.FC = () => {
       console.log('Successfully reset all players answered status');
     }
   };
+
   const resetPlayersReadyStatus = async () => {
     if (!isHost || !gameCode) return;
     const {
@@ -682,6 +707,7 @@ const GamePlay: React.FC = () => {
       });
     }
   };
+
   const markPlayerReady = async () => {
     if (!gameCode || !playerName) return;
     setPlayerReady(true);
@@ -700,6 +726,7 @@ const GamePlay: React.FC = () => {
       });
     }
   };
+
   const resetAllPlayerScores = async () => {
     if (!isHost || !gameCode) return;
     try {
@@ -726,6 +753,7 @@ const GamePlay: React.FC = () => {
       console.error('Exception when resetting player scores:', err);
     }
   };
+
   useEffect(() => {
     if (phase === 'scoringFeedback') {
       const timer = setTimeout(() => {
@@ -734,6 +762,7 @@ const GamePlay: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [phase, isHost]);
+
   const nextRound = async () => {
     if (!isHost) return;
     setAnsweredEarly(false);
@@ -770,6 +799,7 @@ const GamePlay: React.FC = () => {
       description: newIsTriviaRound ? "סיבוב טריוויה ע��מד להתחיל" : "סיבוב חדש עומד להתחיל"
     });
   };
+
   const playFullSong = () => {
     if (!isHost || !currentRound) return;
     toast({
@@ -781,6 +811,7 @@ const GamePlay: React.FC = () => {
       window.open(currentRound.correctSong.fullUrl, '_blank');
     }
   };
+
   const handleTriviaAnswer = (isCorrect: boolean, selectedIndex: number) => {
     if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
       console.log("Already answered or points already awarded - ignoring selection");
@@ -839,6 +870,7 @@ const GamePlay: React.FC = () => {
       submitAllAnswers();
     }
   };
+
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
@@ -857,7 +889,7 @@ const GamePlay: React.FC = () => {
                   המתן למנהל המשחק להציג את שאלת הטריוויה
                 </div>}
               
-              {currentTriviaQuestion && <TriviaQuestion question={currentTriviaQuestion} onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} timeUp={false} answerStartTime={gameStartTimeRef.current || Date.now()} elapsedTime={0} showOptions={false} // Hide options initially
+              {currentTriviaQuestion && <TriviaQuestion question={currentTriviaQuestion} onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} timeUp={false} answerStartTime={gameStartTimeRef.current || Date.now()} elapsedTime={0} showOptions={true} // תמיד להציג אפשרויות בשאלות טריוויה
             isFinalPhase={false} showQuestion={true} />}
             </div>;
         }
@@ -899,7 +931,6 @@ const GamePlay: React.FC = () => {
       case 'answerOptions':
         const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
         const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6; // Final phase with 50-50 (modified to include timeLeft <= 6)
-        const showOptions = timeSinceStart >= 1.5;
         return <div className="flex flex-col items-center py-6 space-y-6">
             <GameTimer initialSeconds={6} isActive={true} onTimeout={handleTimerTimeout} />
             
@@ -912,12 +943,12 @@ const GamePlay: React.FC = () => {
               <SkipForward className="ml-2 text-secondary" />
             </div>
             
-            {isTriviaRound && currentTriviaQuestion ? <TriviaQuestion question={currentTriviaQuestion} onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} timeUp={timeLeft <= 0} answerStartTime={gameStartTimeRef.current || Date.now()} elapsedTime={timeSinceStart} showOptions={showOptions} isFinalPhase={isFinalPhase} hasAnsweredEarly={answeredEarly} onTimeUp={() => submitAllAnswers()} // Add this for automatic transition
+            {isTriviaRound && currentTriviaQuestion ? <TriviaQuestion question={currentTriviaQuestion} onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} timeUp={timeLeft <= 0} answerStartTime={gameStartTimeRef.current || Date.now()} elapsedTime={timeSinceStart} showOptions={true} isFinalPhase={isFinalPhase} hasAnsweredEarly={answeredEarly} onTimeUp={() => submitAllAnswers()} // Add this for automatic transition
           /> : currentRound ? <TriviaQuestion question={{
             question: "מה השיר?",
             options: currentRound.options.map(song => song.title || ''),
             correctAnswerIndex: currentRound.correctAnswerIndex
-          }} onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} timeUp={timeLeft <= 0} answerStartTime={gameStartTimeRef.current || Date.now()} elapsedTime={timeSinceStart} showOptions={showOptions} isFinalPhase={isFinalPhase} hasAnsweredEarly={answeredEarly} onTimeUp={() => submitAllAnswers()} // Add this for automatic transition
+          }} onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} timeUp={timeLeft <= 0} answerStartTime={gameStartTimeRef.current || Date.now()} elapsedTime={timeSinceStart} showOptions={true} isFinalPhase={isFinalPhase} hasAnsweredEarly={answeredEarly} onTimeUp={() => submitAllAnswers()} // Add this for automatic transition
           /> : <div className="text-lg text-gray-600 animate-pulse">
                 טוען אפשרויות...
               </div>}
@@ -1020,6 +1051,7 @@ const GamePlay: React.FC = () => {
           </div>;
     }
   };
+
   useEffect(() => {
     if (phase === 'answerOptions' && timeLeft <= 0.1) {
       if (!currentPlayer.hasAnswered && !currentPlayer.pointsAwarded) {
@@ -1028,6 +1060,7 @@ const GamePlay: React.FC = () => {
       }
     }
   }, [phase, timeLeft]);
+
   return <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
       <div className="container mx-auto px-4 py-6 relative z-10">
         <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6 bg-white/50 backdrop-blur-sm p-4 rounded-lg shadow-sm">
@@ -1061,4 +1094,5 @@ const GamePlay: React.FC = () => {
       </div>
     </div>;
 };
+
 export default GamePlay;
