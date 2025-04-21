@@ -36,13 +36,17 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
   const [visibleOptions, setVisibleOptions] = useState<{option: string, originalIndex: number}[]>([]);
+  const [showFiftyFifty, setShowFiftyFifty] = useState(false);
 
   // Always show all options for trivia questions, regardless of showOptions prop
   const isTrivia = question.question !== "מה השיר?";
   const shouldShowOptions = isTrivia || showOptions;
 
   useEffect(() => {
-    if (isFinalPhase && !answered && !hasAnsweredEarly) {
+    if (timeUp && !answered && isFinalPhase) {
+      console.log("Time is up, showing 50-50 options");
+      setShowFiftyFifty(true);
+      
       const wrongAnswerIndices = question.options
         .map((_, index) => index)
         .filter(index => index !== question.correctAnswerIndex);
@@ -50,12 +54,36 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
       if (wrongAnswerIndices.length >= 2) {
         const indicesToRemove = wrongAnswerIndices
           .sort(() => Math.random() - 0.5)
-          .slice(0, 2);
+          .slice(0, wrongAnswerIndices.length - 1); // Keep only one wrong answer
         
         const remainingOptions = question.options
           .map((option, index) => ({ option, originalIndex: index }))
           .filter(item => !indicesToRemove.includes(item.originalIndex));
         
+        console.log("Setting 50-50 options", remainingOptions);
+        setVisibleOptions(remainingOptions.sort(() => Math.random() - 0.5));
+      } else {
+        setVisibleOptions(question.options.map((option, index) => ({ 
+          option, 
+          originalIndex: index 
+        })));
+      }
+    } else if (isFinalPhase && !answered && !hasAnsweredEarly) {
+      // This is the initial setup for the final phase, but don't show 50-50 yet unless timeUp is true
+      const wrongAnswerIndices = question.options
+        .map((_, index) => index)
+        .filter(index => index !== question.correctAnswerIndex);
+      
+      if (wrongAnswerIndices.length >= 2) {
+        const indicesToRemove = wrongAnswerIndices
+          .sort(() => Math.random() - 0.5)
+          .slice(0, wrongAnswerIndices.length - 1); // Keep only one wrong answer
+        
+        const remainingOptions = question.options
+          .map((option, index) => ({ option, originalIndex: index }))
+          .filter(item => !indicesToRemove.includes(item.originalIndex));
+        
+        // Only prepare the options but don't set showFiftyFifty yet
         setVisibleOptions(remainingOptions.sort(() => Math.random() - 0.5));
       } else {
         setVisibleOptions(question.options.map((option, index) => ({ 
@@ -69,20 +97,22 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
         originalIndex: index 
       })));
     }
-  }, [isFinalPhase, question.options, question.correctAnswerIndex, answered, hasAnsweredEarly]);
+  }, [isFinalPhase, question.options, question.correctAnswerIndex, answered, hasAnsweredEarly, timeUp]);
 
   useEffect(() => {
-    if (timeUp && !answered && onTimeUp) {
-      // Don't auto-call onTimeUp here, as we need to show 50-50 options first
-      // This will be handled by the parent component based on isFinalPhase
-      if (isFinalPhase) {
+    if (timeUp && !answered && onTimeUp && showFiftyFifty) {
+      // Only call onTimeUp after the 50-50 phase has been shown for a period of time
+      const timer = setTimeout(() => {
+        console.log("50-50 time is up, calling onTimeUp");
         onTimeUp();
-      }
+      }, 8000); // 8 seconds for 50-50 phase
+      
+      return () => clearTimeout(timer);
     }
-  }, [timeUp, answered, onTimeUp, isFinalPhase]);
+  }, [timeUp, answered, onTimeUp, showFiftyFifty]);
 
   const handleSelectAnswer = (index: number) => {
-    if (answered || timeUp) return;
+    if (answered || (timeUp && !showFiftyFifty)) return;
     
     setSelectedAnswer(index);
     setAnswered(true);
@@ -120,34 +150,72 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
         
         {shouldShowOptions && (
           <div className="grid grid-cols-1 gap-4">
-            {visibleOptions.map((item, index) => (
-              <div key={index} className="relative">
-                <AppButton
-                  variant={selectedAnswer === item.originalIndex ? 'primary' : 'secondary'}
-                  className={`w-full justify-start px-4 py-3 ${
-                    answered && item.originalIndex !== question.correctAnswerIndex && selectedAnswer === item.originalIndex
-                      ? 'bg-red-100 border-red-500'
-                      : ''
-                  } ${
-                    answered && item.originalIndex === question.correctAnswerIndex
-                      ? 'bg-green-100 border-green-500'
-                      : ''
-                  } ${answered && selectedAnswer !== item.originalIndex ? 'opacity-70' : ''}`}
-                  onClick={() => handleSelectAnswer(item.originalIndex)}
-                  disabled={answered || timeUp}
-                >
-                  {item.option}
-                  
-                  {answered && item.originalIndex === question.correctAnswerIndex && (
-                    <CheckCircle2 className="ml-auto text-green-500" />
-                  )}
-                  
-                  {answered && selectedAnswer === item.originalIndex && item.originalIndex !== question.correctAnswerIndex && (
-                    <XCircle className="ml-auto text-red-500" />
-                  )}
-                </AppButton>
-              </div>
-            ))}
+            {(showFiftyFifty && isFinalPhase && timeUp && !answered) ? (
+              // Show only the 50-50 options when in final phase and time is up
+              <>
+                <div className="text-center mb-4 font-bold text-primary">
+                  50-50 מצב
+                </div>
+                {visibleOptions.map((item, index) => (
+                  <div key={index} className="relative">
+                    <AppButton
+                      variant={selectedAnswer === item.originalIndex ? 'primary' : 'secondary'}
+                      className={`w-full justify-start px-4 py-3 ${
+                        answered && item.originalIndex !== question.correctAnswerIndex && selectedAnswer === item.originalIndex
+                          ? 'bg-red-100 border-red-500'
+                          : ''
+                      } ${
+                        answered && item.originalIndex === question.correctAnswerIndex
+                          ? 'bg-green-100 border-green-500'
+                          : ''
+                      } ${answered && selectedAnswer !== item.originalIndex ? 'opacity-70' : ''}`}
+                      onClick={() => handleSelectAnswer(item.originalIndex)}
+                      disabled={answered}
+                    >
+                      {item.option}
+                      
+                      {answered && item.originalIndex === question.correctAnswerIndex && (
+                        <CheckCircle2 className="ml-auto text-green-500" />
+                      )}
+                      
+                      {answered && selectedAnswer === item.originalIndex && item.originalIndex !== question.correctAnswerIndex && (
+                        <XCircle className="ml-auto text-red-500" />
+                      )}
+                    </AppButton>
+                  </div>
+                ))}
+              </>
+            ) : (
+              // Regular show of all options
+              visibleOptions.map((item, index) => (
+                <div key={index} className="relative">
+                  <AppButton
+                    variant={selectedAnswer === item.originalIndex ? 'primary' : 'secondary'}
+                    className={`w-full justify-start px-4 py-3 ${
+                      answered && item.originalIndex !== question.correctAnswerIndex && selectedAnswer === item.originalIndex
+                        ? 'bg-red-100 border-red-500'
+                        : ''
+                    } ${
+                      answered && item.originalIndex === question.correctAnswerIndex
+                        ? 'bg-green-100 border-green-500'
+                        : ''
+                    } ${answered && selectedAnswer !== item.originalIndex ? 'opacity-70' : ''}`}
+                    onClick={() => handleSelectAnswer(item.originalIndex)}
+                    disabled={answered || (timeUp && !showFiftyFifty)}
+                  >
+                    {item.option}
+                    
+                    {answered && item.originalIndex === question.correctAnswerIndex && (
+                      <CheckCircle2 className="ml-auto text-green-500" />
+                    )}
+                    
+                    {answered && selectedAnswer === item.originalIndex && item.originalIndex !== question.correctAnswerIndex && (
+                      <XCircle className="ml-auto text-red-500" />
+                    )}
+                  </AppButton>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>

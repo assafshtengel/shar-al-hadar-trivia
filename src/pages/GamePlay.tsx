@@ -122,7 +122,8 @@ const GamePlay: React.FC = () => {
         break;
       case 'answerOptions':
         if (!currentPlayer.hasAnswered) {
-          handleTimeout();
+          console.log("Timer ended for answer options - showing 50-50 phase");
+          setTimeLeft(0); // Just mark the time as up, don't change phase yet
         } else {
           submitAllAnswers();
         }
@@ -573,7 +574,7 @@ const GamePlay: React.FC = () => {
   };
 
   const handleTimeout = async () => {
-    console.log('Handling timeout - no answer submitted');
+    console.log('Handling final timeout after 50-50 phase - no answer submitted');
     if (currentPlayer.hasAnswered) {
       console.log('Player already answered - ignoring timeout');
       return;
@@ -709,8 +710,9 @@ const GamePlay: React.FC = () => {
                 onAnswer={handleTriviaAnswer}
                 timeUp={!phaseTimerActive}
                 showOptions={true}
-                isFinalPhase={false}
+                isFinalPhase={true}
                 hasAnsweredEarly={answeredEarly}
+                onTimeUp={handleTimeout}
               />
             ) : currentRound && (
               <TriviaQuestion
@@ -724,8 +726,9 @@ const GamePlay: React.FC = () => {
                 }
                 timeUp={!phaseTimerActive}
                 showOptions={true}
-                isFinalPhase={false}
+                isFinalPhase={true}
                 hasAnsweredEarly={answeredEarly}
+                onTimeUp={handleTimeout}
               />
             )}
             
@@ -959,7 +962,7 @@ const GamePlay: React.FC = () => {
           .eq('name', playerName);
           
         if (error) {
-          console.error('Error updating player timeout status:', error);
+          throw error;
         }
       }
     } else {
