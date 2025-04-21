@@ -18,7 +18,7 @@ interface TriviaQuestionProps {
   isFinalPhase: boolean;
   hasAnsweredEarly?: boolean;
   showQuestion?: boolean; // Added to control visibility of question during song playback
-  onTimeUp?: () => void; // New callback for when time is up and no selection was made
+  onTimeUp?: () => void; // Callback for when time is up and no selection was made
 }
 
 const TriviaQuestion: React.FC<TriviaQuestionProps> = ({ 
