@@ -499,7 +499,7 @@ const GamePlay: React.FC = () => {
     
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה"
+      description: isCorrect ? "תשובה נכונה!\" : \"התשובה שגויה"
     });
   };
 
@@ -929,4 +929,4 @@ const GamePlay: React.FC = () => {
 
   const submitAllAnswers = async () => {
     console.log('Timer ended, submitting all answers');
-    if (!currentRound || !gameCode) {
+    if (!currentRound || !gameCode)
