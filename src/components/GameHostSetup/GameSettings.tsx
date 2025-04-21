@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Settings, Trophy, Clock } from 'lucide-react';
 import { 
@@ -25,6 +24,7 @@ const GameSettings: React.FC<GameSettingsProps> = ({
 }) => {
   const [showScoreLimit, setShowScoreLimit] = useState(!!settings.scoreLimit);
   const [showTimeLimit, setShowTimeLimit] = useState(!!settings.gameDuration);
+  const [songFilter, setSongFilter] = useState<"all" | "mashina" | "adam">("all");
 
   const handleScoreLimitToggle = (checked: boolean) => {
     setShowScoreLimit(checked);
@@ -56,11 +56,30 @@ const GameSettings: React.FC<GameSettingsProps> = ({
     });
   };
 
+  const handleFilterChange = (value: string) => {
+    setSongFilter(value as "all" | "mashina" | "adam");
+  };
+
   return (
     <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 mb-4 shadow-md">
-      <div className="flex items-center mb-3 gap-2">
-        <Settings className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-medium text-primary">הגדרות משחק</h3>
+      <div className="flex items-center mb-3 gap-2 justify-between">
+        <div className="flex items-center gap-2">
+          <Settings className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-medium text-primary">הגדרות משחק</h3>
+        </div>
+        <div>
+          <Label htmlFor="filter-select" className="text-xs mr-2">סנן שירים</Label>
+          <Select value={songFilter} onValueChange={handleFilterChange} disabled={disabled}>
+            <SelectTrigger id="filter-select" className="w-28 h-8 !text-xs px-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">הכל</SelectItem>
+              <SelectItem value="mashina">משינה</SelectItem>
+              <SelectItem value="adam">עומר אדם</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       
       <div className="space-y-4">
