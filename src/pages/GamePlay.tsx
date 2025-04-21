@@ -883,4 +883,78 @@ const GamePlay: React.FC = () => {
         if (isTriviaRound && currentTriviaQuestion) {
           return (
             <div className="flex flex-col items-center justify-center py-6 space-y-6">
-              <h2 className="text-2xl font-bold text-primary
+              <h2 className="text-2xl font-bold text-primary text-center">
+                סיבוב טריוויה למוזיקה ישראלית
+              </h2>
+              <TriviaQuestion 
+                question={currentTriviaQuestion} 
+                onAnswer={handleTriviaAnswer}
+                timeUp={timeLeft <= 0}
+                answerStartTime={gameStartTimeRef.current || 0}
+                elapsedTime={timeLeft}
+                showOptions={true}
+                isFinalPhase={timeLeft <= 0}
+                hasAnsweredEarly={answeredEarly}
+                showQuestion={true}
+              />
+              <GameTimer 
+                timeLeft={timeLeft} 
+                totalTime={answerTimeLimit || 12} 
+                isRunning={timerActive} 
+                onTimeout={handleTimerTimeout} 
+              />
+            </div>
+          );
+        }
+        return (
+          <div className="flex flex-col items-center justify-center py-6 space-y-6">
+            <p>משתמשים בהשמעת שיר...</p>
+          </div>
+        );
+
+      case 'answerOptions':
+        return (
+          <div className="flex flex-col items-center justify-center py-6 space-y-6">
+            <h2 className="text-2xl font-bold text-primary">
+              בחירת תשובה
+            </h2>
+            <GameTimer 
+              timeLeft={timeLeft} 
+              totalTime={answerTimeLimit || 12} 
+              isRunning={timerActive} 
+              onTimeout={handleTimerTimeout} 
+            />
+          </div>
+        );
+
+      case 'scoringFeedback':
+        return (
+          <div className="flex flex-col items-center justify-center py-6 space-y-6">
+            <h2 className="text-2xl font-bold text-primary">
+              ניקוד סיבוב
+            </h2>
+          </div>
+        );
+
+      case 'leaderboard':
+        return (
+          <div className="flex flex-col items-center justify-center py-6 space-y-6">
+            <h2 className="text-2xl font-bold text-primary">
+              תבלוס שחקנים
+            </h2>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div>
+      {renderPhase()}
+    </div>
+  );
+};
+
+export default GamePlay;
