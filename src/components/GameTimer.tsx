@@ -16,95 +16,103 @@ const GameTimer: React.FC<GameTimerProps> = ({
 }) => {
   const [timeLeft, setTimeLeft] = useState(initialSeconds);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+  const lastTickTimeRef = useRef<number>(Date.now());
   const timeoutTriggeredRef = useRef<boolean>(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const forceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Reset timer when props change
   useEffect(() => {
-    // Clear any existing timers
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    
-    // Reset state
-    timeoutTriggeredRef.current = false;
+    timeoutTriggeredRef.current = false; // Reset the timeout flag
     
     if (isActive) {
-      console.log(`Timer initialized with ${initialSeconds} seconds`);
+      console.log(`Timer started with ${initialSeconds} seconds`);
       setTimeLeft(initialSeconds);
+      startTimeRef.current = Date.now();
+      lastTickTimeRef.current = Date.now();
       
-      // Create an absolute timeout that will fire regardless of intervals
-      // This is our safety mechanism
-      timeoutRef.current = setTimeout(() => {
-        console.log('Safety timeout triggered');
+      // Set a hard timeout that will trigger regardless of other conditions
+      if (forceTimeoutRef.current) {
+        clearTimeout(forceTimeoutRef.current);
+      }
+      
+      forceTimeoutRef.current = setTimeout(() => {
+        console.log('Force timeout triggered after timer duration');
         if (!timeoutTriggeredRef.current) {
           timeoutTriggeredRef.current = true;
           onTimeout();
         }
-      }, initialSeconds * 1000 + 100); // Small buffer to ensure it triggers after visual countdown
-    }
-    
-    return () => {
+      }, initialSeconds * 1000 + 500); // Adding a small buffer
+    } else {
       if (timerRef.current) {
+        console.log('Clearing timer due to isActive change');
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
       
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
+      if (forceTimeoutRef.current) {
+        clearTimeout(forceTimeoutRef.current);
+        forceTimeoutRef.current = null;
+      }
+    }
+    
+    return () => {
+      if (forceTimeoutRef.current) {
+        clearTimeout(forceTimeoutRef.current);
+        forceTimeoutRef.current = null;
       }
     };
   }, [initialSeconds, isActive, onTimeout]);
 
-  // Handle the actual countdown
+  // Handle timer logic
   useEffect(() => {
     if (isActive && !timerRef.current) {
-      console.log('Starting timer interval');
-      
-      const startTime = Date.now(); // Capture exact start time
-      
+      console.log('Starting game timer interval');
+
+      // Start a new timer
       timerRef.current = setInterval(() => {
-        const elapsedSeconds = (Date.now() - startTime) / 1000;
-        const newTimeLeft = Math.max(initialSeconds - elapsedSeconds, 0);
+        const now = Date.now();
+        const elapsed = now - lastTickTimeRef.current;
+        lastTickTimeRef.current = now;
         
-        setTimeLeft(newTimeLeft);
-        
-        // Check if timer has reached zero
-        if (newTimeLeft <= 0.05 && !timeoutTriggeredRef.current) {
-          console.log('Timer interval detected zero - triggering callback');
+        setTimeLeft(prev => {
+          const newTime = Math.max(prev - elapsed / 1000, 0);
           
-          // Prevent multiple calls
-          timeoutTriggeredRef.current = true;
-          
-          // Clean up
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
+          // Trigger timeout once when time reaches 0
+          if (newTime <= 0.05 && !timeoutTriggeredRef.current) {
+            console.log('Timer reached zero, triggering timeout callback');
+            timeoutTriggeredRef.current = true; // Mark timeout as triggered
+            
+            if (timerRef.current) {
+              console.log('Cleaning up timer after timeout');
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+            
+            // Use setTimeout to ensure the UI updates before the callback
+            setTimeout(() => {
+              console.log('Executing timeout callback');
+              onTimeout();
+            }, 10);
+            
+            return 0;
           }
-          
-          // Trigger the callback
-          onTimeout();
-        }
-      }, 50); // More frequent updates for smoother countdown
+          return newTime;
+        });
+      }, 50); // Update more frequently for smoother countdown and more reliable timeout
     }
     
     return () => {
       if (timerRef.current) {
+        console.log('Cleaning up timer on effect cleanup');
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
     };
-  }, [isActive, initialSeconds, onTimeout]);
+  }, [isActive, onTimeout]);
 
   // Calculate percentage for progress bar
-  const progressPercentage = (timeLeft / initialSeconds) * 100;
+  const progressPercentage = timeLeft / initialSeconds * 100;
   const isAlmostTimeUp = timeLeft < initialSeconds * 0.3;
 
   return (

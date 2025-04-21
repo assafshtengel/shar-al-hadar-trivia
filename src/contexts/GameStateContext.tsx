@@ -1,18 +1,16 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStateSubscription } from '@/hooks/useGameStateSubscription';
 import GameEndOverlay from '@/components/GameEndOverlay';
 import { useGamePhaseNavigation } from '@/hooks/useGamePhaseNavigation';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
 
 export interface GameSettings {
   scoreLimit: number | null; // null means no limit
   gameDuration: number | null; // in minutes, null means no time limit
-  songFilter?: "all" | "mashina" | "adam";
+  songFilter?: "all" | "mashina" | "adam"; // <-- נוספה אפשרות זו
 }
 
 interface GameStateContextType {
@@ -81,101 +79,16 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.removeItem('isHost');
   };
 
-  // Track current game stats record ID to update end time and duration
-  const currentGameStatsId = useRef<string | null>(null);
-
-  // When phase changes, log start and end times in game_stats table
   useEffect(() => {
     if (previousGamePhaseRef.current !== gamePhase) {
       console.log(`Game phase changed: ${previousGamePhaseRef.current} -> ${gamePhase}`);
-
-      // When game starts playing, create a stats record
-      if (gamePhase === 'playing' && gameCode) {
-        (async () => {
-          // Count players currently in the game
-          const { data: playersData, error: playersError } = await supabase
-            .from('players')
-            .select('id')
-            .eq('game_code', gameCode);
-
-          if (playersError) {
-            console.error('Error fetching players count for game stats:', playersError);
-            return;
-          }
-
-          const playerCount = playersData?.length || 0;
-
-          const { data, error } = await supabase
-            .from('game_stats')
-            .insert({
-              game_code: gameCode,
-              started_at: new Date().toISOString(),
-              players_count: playerCount,
-            })
-            .select('id')
-            .single();
-          
-          if (error) {
-            console.error('Error inserting game stats record:', error);
-            return;
-          }
-
-          currentGameStatsId.current = data.id;
-          console.log('Created game_stats record with id:', currentGameStatsId.current);
-        })();
-      }
-
-
-      // When game ends, update the end time and duration in stats
-      if (gamePhase === 'end' && currentGameStatsId.current) {
-        (async () => {
-          try {
-            const endedAt = new Date().toISOString();
-
-            // Fetch start time for duration calculation
-            const { data: statsData, error: statsError } = await supabase
-              .from('game_stats')
-              .select('started_at')
-              .eq('id', currentGameStatsId.current)
-              .single();
-
-            if (statsError) {
-              console.error('Error fetching game stats start time:', statsError);
-              return;
-            }
-
-            const startedAt = new Date(statsData.started_at);
-            const endedAtDate = new Date(endedAt);
-            const durationSeconds = Math.floor((endedAtDate.getTime() - startedAt.getTime()) / 1000);
-
-            const { error: updateError } = await supabase
-              .from('game_stats')
-              .update({
-                ended_at: endedAt,
-                duration_seconds: durationSeconds
-              })
-              .eq('id', currentGameStatsId.current);
-
-            if (updateError) {
-              console.error('Error updating game stats end time and duration:', updateError);
-            } else {
-              console.log(`Updated game_stats record ${currentGameStatsId.current} with ended_at and duration_seconds`);
-            }
-          } catch (err) {
-            console.error('Exception updating game stats end time:', err);
-          }
-        })();
-      }
-
       previousGamePhaseRef.current = gamePhase;
-    }
-  }, [gamePhase, gameCode]);
-
-  useEffect(() => {
-    if (gamePhase === 'end' && !isHost) {
-      toast('סיבוב הסתיים', {
-        description: 'המארח מציג את טבלת המובילים',
-      });
+      
+      if (gamePhase === 'end' && !isHost) {
+        toast('סיבוב הסתיים', {
+          description: 'המארח מציג את טבלת המובילים',
+        });
+      }
     }
   }, [gamePhase, isHost]);
 
