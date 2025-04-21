@@ -73,9 +73,13 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 
   useEffect(() => {
     if (timeUp && !answered && onTimeUp) {
-      onTimeUp();
+      // Don't auto-call onTimeUp here, as we need to show 50-50 options first
+      // This will be handled by the parent component based on isFinalPhase
+      if (isFinalPhase) {
+        onTimeUp();
+      }
     }
-  }, [timeUp, answered, onTimeUp]);
+  }, [timeUp, answered, onTimeUp, isFinalPhase]);
 
   const handleSelectAnswer = (index: number) => {
     if (answered || timeUp) return;

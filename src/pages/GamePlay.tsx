@@ -395,7 +395,11 @@ const GamePlay: React.FC = () => {
   const handleTimerTimeout = () => {
     console.log('Timer timeout handler called');
     if (selectedAnswer === null && !currentPlayer.hasAnswered) {
-      handleTimeout();
+      if (timeLeft <= 0 && phase === 'answerOptions') {
+        handleTimeout();
+      } else {
+        console.log('Timer ended but not submitting answers yet - showing 50-50 options');
+      }
     } else {
       submitAllAnswers();
     }
@@ -941,13 +945,41 @@ const GamePlay: React.FC = () => {
               <SkipForward className="ml-2 text-secondary" />
             </div>
             
-            {isTriviaRound && currentTriviaQuestion ? <TriviaQuestion question={currentTriviaQuestion} onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} timeUp={timeLeft <= 0} answerStartTime={gameStartTimeRef.current || Date.now()} elapsedTime={timeSinceStart} showOptions={true} isFinalPhase={isFinalPhase} hasAnsweredEarly={answeredEarly} onTimeUp={() => submitAllAnswers()} // Add this for automatic transition
-          /> : currentRound ? <TriviaQuestion question={{
-            question: "מה השיר?",
-            options: currentRound.options.map(song => song.title || ''),
-            correctAnswerIndex: currentRound.correctAnswerIndex
-          }} onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} timeUp={timeLeft <= 0} answerStartTime={gameStartTimeRef.current || Date.now()} elapsedTime={timeSinceStart} showOptions={true} isFinalPhase={isFinalPhase} hasAnsweredEarly={answeredEarly} onTimeUp={() => submitAllAnswers()} // Add this for automatic transition
-          /> : <div className="text-lg text-gray-600 animate-pulse">
+            {isTriviaRound && currentTriviaQuestion ? <TriviaQuestion 
+              question={currentTriviaQuestion} 
+              onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} 
+              timeUp={timeLeft <= 0} 
+              answerStartTime={gameStartTimeRef.current || Date.now()} 
+              elapsedTime={timeSinceStart} 
+              showOptions={true} 
+              isFinalPhase={isFinalPhase} 
+              hasAnsweredEarly={answeredEarly} 
+              onTimeUp={() => {
+                // Only submit answers when we're in the final phase and time is up
+                if (isFinalPhase) {
+                  submitAllAnswers();
+                }
+              }} 
+            /> : currentRound ? <TriviaQuestion 
+              question={{
+                question: "מה השיר?",
+                options: currentRound.options.map(song => song.title || ''),
+                correctAnswerIndex: currentRound.correctAnswerIndex
+              }} 
+              onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} 
+              timeUp={timeLeft <= 0} 
+              answerStartTime={gameStartTimeRef.current || Date.now()} 
+              elapsedTime={timeSinceStart} 
+              showOptions={true} 
+              isFinalPhase={isFinalPhase} 
+              hasAnsweredEarly={answeredEarly} 
+              onTimeUp={() => {
+                // Only submit answers when we're in the final phase and time is up
+                if (isFinalPhase) {
+                  submitAllAnswers();
+                }
+              }}
+            /> : <div className="text-lg text-gray-600 animate-pulse">
                 טוען אפשרויות...
               </div>}
             
