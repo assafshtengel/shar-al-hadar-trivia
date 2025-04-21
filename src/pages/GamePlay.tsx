@@ -1053,8 +1053,8 @@ const GamePlay: React.FC = () => {
           <p className="text-sm text-gray-600">סיבוב {roundCounter} {isTriviaRound && "- טריוויה"}</p>
         </div>
         <div className="flex gap-2">
-          <LeaveGameButton />
-          {isHost && <EndGameButton />}
+          <LeaveGameButton gameCode={gameCode || ''} />
+          {isHost && <EndGameButton gameCode={gameCode || ''} />}
         </div>
       </div>
       
