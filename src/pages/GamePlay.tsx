@@ -877,10 +877,160 @@ const GamePlay: React.FC = () => {
     switch (phase) {
       case 'songPlayback':
         if (isTriviaRound && currentTriviaQuestion) {
-          return <div className="flex flex-col items-center justify-center py-6 space-y-6">
+          return (
+            <div className="flex flex-col items-center justify-center py-6 space-y-6">
               <h2 className="text-2xl font-bold text-primary">שאלת טריוויה במוזיקה</h2>
-              
-              {isHost ? <AppButton variant="primary" size="lg" onClick={() => {
-              updateGameState('answering');
-              setPhase('answerOptions');
-              gameStartTimeRef.current = Date.now(); // Set start time for trivia
+              {isHost ? (
+                <AppButton
+                  variant="primary"
+                  size="lg"
+                  onClick={() => {
+                    updateGameState('answering');
+                    setPhase('answerOptions');
+                    gameStartTimeRef.current = Date.now(); // Set start time for trivia
+                  }}
+                >
+                  התחל סיבוב חדש
+                </AppButton>
+              ) : (
+                <p className="text-center text-gray-700">
+                  המתן למארח שיתחיל את סיבוב הטריוויה
+                </p>
+              )}
+            </div>
+          );
+        }
+        if (currentRound && currentSong) {
+          return (
+            <div className="flex flex-col items-center justify-center space-y-4 max-w-3xl mx-auto w-full">
+              <p className="text-xl font-semibold text-center">מנגן כעת: {currentSong.title} - {currentSong.artist}</p>
+              <SongPlayer
+                song={currentSong}
+                isPlaying={isPlaying}
+                onEnded={handleSongPlaybackEnded}
+                onError={handleSongPlaybackError}
+              />
+              {isHost && (
+                <div className="flex gap-4 mt-4">
+                  <AppButton variant="secondary" onClick={playFullSong}>
+                    השמע שיר מלא
+                  </AppButton>
+                  <AppButton variant="primary" onClick={playSong}>
+                    השמע שיר חדש
+                  </AppButton>
+                </div>
+              )}
+            </div>
+          );
+        }
+        return null;
+
+      case 'answerOptions':
+        if (isTriviaRound && currentTriviaQuestion) {
+          return (
+            <TriviaQuestion
+              question={currentTriviaQuestion}
+              onAnswer={handleTriviaAnswer}
+              timeUp={timeLeft <= 0}
+              showOptions={true}
+              isFinalPhase={answeredEarly}
+              hasAnsweredEarly={answeredEarly}
+              showQuestion={true}
+            />
+          );
+        } else if (currentRound) {
+          return (
+            <div className="flex flex-col items-center justify-center space-y-4 max-w-3xl mx-auto w-full">
+              <h2 className="text-2xl font-bold text-primary mb-6 text-center">
+                מה השיר?
+              </h2>
+              <TriviaQuestion
+                question={{
+                  question: "מה השיר?",
+                  options: currentRound.options.map(s => s.title),
+                  correctAnswerIndex: currentRound.correctAnswerIndex
+                }}
+                onAnswer={handleAnswer}
+                timeUp={timeLeft <= 0}
+                showOptions={true}
+                isFinalPhase={answeredEarly}
+                hasAnsweredEarly={answeredEarly}
+                showQuestion={true}
+              />
+              <div className="flex justify-between w-full max-w-md mt-4">
+                <AppButton
+                  variant="outline"
+                  onClick={handleSkip}
+                  disabled={currentPlayer.skipsLeft <= 0 || currentPlayer.hasAnswered}
+                >
+                  דלג ({currentPlayer.skipsLeft})
+                </AppButton>
+              </div>
+            </div>
+          );
+        }
+        return null;
+
+      case 'scoringFeedback':
+        if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
+          return (
+            <div className="flex flex-col items-center justify-center space-y-4 py-12 max-w-3xl mx-auto w-full text-center">
+              {currentPlayer.lastAnswerCorrect ? (
+                <p className="text-green-600 text-2xl">כל הכבוד! תשובה נכונה</p>
+              ) : (
+                <p className="text-red-600 text-2xl">לא נכון, נסה שוב בשאלה הבאה</p>
+              )}
+              <p>
+                הניקוד שלך בסיבוב זה: {currentPlayer.lastScore}
+              </p>
+              <AppButton variant="primary" onClick={nextRound}>
+                סיבוב הבא
+              </AppButton>
+            </div>
+          );
+        }
+        return null;
+
+      case 'leaderboard':
+        return (
+          <div className="max-w-3xl mx-auto w-full p-4">
+            <h2 className="text-2xl font-bold mb-4 text-center">טבלת ניקוד</h2>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>שם שחקן</TableHead>
+                  <TableHead>ניקוד</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {players.map((player) => (
+                  <TableRow key={player.id}>
+                    <TableCell>{player.name}</TableCell>
+                    <TableCell>{player.score}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="mt-6 flex justify-center gap-4">
+              {isHost && (
+                <AppButton variant="primary" onClick={nextRound}>
+                  סיבוב חדש
+                </AppButton>
+              )}
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center h-screen">
+      {renderPhase()}
+    </div>
+  );
+};
+
+export default GamePlay;
