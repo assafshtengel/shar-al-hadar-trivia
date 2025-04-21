@@ -17,13 +17,14 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
   const [showOverlay, setShowOverlay] = useState(false);
   const [players, setPlayers] = useState<{id: string, name: string, score: number}[]>([]);
   const navigate = useNavigate();
-  const { clearGameData, gameSettings } = useGameState();
+  const { clearGameData, gameSettings, gameCode } = useGameState();
   const lastVisibilityChange = useRef<number>(Date.now());
   const overlayTimerRef = useRef<NodeJS.Timeout | null>(null);
   const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const visibilityChangesRef = useRef<number>(0);
   const [isScoreLimitReached, setIsScoreLimitReached] = useState(false);
   const [isTimeLimitReached, setIsTimeLimitReached] = useState(false);
+  const [scoresLoaded, setScoresLoaded] = useState(false);
   
   useEffect(() => {
     return () => {
@@ -38,10 +39,10 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
   
   useEffect(() => {
     const fetchFinalScores = async () => {
-      const { gameCode } = useGameState();
       if (!gameCode) return;
 
       try {
+        console.log('Fetching final scores for game end overlay');
         const { data, error } = await supabase
           .from('players')
           .select('id, name, score')
@@ -54,8 +55,9 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         }
 
         if (data) {
-          console.log('Final game scores:', data);
+          console.log('Final game scores retrieved:', data);
           setPlayers(data);
+          setScoresLoaded(true);
           
           // Check if score limit reached
           if (gameSettings.scoreLimit && data.length > 0) {
@@ -71,7 +73,7 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
     if (showOverlay) {
       fetchFinalScores();
     }
-  }, [showOverlay, gameSettings]);
+  }, [showOverlay, gameSettings, gameCode]);
   
   useEffect(() => {
     const currentTime = Date.now();
@@ -105,6 +107,7 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
     } else {
       console.log('Game end state cleared');
       setShowOverlay(false);
+      setScoresLoaded(false);
     }
   }, [isVisible]);
   
@@ -132,12 +135,26 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
   }, [showOverlay, isScoreLimitReached, isTimeLimitReached]);
 
   const handleCloseOverlay = () => {
-    toast('המשחק הסתיים', {
-      description: 'חוזר לדף הבית',
-    });
-    clearGameData(); // Only reset scores when actually leaving the game
-    navigate('/');
-    setShowOverlay(false);
+    // Only clear game data after ensuring scores are loaded and displayed
+    if (scoresLoaded) {
+      toast('המשחק הסתיים', {
+        description: 'חוזר לדף הבית',
+      });
+      clearGameData(); // Only reset scores when actually leaving the game
+      navigate('/');
+      setShowOverlay(false);
+    } else {
+      console.log('Not clearing game data yet - scores have not been loaded');
+      // Give more time for scores to load
+      setTimeout(() => {
+        if (!scoresLoaded) {
+          console.log('Scores still not loaded after timeout, proceeding with navigation');
+          clearGameData();
+          navigate('/');
+          setShowOverlay(false);
+        }
+      }, 2000);
+    }
   };
   
   const handleNextRound = async () => {
@@ -147,7 +164,6 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
     if (isHost) {
       // Update game state to start a new round
       try {
-        const { gameCode } = useGameState();
         if (!gameCode) return;
         
         const { error } = await supabase
@@ -186,34 +202,40 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
 
         <h2 className="text-2xl font-bold text-primary mb-4">טבלת המובילים</h2>
 
-        <div className="w-full mb-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">מיקום</TableHead>
-                <TableHead className="text-right">שם</TableHead>
-                <TableHead className="text-right">ניקוד</TableHead>
-                <TableHead className="w-12"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {players.map((player, idx) => (
-                <TableRow key={player.id}>
-                  <TableCell className="font-medium">{idx + 1}</TableCell>
-                  <TableCell className="font-semibold">{player.name}</TableCell>
-                  <TableCell className={`font-bold ${player.score < 0 ? "text-red-500" : ""}`}>
-                    {player.score}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
-                    {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
-                    {idx === 2 && <Award className="h-5 w-5 text-amber-700" />}
-                  </TableCell>
+        {players.length === 0 ? (
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-pulse text-primary">טוען נתונים...</div>
+          </div>
+        ) : (
+          <div className="w-full mb-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">מיקום</TableHead>
+                  <TableHead className="text-right">שם</TableHead>
+                  <TableHead className="text-right">ניקוד</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {players.map((player, idx) => (
+                  <TableRow key={player.id}>
+                    <TableCell className="font-medium">{idx + 1}</TableCell>
+                    <TableCell className="font-semibold">{player.name}</TableCell>
+                    <TableCell className={`font-bold ${player.score < 0 ? "text-red-500" : ""}`}>
+                      {player.score}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
+                      {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
+                      {idx === 2 && <Award className="h-5 w-5 text-amber-700" />}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         <div className="text-sm text-gray-500 mb-3">
           {players.length > 0 && `המנצח: ${players[0].name} עם ${players[0].score} נקודות`}

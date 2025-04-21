@@ -14,13 +14,14 @@ interface LeaveGameDialogProps {
 
 const LeaveGameDialog = ({ isOpen, onClose }: LeaveGameDialogProps) => {
   const navigate = useNavigate();
-  const { clearGameData, gameCode, isHost } = useGameState();
+  const { clearGameData, gameCode, isHost, gamePhase } = useGameState();
 
   const handleLeaveGame = async () => {
     console.log('Leave game dialog: Clearing game data and navigating to home page');
     
-    // If the player is the host, reset player scores when leaving
-    if (isHost && gameCode) {
+    // Only reset player scores when the host is leaving and NOT during end game phase
+    // This ensures scores remain visible during the end game overlay
+    if (isHost && gameCode && gamePhase !== 'end') {
       try {
         console.log('Host is leaving - resetting player scores');
         const { error } = await supabase
