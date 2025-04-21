@@ -980,7 +980,7 @@ const GamePlay: React.FC = () => {
 
       case 'answerOptions': {
         const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
-        const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6;
+        const isFinalPhase = true; // כל הזמן עכשיו זה Final Phase — 8 שניות בלבד
 
         if (
           isHost &&
@@ -989,7 +989,7 @@ const GamePlay: React.FC = () => {
         ) {
           return (
             <div className="flex flex-col items-center py-6 space-y-6">
-              <GameTimer initialSeconds={6} isActive={true} onTimeout={handleTimerTimeout} />
+              <GameTimer initialSeconds={8} isActive={true} onTimeout={handleTimerTimeout} />
               <div className="text-xl font-semibold text-primary">
                 הבחירה שלך נקלטה! ממתין לשאר המשתתפים...
               </div>
@@ -1002,7 +1002,7 @@ const GamePlay: React.FC = () => {
 
         return (
           <div className="flex flex-col items-center py-6 space-y-6">
-            <GameTimer initialSeconds={30} isActive={timerActive} onTimeout={handleTimerTimeout} />
+            <GameTimer initialSeconds={8} isActive={timerActive} onTimeout={handleTimerTimeout} />
 
             <div className="text-xl font-semibold text-primary">
               הניקוד שלך בסיבוב זה: {currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}
