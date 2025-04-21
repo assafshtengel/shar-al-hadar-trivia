@@ -48,6 +48,36 @@ export type Database = {
         }
         Relationships: []
       }
+      game_stats: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          game_code: string
+          id: string
+          players_count: number | null
+          started_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          game_code: string
+          id?: string
+          players_count?: number | null
+          started_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          game_code?: string
+          id?: string
+          players_count?: number | null
+          started_at?: string
+        }
+        Relationships: []
+      }
       improvements: {
         Row: {
           created_at: string

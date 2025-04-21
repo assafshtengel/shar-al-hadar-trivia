@@ -667,7 +667,7 @@ const GamePlay: React.FC = () => {
     }
     toast({
       title: "דילגת על השאלה",
-      description: `נותרו ${currentPlayer.skipsLeft - 1} דילו������ם`
+      description: `נותרו ${currentPlayer.skipsLeft - 1} דילוגים`
     });
   };
 
@@ -810,7 +810,7 @@ const GamePlay: React.FC = () => {
     }
     toast({
       title: "מתכוננים לסיבוב הבא",
-      description: newIsTriviaRound ? "סיבוב טריוויה ע��מד להתחיל" : "סיבוב חדש עומד להתחיל"
+      description: newIsTriviaRound ? "סיבוב טריוויה עומד להתחיל" : "סיבוב חדש עומד להתחיל"
     });
   };
 
@@ -849,6 +849,9 @@ const GamePlay: React.FC = () => {
         points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
       }
     }
+    if (!isCorrect) {
+      points = isFinalPhase ? -2 : 0;
+    }
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
@@ -878,7 +881,7 @@ const GamePlay: React.FC = () => {
     }
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "תשובה נכונה!" : "התשובה ��גויה, נסה ב��עם הבאה"
+      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
     if (isFinalPhase) {
       submitAllAnswers();
