@@ -135,7 +135,7 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
     toast('המשחק הסתיים', {
       description: 'חוזר לדף הבית',
     });
-    clearGameData();
+    clearGameData(); // Only reset scores when actually leaving the game
     navigate('/');
     setShowOverlay(false);
   };

@@ -99,7 +99,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setHostReady,
     clearGameData,
     navigate,
-    gameSettings // Pass game settings to subscription hook
+    gameSettings
   });
 
   const { isRedirecting } = useGamePhaseNavigation({
