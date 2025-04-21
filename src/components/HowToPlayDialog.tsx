@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { HelpCircle, Award, Star, QuestionMarkCircle, SkipForward } from "lucide-react";
+import { HelpCircle, Award, Star, CircleHelp, SkipForward } from "lucide-react";
 
 const HowToPlayDialog = () => {
   const [open, setOpen] = React.useState(false);
@@ -54,7 +54,7 @@ const HowToPlayDialog = () => {
                 </ul>
               </div>
               <div>
-                <span className="font-semibold text-lg flex items-center gap-2 mb-1"><QuestionMarkCircle className="w-5 h-5 text-violet-600" /> שלבי המשחק</span>
+                <span className="font-semibold text-lg flex items-center gap-2 mb-1"><CircleHelp className="w-5 h-5 text-violet-600" /> שלבי המשחק</span>
                 <ol className="list-decimal mr-5 space-y-1">
                   <li>מקשיבים לשיר ומנסים לזהות אותו.</li>
                   <li>בוחרים תשובה נכונה מהר ככל האפשר מהאפשרויות המוצגות.</li>

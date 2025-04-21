@@ -8,7 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import LiveStats from '@/components/LiveStats';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Info } from 'lucide-react';
-import { HowToPlayDialog } from "@/components/HowToPlayDialog";
+import HowToPlayDialog from "@/components/HowToPlayDialog";
 import { ImprovementDialog } from "@/components/ImprovementDialog";
 
 // Import the GameStateContext and useContext
