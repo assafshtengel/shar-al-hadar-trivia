@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameState } from '@/contexts/GameStateContext';
 import { toast } from 'sonner';
-import { X, Trophy, Award } from 'lucide-react';
+import { X, Trophy, Award, List } from 'lucide-react';
 import AppButton from './AppButton';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -23,7 +22,6 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
   const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const visibilityChangesRef = useRef<number>(0);
   
-  // Clean up timers on unmount
   useEffect(() => {
     return () => {
       if (overlayTimerRef.current) {
@@ -35,7 +33,6 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
     };
   }, []);
   
-  // Fetch players' final scores when overlay becomes visible
   useEffect(() => {
     const fetchFinalScores = async () => {
       const { gameCode } = useGameState();
@@ -68,8 +65,6 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
   }, [showOverlay]);
   
   useEffect(() => {
-    // Only process visibility changes if there's a significant gap (0.75 seconds)
-    // This prevents overlay flashing when quick state changes happen
     const currentTime = Date.now();
     
     if (isVisible !== showOverlay) {
@@ -77,7 +72,6 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
       console.log(`Game end visibility changed to ${isVisible}, change #${visibilityChangesRef.current}`);
     }
     
-    // Require more time between rapid changes to stabilize
     const requiredInterval = 750; 
     
     if (currentTime - lastVisibilityChange.current < requiredInterval) {
@@ -87,21 +81,18 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
     
     lastVisibilityChange.current = currentTime;
     
-    // Clear any existing timers
     if (overlayTimerRef.current) {
       clearTimeout(overlayTimerRef.current);
       overlayTimerRef.current = null;
     }
     
-    // Add a delay before showing the overlay to prevent flashes when joining
-    // and to allow time for other state updates to be processed
     if (isVisible) {
       console.log('Game end detected, scheduling overlay display with delay');
       overlayTimerRef.current = setTimeout(() => {
         console.log('Displaying game end overlay');
         setShowOverlay(true);
         overlayTimerRef.current = null;
-      }, 1000); // Longer delay to ensure all state updates are processed
+      }, 1000);
     } else {
       console.log('Game end state cleared');
       setShowOverlay(false);
@@ -109,22 +100,16 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
   }, [isVisible]);
   
   useEffect(() => {
-    // The overlay should be visible for at least 10 seconds before redirecting
     if (showOverlay) {
-      // Clear any existing redirect timer
       if (redirectTimerRef.current) {
         clearTimeout(redirectTimerRef.current);
         redirectTimerRef.current = null;
       }
-      
-      console.log('Overlay visible, scheduling redirect with 10-second delay');
       redirectTimerRef.current = setTimeout(() => {
-        console.log('Auto-redirecting to home and clearing game data');
         handleCloseOverlay();
         redirectTimerRef.current = null;
-      }, 10000); // Changed from 4000 to 10000 (10 seconds)
+      }, 10000);
     }
-    
     return () => {
       if (redirectTimerRef.current) {
         clearTimeout(redirectTimerRef.current);
@@ -134,7 +119,6 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
   }, [showOverlay]);
 
   const handleCloseOverlay = () => {
-    console.log('Closing overlay, redirecting to home and clearing game data');
     toast('המשחק הסתיים', {
       description: 'חוזר לדף הבית',
     });
@@ -143,7 +127,6 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
     setShowOverlay(false);
   };
   
-  // Make sure to display it for all players, not just host or top players
   if (!showOverlay) return null;
   
   return (
@@ -156,9 +139,9 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         >
           <X size={20} />
         </button>
-        
+
         <h2 className="text-2xl font-bold text-primary mb-4">המשחק הסתיים</h2>
-        
+
         <div className="w-full mb-6">
           <Table>
             <TableHeader>
@@ -187,21 +170,20 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
             </TableBody>
           </Table>
         </div>
-        
+
         <div className="text-sm text-gray-500 mb-3">
           {players.length > 0 && `המנצח: ${players[0].name} עם ${players[0].score} נקודות`}
         </div>
-        
         <div className="text-sm text-gray-500 mb-3">
-          מועבר לדף הבית באופן אוטומטי...
+          המשחק הסתיים! תועבר אוטומטית לדף הבית בעוד 10 שניות.
         </div>
-        
         <AppButton 
           variant="primary" 
-          size="sm" 
+          size="lg"
+          className="mt-4"
           onClick={handleCloseOverlay}
         >
-          סגור וחזור לדף הבית
+          יציאה מהמשחק ולחזור לדף הבית
         </AppButton>
       </div>
     </div>

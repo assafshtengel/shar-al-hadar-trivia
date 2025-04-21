@@ -131,7 +131,6 @@ const GamePlay: React.FC = () => {
 
   useEffect(() => {
     if (!serverGamePhase) return;
-    console.log('Server game phase changed:', serverGamePhase);
     setTimerActive(false);
     switch (serverGamePhase) {
       case 'playing':
@@ -149,7 +148,6 @@ const GamePlay: React.FC = () => {
         setPhase('answerOptions');
         setSelectedAnswer(null);
         if (!isHost) {
-          console.log('Setting timer active for non-host in answering phase');
           setTimerActive(true);
         }
         break;
@@ -1000,9 +998,10 @@ const GamePlay: React.FC = () => {
               </AppButton>}
           </div>;
       case 'leaderboard':
-        return <div className="flex flex-col items-center justify-center py-8">
+        return (
+          <div className="flex flex-col items-center justify-center py-8">
             <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
-            
+
             <div className="w-full max-w-md">
               <Table>
                 <TableHeader>
@@ -1014,7 +1013,8 @@ const GamePlay: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {players.map((player, idx) => <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
+                  {players.map((player, idx) => (
+                    <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
                       <TableCell className="font-medium">{idx + 1}</TableCell>
                       <TableCell className="font-semibold">{player.name}</TableCell>
                       <TableCell className={`font-bold ${(player.score || 0) < 0 ? "text-red-500" : ""}`}>
@@ -1026,23 +1026,29 @@ const GamePlay: React.FC = () => {
                         {idx === 2 && <Award className="h-5 w-5 text-amber-700" />}
                         {player.name === playerName && idx > 2 && <CheckCircle2 className="h-5 w-5 text-primary my-[30px]" />}
                       </TableCell>
-                    </TableRow>)}
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>
-            
-            {isHost && <GameHostControls roundCounter={roundCounter} isTriviaRound={isTriviaRound} onPlayNext={nextRound} onResetScores={resetAllPlayerScores} gamePhase={serverGamePhase} />}
-            
-            {!isHost && !playerReady && <AppButton variant="primary" onClick={markPlayerReady} className="mt-8">
-                מוכן לסיבוב הבא
-                <CheckCircle2 className="mr-2" />
-              </AppButton>}
-            
-            {!isHost && playerReady && <div className="mt-8 p-4 bg-primary/10 rounded-lg text-center">
-                <div className="font-semibold mb-2">אתה מוכן לסיבוב הבא</div>
-                <div className="text-sm">ממתין למנהל המשחק להתחיל...</div>
-              </div>}
-          </div>;
+
+            <div className="text-sm text-gray-500 mb-3 mt-4">
+              המשחק הסתיים! תועבר אוטומטית לדף הבית בעוד 10 שניות, או לחץ על כפתור היציאה.
+            </div>
+            <AppButton
+              variant="primary"
+              size="lg"
+              className="mt-3"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  navigate("/");
+                }
+              }}
+            >
+              יציאה וחזרה לדף הבית
+            </AppButton>
+          </div>
+        );
       default:
         return <div className="flex flex-col items-center justify-center h-full">
             <div className="text-lg text-gray-600 animate-pulse">
