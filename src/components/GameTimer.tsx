@@ -22,6 +22,7 @@ const GameTimer: React.FC<GameTimerProps> = ({
 
   // Reset timer when props change
   useEffect(() => {
+    console.log(`GameTimer: isActive=${isActive}, initialSeconds=${initialSeconds}`);
     timeoutTriggeredRef.current = false; // Reset the timeout flag
     
     if (isActive) {
@@ -40,6 +41,14 @@ const GameTimer: React.FC<GameTimerProps> = ({
       clearTimers();
     };
   }, [initialSeconds, isActive]);
+
+  // Force timer to start immediately when mounted if isActive is true
+  useEffect(() => {
+    if (isActive && !timerRef.current) {
+      console.log('GameTimer: Force starting timer on mount');
+      startTimer();
+    }
+  }, []);
 
   const startTimer = () => {
     if (timerRef.current) {
