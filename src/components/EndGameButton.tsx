@@ -19,11 +19,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useGameState } from '@/contexts/GameStateContext';
 
 interface EndGameButtonProps {
-  gameCode?: string | null;
-  className?: string; // Adding className prop to support styling
+  gameCode: string | null;
 }
 
-const EndGameButton: React.FC<EndGameButtonProps> = ({ gameCode, className }) => {
+const EndGameButton: React.FC<EndGameButtonProps> = ({ gameCode }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { clearGameData } = useGameState();
@@ -99,7 +98,7 @@ const EndGameButton: React.FC<EndGameButtonProps> = ({ gameCode, className }) =>
         <Button 
           variant="ghost" 
           size="icon" 
-          className={`text-destructive hover:text-destructive ${className || ''}`}
+          className="text-destructive hover:text-destructive"
           aria-label="סיים משחק"
         >
           <X className="h-5 w-5" />
