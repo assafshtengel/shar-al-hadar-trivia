@@ -143,7 +143,8 @@ const GamePlay: React.FC = () => {
           hasAnswered: false,
           lastAnswer: undefined,
           lastAnswerCorrect: undefined,
-          pendingAnswer: null
+          pendingAnswer: null,
+          pointsAwarded: false
         }));
         break;
       case 'answering':
@@ -658,7 +659,7 @@ const GamePlay: React.FC = () => {
     }, 2000);
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
+      description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה ב��עם הבאה"
     });
     if (timeLeft <= 0 || isFinalPhase) {
       submitAllAnswers();
@@ -1012,7 +1013,7 @@ const GamePlay: React.FC = () => {
                 </AppButton>
               ) : (
                 <div className="text-lg text-gray-600 text-center">
-                  המתן למנהל המשחק להציג את שאלת הטריוויה
+                  המתן למנהל המשחק להצ��ג את שאלת הטריוויה
                 </div>
               )}
               {currentTriviaQuestion && (
