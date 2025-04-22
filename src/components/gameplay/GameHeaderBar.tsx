@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { MusicNote } from '@/components/MusicNote';
-import { LeaveGameButton } from '@/components/LeaveGameButton';
-import { EndGameButton } from '@/components/EndGameButton';
+import MusicNote from '@/components/MusicNote';
+import LeaveGameButton from '@/components/LeaveGameButton';
+import EndGameButton from '@/components/EndGameButton';
 
 interface GameHeaderBarProps {
   gameCode: string;
