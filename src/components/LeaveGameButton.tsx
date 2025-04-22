@@ -7,15 +7,13 @@ import { useNavigate } from 'react-router-dom';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { useGameState } from '@/contexts/GameStateContext';
-import { cn } from '@/lib/utils';
 
 interface LeaveGameButtonProps {
   gameCode: string;
   isHost?: boolean;
-  className?: string; // Added className prop
 }
 
-const LeaveGameButton: React.FC<LeaveGameButtonProps> = ({ gameCode, isHost = false, className }) => {
+const LeaveGameButton: React.FC<LeaveGameButtonProps> = ({ gameCode, isHost = false }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { clearGameData, playerName } = useGameState();
@@ -107,7 +105,7 @@ const LeaveGameButton: React.FC<LeaveGameButtonProps> = ({ gameCode, isHost = fa
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" className={cn("w-full", className)}>
+        <Button variant="destructive" className="w-full">
           עזוב משחק
           <X className="mr-2" />
         </Button>

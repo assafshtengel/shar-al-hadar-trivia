@@ -10,7 +10,7 @@ interface TriviaQuestionProps {
     options: string[];
     correctAnswerIndex: number;
   };
-  onAnswer: (selectedIndex: number, isCorrect: boolean) => void;
+  onAnswer: (isCorrect: boolean, selectedIndex: number) => void;
   timeUp: boolean;
   answerStartTime?: number;
   elapsedTime?: number;
@@ -88,7 +88,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     setAnswered(true);
     
     const isCorrect = index === question.correctAnswerIndex;
-    onAnswer(index, isCorrect);
+    onAnswer(isCorrect, index);
   };
 
   if (!showQuestion) {

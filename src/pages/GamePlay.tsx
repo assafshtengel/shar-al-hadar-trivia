@@ -1,11 +1,10 @@
-import React from 'react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import GameTimer from '@/components/GameTimer';
-import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, CheckCircle2, Youtube, XCircle } from 'lucide-react';
+import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, CheckCircle2, Youtube } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
@@ -20,10 +19,8 @@ import TriviaQuestion from '@/components/TriviaQuestion';
 import { triviaQuestions } from '@/data/triviaQuestions';
 import { mashinaSongs } from "@/data/songs/mashina";
 import { adamSongs } from "@/data/songs/adam";
-import { Badge } from "@/components/ui/badge";
 
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
-
 interface Player {
   name: string;
   score: number;
@@ -36,13 +33,11 @@ interface Player {
   pendingAnswer?: number | null;
   pointsAwarded?: boolean;
 }
-
 interface GameRound {
   correctSong: Song;
   options: Song[];
   correctAnswerIndex: number;
 }
-
 interface SupabasePlayer {
   id: string;
   name: string;
@@ -51,20 +46,11 @@ interface SupabasePlayer {
   joined_at: string;
   hasAnswered: boolean;
   isReady: boolean;
-  skipsLeft: number;
 }
-
 interface PendingAnswerUpdate {
   player_name: string;
   is_correct: boolean;
   points: number;
-}
-
-declare module '@/contexts/GameStateContext' {
-  interface GameSettings {
-    songList?: string;
-    triviaRoundChance?: number;
-  }
 }
 
 const GamePlay: React.FC = () => {
@@ -111,672 +97,1251 @@ const GamePlay: React.FC = () => {
   const [answeredEarly, setAnsweredEarly] = useState(false);
   const [userSkippedQuestion, setUserSkippedQuestion] = useState(false);
 
-  const fetchPlayers = useCallback(async () => {
-    if (!gameCode) return;
-
-    const { data: playersData, error: playersError } = await supabase
-      .from('players')
-      .select('*')
-      .eq('game_code', gameCode)
-      .order('score', { ascending: false });
-
-    if (playersError) {
-      console.error("Error fetching players:", playersError);
-      return;
-    }
-
-    if (playersData) {
-      setPlayers(playersData);
-    }
+  const checkAllPlayersAnswered = useCallback(async () => {
+    if (!gameCode) return false;
+    const {
+      data
+    } = await supabase.from('players').select('hasAnswered').eq('game_code', gameCode);
+    if (!data) return false;
+    return data.every(player => player.hasAnswered === true);
   }, [gameCode]);
 
-  const updatePlayerReadiness = useCallback(async (isReady: boolean) => {
-    if (!gameCode || !playerName) return;
+  const checkAllPlayersReady = useCallback(async () => {
+    if (!gameCode) return false;
+    const {
+      data
+    } = await supabase.from('players').select('isReady').eq('game_code', gameCode);
+    if (!data) return false;
+    return data.every(player => player.isReady === true);
+  }, [gameCode]);
 
-    const { error } = await supabase
-      .from('players')
-      .update({ isReady })
-      .eq('game_code', gameCode)
-      .eq('name', playerName);
-
-    if (error) {
-      console.error("Error updating player readiness:", error);
-      toast({
-        title: "שגיאה",
-        description: "אירעה שגיאה בעדכון המוכנות שלך",
-        variant: "destructive"
-      });
-    } else {
-      setPlayerReady(isReady);
-      toast({
-        title: "מוכנות עודכנה",
-        description: `השתנת ל ${isReady ? 'מוכן' : 'לא מוכן'}`,
-      });
+  useEffect(() => {
+    if (!gameCode) {
+      navigate('/');
     }
-  }, [gameCode, playerName, toast]);
+  }, [gameCode, navigate]);
 
-  const startGameRound = useCallback(async () => {
-    if (!isHost || !gameCode) return;
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        console.log('Cleaning up timer on component unmount');
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
 
-    const triviaChance = gameSettings?.triviaRoundChance || 0.2;
-    const shouldBeTrivia = Math.random() < triviaChance;
-    setIsTriviaRound(shouldBeTrivia);
+  useEffect(() => {
+    if (!serverGamePhase) return;
+    setTimerActive(false);
+    switch (serverGamePhase) {
+      case 'playing':
+        setPhase('songPlayback');
+        setSelectedAnswer(null);
+        setCurrentPlayer(prev => ({
+          ...prev,
+          hasAnswered: false,
+          lastAnswer: undefined,
+          lastAnswerCorrect: undefined,
+          pendingAnswer: null,
+          pointsAwarded: false
+        }));
+        break;
+      case 'answering':
+        setPhase('answerOptions');
+        setSelectedAnswer(null);
+        if (!isHost) {
+          setTimerActive(true);
+        }
+        break;
+      case 'results':
+        setPhase('scoringFeedback');
+        break;
+      case 'end':
+        setPhase('leaderboard');
+        break;
+    }
+  }, [serverGamePhase, isHost]);
 
-    let song: Song;
-    let triviaQuestion: TriviaQuestionType | null = null;
+  useEffect(() => {
+    if (!gameCode || phase !== 'answerOptions' || !timerActive) return;
+    const interval = setInterval(async () => {
+      const allAnswered = await checkAllPlayersAnswered();
+      if (allAnswered) {
+        setAllPlayersAnswered(true);
+        clearInterval(interval);
+        if (isHost) {
+          updateGameState('results');
+        }
+      }
+    }, 2000); // Check every 2 seconds
 
-    if (shouldBeTrivia) {
-      const randomIndex = Math.floor(Math.random() * triviaQuestions.length);
-      triviaQuestion = triviaQuestions[randomIndex];
-      setCurrentTriviaQuestion(triviaQuestion);
+    return () => clearInterval(interval);
+  }, [gameCode, phase, timerActive, checkAllPlayersAnswered, isHost]);
 
-      if (triviaQuestion && triviaQuestion.correctAnswerIndex >= triviaQuestion.options.length) {
-        console.error("Invalid correctAnswerIndex in trivia question:", triviaQuestion);
+  useEffect(() => {
+    if (!gameCode) return;
+    const fetchPlayers = async () => {
+      const {
+        data,
+        error
+      } = await supabase.from('players').select('*').eq('game_code', gameCode).order('score', {
+        ascending: false
+      });
+      if (error) {
+        console.error('Error fetching players:', error);
         toast({
-          title: "שגיאה",
-          description: "שאלת טריוויה לא תקינה",
+          title: "שגיאה בטעינת השחקנים",
+          description: "אירעה שגיאה בטעינת רשימת השחקנים",
           variant: "destructive"
         });
         return;
       }
-
-      song = {
-        id: 'trivia',
-        title: 'Trivia Round',
-        artist: 'Trivia',
-        embedUrl: '',
-      };
-    } else {
-      const selectedList = gameSettings?.songList || 'default';
-      const songBank = selectedList === 'mashina' ? mashinaSongs : selectedList === 'adam' ? adamSongs : defaultSongBank;
-      const randomIndex = Math.floor(Math.random() * songBank.length);
-      song = songBank[randomIndex];
-      setCurrentTriviaQuestion(null);
-    }
-
-    setCurrentSong(song);
-
-    const options = [song];
-    while (options.length < 4) {
-      const randomSong = defaultSongBank[Math.floor(Math.random() * defaultSongBank.length)];
-      if (!options.find(s => s.id === randomSong.id)) {
-        options.push(randomSong);
+      if (data) {
+        console.log('Fetched players:', data);
+        setPlayers(data);
+        if (playerName) {
+          const currentPlayerData = data.find(p => p.name === playerName);
+          if (currentPlayerData) {
+            console.log('Found current player in database:', currentPlayerData);
+            setCurrentPlayer(prev => ({
+              ...prev,
+              name: currentPlayerData.name,
+              score: currentPlayerData.score || 0,
+              hasAnswered: currentPlayerData.hasAnswered || false,
+              isReady: currentPlayerData.isReady || false
+            }));
+          } else {
+            console.log('Current player not found in database. Player name:', playerName);
+          }
+        }
       }
-    }
-    options.sort(() => Math.random() - 0.5);
-
-    const correctAnswerIndex = options.findIndex(s => s.id === song.id);
-    const round: GameRound = {
-      correctSong: song,
-      options,
-      correctAnswerIndex,
     };
-    setCurrentRound(round);
+    fetchPlayers();
+    const channel = supabase.channel('players-changes').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'players',
+      filter: `game_code=eq.${gameCode}`
+    }, payload => {
+      console.log('Players table changed:', payload);
+      fetchPlayers();
+    }).subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gameCode, toast, playerName]);
 
-    const { error } = await supabase
-      .from('game_state')
-      .update({
-        game_phase: 'songPlayback',
-        current_song_id: song.id.toString(),
-        current_round: JSON.stringify(round),
-        round_counter: roundCounter,
-        is_trivia_round: shouldBeTrivia,
-        current_trivia_question: JSON.stringify(triviaQuestion),
-      })
-      .eq('game_code', gameCode);
+  useEffect(() => {
+    if (!gameCode) return;
+    const fetchGameRoundData = async () => {
+      const {
+        data,
+        error
+      } = await supabase.from('game_state').select('current_song_name, current_song_url, game_phase').eq('game_code', gameCode).maybeSingle();
+      if (error) {
+        console.error('Error fetching game round data:', error);
+        return;
+      }
+      if (data) {
+        const fetchCurrentRoundNumber = async () => {
+          try {
+            const { data, error } = await supabase
+              .from('game_state')
+              .select('current_round')
+              .eq('game_code', gameCode)
+              .maybeSingle();
+              
+            if (error) {
+              console.error('Error fetching current round:', error);
+              return 1;
+            }
+            
+            return data?.current_round || 1;
+          } catch (err) {
+            console.error('Exception fetching round number:', err);
+            return 1;
+          }
+        };
+        
+        const roundCounter = await fetchCurrentRoundNumber();
+        const isTrivia = roundCounter % 5 === 0;
+        setIsTriviaRound(isTrivia);
+        
+        if (isTrivia) {
+          console.log('Fetching trivia question for all participants');
+          try {
+            if (data.current_song_name && data.current_song_name.includes("trivia")) {
+              const triviaData = JSON.parse(data.current_song_name);
+              setCurrentTriviaQuestion(triviaData.question);
+            } else if (!isHost) {
+              const randomIndex = Math.floor(Math.random() * triviaQuestions.length);
+              setCurrentTriviaQuestion(triviaQuestions[randomIndex]);
+            }
+          } catch (parseError) {
+            console.error('Error parsing trivia data:', parseError);
+            const randomIndex = Math.floor(Math.random() * triviaQuestions.length);
+            setCurrentTriviaQuestion(triviaQuestions[randomIndex]);
+          }
+        } else if (data.current_song_name) {
+          try {
+            const roundData = JSON.parse(data.current_song_name);
+            if (roundData && roundData.correctSong && roundData.options) {
+              console.log('Fetched game round data:', roundData);
+              setCurrentRound(roundData);
+              if (roundData.correctSong) {
+                setCurrentSong(roundData.correctSong);
+              }
+            }
+          } catch (parseError) {
+            console.error('Error parsing game round data:', parseError);
+          }
+        }
+      }
+    };
+    
+    fetchGameRoundData();
+    
+    const gameStateChannel = supabase.channel('game-state-changes').on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'game_state',
+      filter: `game_code=eq.${gameCode}`
+    }, payload => {
+      console.log('Game state changed:', payload);
+      if (payload.new) {
+        if (payload.new.game_phase === 'answering' || payload.new.game_phase === 'playing') {
+          fetchGameRoundData();
+        }
+        
+        if (payload.new.current_song_name && payload.new.current_song_name.includes("trivia")) {
+          try {
+            const triviaData = JSON.parse(payload.new.current_song_name);
+            setCurrentTriviaQuestion(triviaData.question);
+            setIsTriviaRound(true);
+          } catch (parseError) {
+            console.error('Error parsing trivia data from real-time update:', parseError);
+          }
+        } else if (payload.new.current_song_name) {
+          try {
+            const roundData = JSON.parse(payload.new.current_song_name);
+            if (roundData && roundData.correctSong && roundData.options) {
+              console.log('New game round data from real-time update:', roundData);
+              setCurrentRound(roundData);
+              if (roundData.correctSong) {
+                setCurrentSong(roundData.correctSong);
+              }
+            }
+          } catch (parseError) {
+            console.error('Error parsing real-time game round data:', parseError);
+          }
+        }
+      }
+    }).subscribe();
+    
+    return () => {
+      supabase.removeChannel(gameStateChannel);
+    };
+  }, [gameCode, isHost]);
 
+  const updateGameState = async (phase: string) => {
+    if (!isHost || !gameCode) return;
+    const {
+      error
+    } = await supabase.from('game_state').update({
+      game_phase: phase
+    }).eq('game_code', gameCode);
     if (error) {
-      console.error("Error starting game round:", error);
+      console.error('Error updating game state:', error);
       toast({
-        title: "שגיאה",
-        description: "אירעה שגיאה בתחילת הסיבוב",
+        title: "שגיאה בעדכון מצב המשחק",
+        description: "אירעה שגיאה בעדכון מצב המשחק",
         variant: "destructive"
       });
-    } else {
-      setRoundCounter(prev => prev + 1);
     }
-  }, [gameCode, isHost, toast, gameSettings, roundCounter]);
+  };
 
-  const handleAnswerSelection = useCallback(async (selectedIndex: number, isCorrect: boolean) => {
-    if (!gameCode || !playerName || !currentRound) return;
+  const getFilteredSongs = () => {
+    if (gameSettings?.songFilter === "mashina") {
+      return mashinaSongs;
+    }
+    if (gameSettings?.songFilter === "adam") {
+      return adamSongs;
+    }
+    return defaultSongBank;
+  };
 
-    setAnsweredEarly(timerActive);
+  function createGameRound(): GameRound {
+    const songList = getFilteredSongs().filter(song => song.embedUrl || song.spotifyUrl);
+    const randomIndex = Math.floor(Math.random() * songList.length);
+    const correctSong = songList[randomIndex];
+    const otherSongs = songList.filter(song => song.id !== correctSong.id && song.title);
+    const shuffledWrongSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
+    const allOptions = [correctSong, ...shuffledWrongSongs];
+    const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
+    const correctSongTitle = correctSong.title || '';
+    const correctIndex = shuffledOptions.findIndex(song => song.title === correctSongTitle);
+    return {
+      correctSong,
+      options: shuffledOptions,
+      correctAnswerIndex: correctIndex
+    };
+  }
 
+  useEffect(() => {
+    if (showYouTubeEmbed) {
+      const timer = setTimeout(() => {
+        setShowYouTubeEmbed(false);
+        setIsPlaying(false);
+        if (isHost) {
+          updateGameState('answering');
+        }
+        setPhase('answerOptions');
+        if (!isHost) {
+          console.log('Setting timer active after YouTube embed finishes (non-host)');
+          setTimerActive(true);
+        }
+      }, 12000); // Changed to 12 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [showYouTubeEmbed, isHost]);
+
+  const playSong = async () => {
+    if (!isHost) return;
+    await resetPlayersReadyStatus();
+    await resetPlayersAnsweredStatus();
+    const gameRound = createGameRound();
+    setCurrentRound(gameRound);
+    setCurrentSong(gameRound.correctSong);
+    setSelectedAnswer(null);
+    setIsPlaying(true);
+    setShowYouTubeEmbed(true);
+    setAllPlayersAnswered(false);
+    gameStartTimeRef.current = Date.now(); // Set start time for scoring
+    const roundDataString = JSON.stringify(gameRound);
+    const {
+      error
+    } = await supabase.from('game_state').update({
+      current_song_name: roundDataString,
+      current_song_url: gameRound.correctSong.embedUrl,
+      game_phase: 'playing'
+    }).eq('game_code', gameCode);
+    if (error) {
+      console.error('Error storing game round data:', error);
+      toast({
+        title: "שגיאה בשמירת נתוני הסיבוב",
+        description: "אירעה שגיאה בשמירת נתוני הסיבוב",
+        variant: "destructive"
+      });
+      return;
+    }
+    toast({
+      title: "משמיע שיר...",
+      description: "מנגן כעת, האזן בקשב"
+    });
+  };
+
+  const handleSongPlaybackEnded = () => {
+    setShowYouTubeEmbed(false);
+    setIsPlaying(false);
+    if (isHost) {
+      updateGameState('answering');
+    }
+    setPhase('answerOptions');
+    if (!isHost) {
+      console.log('Setting timer active after YouTube embed finishes (non-host)');
+      setTimerActive(true);
+    }
+  };
+
+  const handleSongPlaybackError = () => {
+    toast({
+      title: "שגיאה בהשמעת השיר",
+      description: "אירעה שגיאה בהשמעת השיר, בחר שיר אחר",
+      variant: "destructive"
+    });
+    setIsPlaying(false);
+    setShowYouTubeEmbed(false);
+  };
+
+  const handleTimerTimeout = () => {
+    console.log('Timer timeout handler called');
+    if (selectedAnswer === null && !currentPlayer.hasAnswered) {
+      if (timeLeft <= 0 && phase === 'answerOptions') {
+        handleTimeout();
+      } else {
+        console.log('Timer ended but not submitting answers yet - showing 50-50 options');
+      }
+    } else {
+      submitAllAnswers();
+    }
+  };
+
+  const submitAllAnswers = async () => {
+    console.log('Timer ended, submitting all answers');
+    if (!currentRound || !gameCode) {
+      console.error('Missing current round data or game code');
+      return;
+    }
+    if (!currentPlayer.pointsAwarded && playerName && selectedAnswer !== null) {
+      console.log(`Processing answer for ${playerName} - points not yet awarded`);
+      const isCorrect = selectedAnswer === currentRound.correctAnswerIndex;
+      const points = isCorrect ? 10 : 0;
+      const pendingUpdate: PendingAnswerUpdate = {
+        player_name: playerName,
+        is_correct: isCorrect,
+        points
+      };
+      setPendingAnswers([pendingUpdate]);
+      setCurrentPlayer(prev => {
+        const updatedScore = prev.score + points;
+        console.log(`Updating player score: ${prev.score} + ${points} = ${updatedScore} (first calculation)`);
+        return {
+          ...prev,
+          hasAnswered: true,
+          lastAnswer: currentRound.options[selectedAnswer].title,
+          lastAnswerCorrect: isCorrect,
+          lastScore: points,
+          score: updatedScore,
+          pointsAwarded: true
+        };
+      });
+      await batchUpdatePlayerScores([pendingUpdate]);
+    } else {
+      console.log(`Skipping answer processing for ${playerName} - points already awarded or no answer selected`);
+    }
+    if (isHost) {
+      updateGameState('results');
+    }
+    setPhase('scoringFeedback');
+  };
+
+  const batchUpdatePlayerScores = async (updates: PendingAnswerUpdate[]) => {
+    if (!gameCode || updates.length === 0) {
+      return;
+    }
+    console.log('Batch updating player scores:', updates);
+    try {
+      for (const update of updates) {
+        const {
+          data: playerData,
+          error: fetchError
+        } = await supabase.from('players').select('score, hasAnswered').eq('game_code', gameCode).eq('name', update.player_name).maybeSingle();
+        if (fetchError) {
+          console.error(`Error fetching player ${update.player_name}:`, fetchError);
+          continue;
+        }
+        if (!playerData) {
+          console.error(`Player ${update.player_name} not found`);
+          continue;
+        }
+        if (playerData.hasAnswered) {
+          console.log(`Player ${update.player_name} has already answered this round. Skipping score update.`);
+          continue;
+        }
+        const currentScore = playerData.score || 0;
+        const newScore = currentScore + update.points;
+        console.log(`Player ${update.player_name}: Current score=${currentScore}, adding ${update.points}, new score=${newScore}`);
+        const {
+          error: updateError
+        } = await supabase.from('players').update({
+          score: newScore,
+          hasAnswered: true
+        }).eq('game_code', gameCode).eq('name', update.player_name);
+        if (updateError) {
+          console.error(`Error updating player ${update.player_name}:`, updateError);
+        } else {
+          console.log(`Successfully updated player ${update.player_name} score to ${newScore}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error in batchUpdatePlayerScores:', error);
+      toast({
+        title: "שגיאה בעדכון הניקוד",
+        description: "אירעה שגיאה בעדכון הניקוד",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAnswer = async (isCorrect: boolean, selectedIndex: number) => {
+    if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound || currentPlayer.pointsAwarded) {
+      console.log("Already answered or missing round data or points already awarded - ignoring selection");
+      return;
+    }
+    
+    setUserSkippedQuestion(false);
+    
+    console.log(`Player ${playerName} selected answer: ${selectedIndex}`);
+    setSelectedAnswer(selectedIndex);
+    const currentTime = Date.now();
+    const timeSinceStart = (currentTime - (gameStartTimeRef.current || currentTime)) / 1000;
+    if (timeSinceStart <= 12) {
+      setAnsweredEarly(true);
+    }
+    let points = 0;
+    const isFinalPhase = timeSinceStart > 8;
+
+    if (isFinalPhase) {
+      points = isCorrect ? 4 : -2;
+    } else {
+      if (timeSinceStart <= 3) {
+        points = 13;
+      } else if (timeSinceStart <= 8) {
+        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
+      }
+    }
+    if (!isCorrect) {
+      points = isFinalPhase ? -2 : 0;
+    }
+    let currentScore = 0;
+    let hasAlreadyAnswered = false;
+    if (gameCode && playerName) {
+      try {
+        const {
+          data
+        } = await supabase.from('players').select('score, hasAnswered').eq('game_code', gameCode).eq('name', playerName).maybeSingle();
+        if (data) {
+          currentScore = data.score || 0;
+          hasAlreadyAnswered = data.hasAnswered || false;
+          if (hasAlreadyAnswered) {
+            console.log(`Player ${playerName} has already answered this round. Not updating score.`);
+            setCurrentPlayer(prev => ({
+              ...prev,
+              hasAnswered: true,
+              lastAnswer: currentRound.options[selectedIndex].title,
+              lastAnswerCorrect: isCorrect,
+              lastScore: points,
+              pendingAnswer: selectedIndex,
+              pointsAwarded: true
+            }));
+            setShowAnswerConfirmation(true);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error getting current player score:', err);
+      }
+    }
+    const updatedScore = currentScore + points;
+    console.log(`Calculating new score: ${currentScore} + ${points} = ${updatedScore}`);
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
       lastAnswer: currentRound.options[selectedIndex].title,
       lastAnswerCorrect: isCorrect,
-      pendingAnswer: isCorrect ? 1 : 0,
-      pointsAwarded: false
+      lastScore: points,
+      pendingAnswer: selectedIndex,
+      score: updatedScore,
+      pointsAwarded: true
     }));
-
-    const points = isCorrect ? 1 : 0;
-    const { error } = await supabase
-      .from('players')
-      .update({
-        hasAnswered: true,
-        score: currentPlayer.score + points,
-      })
-      .eq('game_code', gameCode)
-      .eq('name', playerName);
-
-    if (error) {
-      console.error("Error updating player answer:", error);
-      toast({
-        title: "שגיאה",
-        description: "אירעה שגיאה בעדכון התשובה שלך",
-        variant: "destructive"
-      });
-
-      setCurrentPlayer(prev => ({
-        ...prev,
-        hasAnswered: false,
-        lastAnswer: undefined,
-        lastAnswerCorrect: undefined,
-        pendingAnswer: null
-      }));
-    } else {
-      fetchPlayers();
+    setShowAnswerConfirmation(true);
+    if (gameCode && playerName) {
+      try {
+        console.log(`Updating hasAnswered status and storing answer for player ${playerName}`);
+        const {
+          error
+        } = await supabase.from('players').update({
+          hasAnswered: true,
+          score: updatedScore
+        }).eq('game_code', gameCode).eq('name', playerName);
+        if (error) {
+          console.error('Error updating player answer status:', error);
+        } else {
+          console.log(`Successfully marked ${playerName} as having answered and updated score to ${updatedScore}`);
+        }
+      } catch (err) {
+        console.error('Exception when updating player answer status:', err);
+      }
     }
-  }, [gameCode, playerName, currentPlayer.score, fetchPlayers, toast, currentRound, timerActive]);
-
-  const handleTimeUp = useCallback(async () => {
-    if (!gameCode || !playerName) return;
-
-    setCurrentPlayer(prev => ({
-      ...prev,
-      hasAnswered: true,
-      lastAnswer: undefined,
-      lastAnswerCorrect: false,
-      pendingAnswer: 0,
-      pointsAwarded: false
-    }));
-
-    const { error } = await supabase
-      .from('players')
-      .update({
-        hasAnswered: true,
-      })
-      .eq('game_code', gameCode)
-      .eq('name', playerName);
-
-    if (error) {
-      console.error("Error updating player after time up:", error);
-      toast({
-        title: "שגיאה",
-        description: "אירעה שגיאה בעדכון הסטטוס שלך",
-        variant: "destructive"
-      });
-
-      setCurrentPlayer(prev => ({
-        ...prev,
-        hasAnswered: false,
-        lastAnswer: undefined,
-        lastAnswerCorrect: undefined,
-        pendingAnswer: null
-      }));
-    } else {
-      fetchPlayers();
+    setTimeout(() => {
+      setShowAnswerConfirmation(false);
+    }, 2000);
+    toast({
+      title: isCorrect ? "כל הכבוד!" : "אופס!",
+      description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה ב��עם הבאה"
+    });
+    if (timeLeft <= 0 || isFinalPhase) {
+      submitAllAnswers();
     }
-  }, [gameCode, playerName, fetchPlayers, toast]);
+  };
 
-  const advanceToNextPhase = useCallback(async () => {
-    if (!isHost || !gameCode) return;
-
-    let nextPhase: GamePhase;
-    switch (phase) {
-      case 'songPlayback':
-        nextPhase = 'answerOptions';
-        break;
-      case 'answerOptions':
-        nextPhase = 'scoringFeedback';
-        break;
-      case 'scoringFeedback':
-        nextPhase = 'leaderboard';
-        break;
-      case 'leaderboard':
-        nextPhase = 'songPlayback';
-        break;
-      default:
-        nextPhase = 'songPlayback';
+  const handleSkip = async () => {
+    if (selectedAnswer !== null || currentPlayer.skipsLeft <= 0 || !currentRound || currentPlayer.pointsAwarded) {
+      console.log("Cannot skip: Already answered, no skips left, missing round data, or points already awarded");
+      return;
     }
-
-    const { error } = await supabase
-      .from('game_state')
-      .update({ game_phase: nextPhase })
-      .eq('game_code', gameCode);
-
-    if (error) {
-      console.error("Error advancing to next phase:", error);
-      toast({
-        title: "שגיאה",
-        description: "אירעה שגיאה במעבר לשלב הבא",
-        variant: "destructive"
-      });
-    }
-  }, [gameCode, isHost, phase, toast]);
-
-  const resetPlayerAnswers = useCallback(async () => {
-    if (!isHost || !gameCode) return;
-
-    const { error } = await supabase
-      .from('players')
-      .update({ hasAnswered: false })
-      .eq('game_code', gameCode);
-
-    if (error) {
-      console.error("Error resetting player answers:", error);
-      toast({
-        title: "שגיאה",
-        description: "אירעה שגיאה באיפוס התשובות של השחקנים",
-        variant: "destructive"
-      });
-    }
-  }, [gameCode, isHost, toast]);
-
-  const handleSkipSong = useCallback(async () => {
-    if (!gameCode || !playerName) return;
-
-    setCurrentPlayer(prev => ({
-      ...prev,
-      skipsLeft: Math.max(0, prev.skipsLeft - 1),
-    }));
+    
     setUserSkippedQuestion(true);
-
-    const { error } = await supabase
-      .from('players')
-      .update({
-        skipsLeft: currentPlayer.skipsLeft - 1,
-      })
-      .eq('game_code', gameCode)
-      .eq('name', playerName);
-
-    if (error) {
-      console.error("Error updating player skips:", error);
-      toast({
-        title: "שגיאה",
-        description: "אירעה שגיאה בעדכון הדילוגים שלך",
-        variant: "destructive"
-      });
-
-      setCurrentPlayer(prev => ({
-        ...prev,
-        skipsLeft: prev.skipsLeft + 1,
-      }));
-      setUserSkippedQuestion(false);
-    } else {
-      fetchPlayers();
-    }
-  }, [gameCode, playerName, currentPlayer.skipsLeft, fetchPlayers, toast]);
-
-  useEffect(() => {
-    if (serverGamePhase) {
-      setPhase(serverGamePhase as GamePhase);
-    }
-  }, [serverGamePhase]);
-
-  useEffect(() => {
-    fetchPlayers();
-  }, [fetchPlayers]);
-
-  useEffect(() => {
-    const gameStateSubscription = supabase
-      .channel('game_state_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'game_state', filter: `game_code=eq.${gameCode}` },
-        (payload) => {
-          if (payload.new) {
-            const newGameState = payload.new as any;
-            if (newGameState.game_phase) {
-              setPhase(newGameState.game_phase as GamePhase);
-            }
-            if (newGameState.current_song_id) {
-              const selectedList = gameSettings?.songList || 'default';
-              const songBank = selectedList === 'mashina' ? mashinaSongs : selectedList === 'adam' ? adamSongs : defaultSongBank;
-              const newSong = songBank.find(song => song.id.toString() === newGameState.current_song_id) || null;
-              setCurrentSong(newSong);
-            }
-            if (newGameState.current_round) {
-              try {
-                const roundData = typeof newGameState.current_round === 'string' 
-                  ? JSON.parse(newGameState.current_round) 
-                  : newGameState.current_round;
-                setCurrentRound(roundData);
-              } catch (e) {
-                console.error("Error parsing current_round:", e);
-              }
-            }
-            if (newGameState.round_counter) {
-              setRoundCounter(Number(newGameState.round_counter));
-            }
-            if (newGameState.is_trivia_round !== undefined) {
-              setIsTriviaRound(newGameState.is_trivia_round);
-            }
-            if (newGameState.current_trivia_question) {
-              try {
-                const questionData = typeof newGameState.current_trivia_question === 'string' 
-                  ? JSON.parse(newGameState.current_trivia_question) 
-                  : newGameState.current_trivia_question;
-                setCurrentTriviaQuestion(questionData);
-              } catch (e) {
-                console.error("Error parsing current_trivia_question:", e);
-              }
-            }
+    
+    const skipPoints = 3;
+    let currentScore = 0;
+    let hasAlreadyAnswered = false;
+    if (gameCode && playerName) {
+      try {
+        const {
+          data
+        } = await supabase.from('players').select('score, hasAnswered').eq('game_code', gameCode).eq('name', playerName).maybeSingle();
+        if (data) {
+          currentScore = data.score || 0;
+          hasAlreadyAnswered = data.hasAnswered || false;
+          if (hasAlreadyAnswered) {
+            console.log(`Player ${playerName} has already answered this round. Not updating score for skip.`);
+            setSelectedAnswer(null);
+            setCurrentPlayer(prev => ({
+              ...prev,
+              skipsLeft: prev.skipsLeft - 1,
+              pointsAwarded: true
+            }));
+            return;
           }
         }
-      )
-      .subscribe();
-
-    const playersSubscription = supabase
-      .channel('players_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'players', filter: `game_code=eq.${gameCode}` },
-        (payload) => {
-          fetchPlayers();
+      } catch (err) {
+        console.error('Error getting current player score for skip:', err);
+      }
+    }
+    const updatedScore = currentScore + skipPoints;
+    console.log(`Skip calculation: ${currentScore} + ${skipPoints} = ${updatedScore}`);
+    setSelectedAnswer(null);
+    setCurrentPlayer(prev => ({
+      ...prev,
+      skipsLeft: prev.skipsLeft - 1,
+      lastScore: skipPoints,
+      score: updatedScore,
+      hasAnswered: true,
+      pointsAwarded: true
+    }));
+    if (gameCode && playerName) {
+      try {
+        console.log(`Updating for skip: player ${playerName}`);
+        const {
+          error
+        } = await supabase.from('players').update({
+          hasAnswered: true,
+          score: updatedScore
+        }).eq('game_code', gameCode).eq('name', playerName);
+        if (error) {
+          console.error('Error updating player skip status:', error);
+        } else {
+          console.log(`Successfully marked ${playerName} as having skipped and updated score to ${updatedScore}`);
         }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(gameStateSubscription);
-      supabase.removeChannel(playersSubscription);
-    };
-  }, [gameCode, fetchPlayers, gameSettings]);
-
-  useEffect(() => {
-    const currentPlayer = players.find(p => p.name === playerName);
-    if (currentPlayer) {
-      setCurrentPlayer(prev => ({
-        ...prev,
-        score: currentPlayer.score,
-        skipsLeft: currentPlayer.skipsLeft !== undefined ? currentPlayer.skipsLeft : 3,
-        hasAnswered: currentPlayer.hasAnswered,
-        isReady: currentPlayer.isReady,
-      }));
-      setPlayerReady(currentPlayer.isReady);
+      } catch (err) {
+        console.error('Exception when updating player skip status:', err);
+      }
     }
-  }, [players, playerName]);
+    toast({
+      title: "דילגת על השאלה",
+      description: `נותרו ${currentPlayer.skipsLeft - 1} דילוגים`
+    });
+  };
 
-  useEffect(() => {
-    if (phase === 'songPlayback') {
-      setAllPlayersAnswered(false);
-      setAnsweredEarly(false);
-      setUserSkippedQuestion(false);
-      resetPlayerAnswers();
+  const handleTimeout = async () => {
+    console.log('Timeout reached without selection');
+    if (selectedAnswer !== null || currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
+      console.log('Player already answered or points already awarded, skipping timeout handler');
+      return;
     }
-  }, [phase, resetPlayerAnswers]);
 
-  useEffect(() => {
-    if (phase === 'answerOptions') {
-      setTimeLeft(answerTimeLimit || 10);
-      setTimerActive(true);
+    console.log('No answer selected after timeout, moving to results');
+
+    submitAllAnswers();
+  };
+
+  const resetPlayersAnsweredStatus = async () => {
+    if (!isHost || !gameCode) return;
+    const {
+      error
+    } = await supabase.from('players').update({
+      hasAnswered: false
+    }).eq('game_code', gameCode);
+    if (error) {
+      console.error('Error resetting players answered status:', error);
+      toast({
+        title: "שגיאה באיפוס סטטוס השחקנים",
+        description: "אירעה שגיאה באיפוס סטטוס השחקנים",
+        variant: "destructive"
+      });
     } else {
-      setTimerActive(false);
+      console.log('Successfully reset all players answered status');
     }
-  }, [phase, answerTimeLimit]);
+  };
+
+  const resetPlayersReadyStatus = async () => {
+    if (!isHost || !gameCode) return;
+    const {
+      error
+    } = await supabase.from('players').update({
+      isReady: false
+    }).eq('game_code', gameCode);
+    if (error) {
+      console.error('Error resetting players ready status:', error);
+      toast({
+        title: "שגיאה באיפוס סטטוס מוכנות השחקנים",
+        description: "אירעה שגיאה באיפוס סטטוס מוכנות השחקנים",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const markPlayerReady = async () => {
+    if (!gameCode || !playerName) return;
+    setPlayerReady(true);
+    const {
+      error
+    } = await supabase.from('players').update({
+      isReady: true
+    }).eq('game_code', gameCode).eq('name', playerName);
+    if (error) {
+      console.error('Error marking player as ready:', error);
+      setPlayerReady(false);
+      toast({
+        title: "שגיאה בסימון מוכנות",
+        description: "אירעה שגיאה בסימון המוכנות שלך",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const resetAllPlayerScores = async () => {
+    if (!isHost || !gameCode) return;
+    try {
+      const {
+        error
+      } = await supabase.from('players').update({
+        score: 0
+      }).eq('game_code', gameCode);
+      if (error) {
+        console.error('Error resetting player scores:', error);
+        toast({
+          title: "שגיאה באיפוס הניקוד",
+          description: "אירעה שגיאה באיפוס ניקוד השחקנים",
+          variant: "destructive"
+        });
+      } else {
+        console.log('Successfully reset all player scores to 0');
+        toast({
+          title: "ניקוד אופס",
+          description: "ניקוד כל השחקנים אופס בהצלחה"
+        });
+      }
+    } catch (err) {
+      console.error('Exception when resetting player scores:', err);
+    }
+  };
 
   useEffect(() => {
     if (phase === 'scoringFeedback') {
-      const now = Date.now();
-      gameStartTimeRef.current = now;
+      const timer = setTimeout(() => {
+        setPhase('leaderboard');
+      }, 6000);
+      return () => clearTimeout(timer);
     }
-  }, [phase]);
+  }, [phase, isHost]);
 
-  useEffect(() => {
-    if (phase === 'leaderboard') {
-      const now = Date.now();
-      gameStartTimeRef.current = now;
+  const nextRound = async () => {
+    if (!isHost) return;
+    setAnsweredEarly(false);
+    setSelectedAnswer(null);
+    setTimerActive(false);
+    setPlayerReady(false);
+    setUserSkippedQuestion(false);
+    setRoundCounter(prev => prev + 1);
+    const newRoundCounter = roundCounter + 1;
+    const newIsTriviaRound = newRoundCounter % 5 === 0;
+    setIsTriviaRound(newIsTriviaRound);
+    
+    if (timerRef.current) {
+      console.log('Clearing timer before starting next round');
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
-  }, [phase]);
+    
+    setCurrentPlayer(prev => ({
+      ...prev,
+      hasAnswered: false,
+      isReady: false,
+      lastAnswer: undefined,
+      lastAnswerCorrect: undefined,
+      lastScore: undefined,
+      pendingAnswer: null,
+      pointsAwarded: false
+    }));
+    
+    try {
+      const { error: roundUpdateError } = await supabase
+        .from('game_state')
+        .update({ current_round: newRoundCounter })
+        .eq('game_code', gameCode);
+        
+      if (roundUpdateError) {
+        console.error('Error updating round number:', roundUpdateError);
+      }
+    } catch (err) {
+      console.error('Exception updating round number:', err);
+    }
+    
+    if (newIsTriviaRound) {
+      const randomIndex = Math.floor(Math.random() * triviaQuestions.length);
+      const selectedQuestion = triviaQuestions[randomIndex];
+      setCurrentTriviaQuestion(selectedQuestion);
+      
+      const triviaData = {
+        type: "trivia",
+        question: selectedQuestion
+      };
+      
+      const { error } = await supabase.from('game_state').update({
+        current_song_name: JSON.stringify(triviaData),
+        game_phase: 'playing'
+      }).eq('game_code', gameCode);
+      
+      if (error) {
+        console.error('Error storing trivia data:', error);
+        toast({
+          title: "שגיאה בשמירת נתוני הטריוויה",
+          description: "אירעה שגיאה בשמירת נתוני הטריוויה",
+          variant: "destructive"
+        });
+        return;
+      }
+    } else {
+      updateGameState('playing');
+    }
+    
+    setPhase('songPlayback');
+    
+    toast({
+      title: "מתכוננים לסיבוב הבא",
+      description: newIsTriviaRound ? "סיבוב טריוויה עומד להתחיל" : "סיבוב חדש עומד להתחיל"
+    });
+  };
 
-  useEffect(() => {
-    if (phase === 'songPlayback') {
-      const now = Date.now();
-      gameStartTimeRef.current = now;
+  const playFullSong = () => {
+    if (!isHost || !currentRound) return;
+    toast({
+      title: "משמיע את השיר המלא",
+      description: "השיר המלא מתנגן כעת"
+    });
+    if (currentRound.correctSong.fullUrl) {
+      console.log(`Playing full song from YouTube: ${currentRound.correctSong.fullUrl}`);
+      window.open(currentRound.correctSong.fullUrl, '_blank');
     }
-  }, [phase]);
+  };
 
-  useEffect(() => {
-    if (phase === 'songPlayback' && isHost) {
-      const now = Date.now();
-      gameStartTimeRef.current = now;
-      startGameRound();
+  const handleTriviaAnswer = (isCorrect: boolean, selectedIndex: number) => {
+    if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
+      console.log("Already answered or points already awarded - ignoring selection");
+      return;
     }
-  }, [phase, isHost, startGameRound]);
+    
+    setUserSkippedQuestion(false);
+    
+    console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${isCorrect}`);
+    const currentTime = Date.now();
+    const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
+    if (timeSinceStart <= 12) {
+      setAnsweredEarly(true);
+    }
+    let points = 0;
+    const isFinalPhase = timeSinceStart > 8;
+
+    if (isFinalPhase) {
+      points = isCorrect ? 4 : -2;
+    } else {
+      if (timeSinceStart <= 3) {
+        points = 13;
+      } else if (timeSinceStart <= 8) {
+        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
+      }
+    }
+    setCurrentPlayer(prev => ({
+      ...prev,
+      hasAnswered: true,
+      lastAnswerCorrect: isCorrect,
+      lastScore: points,
+      score: prev.score + points,
+      pointsAwarded: true
+    }));
+    if (gameCode && playerName) {
+      try {
+        console.log(`Updating score for player ${playerName} after trivia answer`);
+        supabase.from('players').update({
+          hasAnswered: true,
+          score: currentPlayer.score + points
+        }).eq('game_code', gameCode).eq('name', playerName).then(({
+          error
+        }) => {
+          if (error) {
+            console.error('Error updating player after trivia answer:', error);
+          } else {
+            console.log(`Successfully updated ${playerName} score after trivia answer`);
+          }
+        });
+      } catch (err) {
+        console.error('Exception when updating player after trivia answer:', err);
+      }
+    }
+    toast({
+      title: isCorrect ? "כל הכבוד!" : "אופס!",
+      description: isCorrect ? "תשובה נכונה!" : "התשובה שגוי��, נסה בפעם הבאה"
+    });
+    if (isFinalPhase) {
+      submitAllAnswers();
+    }
+  };
 
   const renderPhase = () => {
     switch (phase) {
       case 'songPlayback':
-        return (
-          <div>
-            <h2 className="text-xl font-bold mb-4 text-center">
-              {isTriviaRound ? 'שאלה טריוויה' : 'השמעת שיר'}
-              <span className="ml-2">{roundCounter}</span>
-            </h2>
-            {isTriviaRound && currentTriviaQuestion ? (
-              <TriviaQuestion
-                question={currentTriviaQuestion}
-                onAnswer={handleAnswerSelection}
-                timeUp={false}
-                showOptions={false}
-                isFinalPhase={false}
-                showQuestion={true}
-              />
-            ) : (
-              currentSong && (
-                <SongPlayer
-                  song={currentSong}
-                  isPlaying={true}
-                  duration={8000}
-                  onPlaybackEnded={advanceToNextPhase}
+        if (isTriviaRound && currentTriviaQuestion) {
+          return (
+            <div className="flex flex-col items-center justify-center py-6 space-y-6">
+              <h2 className="text-2xl font-bold text-primary">שאלת טריוויה במוזיקה ישראלית</h2>
+              {isHost ? (
+                <AppButton 
+                  variant="primary" 
+                  size="lg" 
+                  onClick={() => {
+                    updateGameState('answering');
+                    setPhase('answerOptions');
+                    gameStartTimeRef.current = Date.now(); // Set start time for trivia question
+                  }} 
+                  className="max-w-xs"
+                >
+                  הצג שאלת טריוויה
+                  <Play className="mr-2" />
+                </AppButton>
+              ) : (
+                <div className="text-lg text-gray-600 text-center">
+                  המתן למנהל המשחק להצ��ג את שאלת הטריוויה
+                </div>
+              )}
+              {currentTriviaQuestion && (
+                <TriviaQuestion 
+                  question={currentTriviaQuestion} 
+                  onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} 
+                  timeUp={false} 
+                  answerStartTime={gameStartTimeRef.current || Date.now()} 
+                  elapsedTime={0} 
+                  showOptions={false}
+                  isFinalPhase={false} 
+                  showQuestion={true} 
                 />
-              )
-            )}
-            <div className="flex justify-between items-center mt-4">
-              <div className="flex items-center space-x-2">
-                <AppButton
-                  variant="outline"
-                  onClick={() => updatePlayerReadiness(!playerReady)}
-                >
-                  {playerReady ? 'מחכה' : 'מוכן'}
-                </AppButton>
-                <span className="text-sm text-gray-500">
-                  {players.filter(p => p.isReady).length} / {players.length} מוכנים
-                </span>
-              </div>
-              {currentPlayer.skipsLeft > 0 && !userSkippedQuestion && (
-                <AppButton
-                  variant="secondary"
-                  onClick={handleSkipSong}
-                  leftIcon={<SkipForward size={16} />}
-                >
-                  דלג ({currentPlayer.skipsLeft})
-                </AppButton>
               )}
             </div>
-          </div>
-        );
-      case 'answerOptions':
+          );
+        }
+
         return (
-          <div>
-            <h2 className="text-xl font-bold mb-4 text-center">
-              {isTriviaRound ? 'שאלה טריוויה' : 'בחר את התשובה הנכונה'}
-              <span className="ml-2">{roundCounter}</span>
-            </h2>
-            <GameTimer
-              initialSeconds={answerTimeLimit || 10}
-              isActive={timerActive}
-              onTimeout={handleTimeUp}
+          <div className="flex flex-col items-center justify-center py-6 space-y-6">
+            <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
+            <SongPlayer 
+              song={currentSong} 
+              isPlaying={isPlaying && showYouTubeEmbed} 
+              onPlaybackEnded={handleSongPlaybackEnded} 
+              onPlaybackError={handleSongPlaybackError} 
+              onPlaybackStarted={() => {
+                if (currentRound) {
+                  gameStartTimeRef.current = Date.now();
+                }
+              }} 
+              showOverlay={true}
             />
-            {isTriviaRound && currentTriviaQuestion ? (
-              <TriviaQuestion
-                question={currentTriviaQuestion}
-                onAnswer={handleAnswerSelection}
-                timeUp={!timerActive}
-                answerStartTime={gameStartTimeRef.current || 0}
-                elapsedTime={Date.now() - (gameStartTimeRef.current || 0)}
-                showOptions={true}
-                isFinalPhase={true}
-                hasAnsweredEarly={answeredEarly}
-                onTimeUp={handleTimeUp}
+            {currentRound && (
+              <TriviaQuestion 
+                question={{
+                  question: "מה השיר?",
+                  options: currentRound.options.map(song => song.title || ''),
+                  correctAnswerIndex: currentRound.correctAnswerIndex
+                }} 
+                onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} 
+                timeUp={timeLeft <= 0} 
+                answerStartTime={gameStartTimeRef.current || Date.now()} 
+                elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} 
+                showOptions={false} // Don't show options during song playback
+                isFinalPhase={false} 
+                showQuestion={true} 
               />
-            ) : (
-              currentRound && (
-                <TriviaQuestion
-                  question={{
-                    question: "מה השיר?",
-                    options: currentRound.options.map(song => song.title),
-                    correctAnswerIndex: currentRound.correctAnswerIndex,
-                  }}
-                  onAnswer={handleAnswerSelection}
-                  timeUp={!timerActive}
-                  answerStartTime={gameStartTimeRef.current || 0}
-                  elapsedTime={Date.now() - (gameStartTimeRef.current || 0)}
-                  showOptions={true}
-                  isFinalPhase={true}
-                  hasAnsweredEarly={answeredEarly}
-                  onTimeUp={handleTimeUp}
-                />
-              )
+            )}
+            {isPlaying && !showYouTubeEmbed && (
+              <div className="relative w-40 h-40 flex items-center justify-center">
+                <div className="absolute w-full h-full">
+                  <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
+                  <MusicNote type="note2" className="absolute top-10 left-0 text-secondary animate-float-alt" size={28} />
+                  <MusicNote type="note3" className="absolute bottom-10 right-10 text-accent animate-float" size={36} />
+                </div>
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
+                  <Music className="w-10 h-10 text-primary" />
+                </div>
+              </div>
+            )}
+            {!isHost && !isPlaying && (
+              <div className="text-lg text-gray-600 text-center">
+                המתן למנהל המשחק להשמיע את השיר הבא
+              </div>
             )}
           </div>
         );
+
+      case 'answerOptions': {
+        const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
+        const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6;
+
+        if (
+          isHost &&
+          currentPlayer.hasAnswered &&
+          isFinalPhase
+        ) {
+          return (
+            <div className="flex flex-col items-center py-6 space-y-6">
+              <GameTimer initialSeconds={6} isActive={true} onTimeout={handleTimerTimeout} />
+              <div className="text-xl font-semibold text-primary">
+                הבחירה שלך נקלטה! ממתין לשאר המשתתפים...
+              </div>
+              <div className="text-md text-gray-600 bg-gray-100 rounded-lg border p-5 max-w-xl mt-8 text-center">
+                לאחר שכל המשתתפים יענו או שייגמר הזמן, יעברו כל השחקנים לצפייה בתוצאה, ניקוד, ושם השיר הנכון כולל אפשרות להשמעתו.
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex flex-col items-center py-6 space-y-6">
+            <GameTimer initialSeconds={30} isActive={timerActive} onTimeout={handleTimerTimeout} />
+
+            <div className="text-xl font-semibold text-primary">
+              הניקוד שלך בסיבוב זה: {currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}
+            </div>
+
+            <div className="flex items-center">
+              <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
+              <SkipForward className="ml-2 text-secondary" />
+            </div>
+
+            {isTriviaRound && currentTriviaQuestion ? (
+              <TriviaQuestion
+                question={currentTriviaQuestion}
+                onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)}
+                timeUp={timeLeft <= 0}
+                answerStartTime={gameStartTimeRef.current || Date.now()}
+                elapsedTime={timeSinceStart}
+                showOptions={true}
+                isFinalPhase={isFinalPhase}
+                hasAnsweredEarly={answeredEarly}
+                onTimeUp={() => {
+                  if (isFinalPhase) {
+                    submitAllAnswers();
+                  }
+                }}
+              />
+            ) : currentRound ? (
+              <TriviaQuestion
+                question={{
+                  question: "מה השיר?",
+                  options: currentRound.options.map(song => song.title || ''),
+                  correctAnswerIndex: currentRound.correctAnswerIndex
+                }}
+                onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)}
+                timeUp={timeLeft <= 0}
+                answerStartTime={gameStartTimeRef.current || Date.now()}
+                elapsedTime={timeSinceStart}
+                showOptions={true}
+                isFinalPhase={isFinalPhase}
+                hasAnsweredEarly={answeredEarly}
+                onTimeUp={() => {
+                  if (isFinalPhase) {
+                    submitAllAnswers();
+                  }
+                }}
+              />
+            ) : (
+              <div className="text-lg text-gray-600 animate-pulse">
+                טוען אפשרויות...
+              </div>
+            )}
+
+            {!currentPlayer.hasAnswered && (
+              <AppButton variant="secondary" className="mt-4 max-w-xs" disabled={selectedAnswer !== null || currentPlayer.skipsLeft <= 0} onClick={handleSkip}>
+                דלג ({currentPlayer.skipsLeft})
+                <SkipForward className="mr-2" />
+              </AppButton>
+            )}
+
+            {selectedAnswer !== null && (
+              <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
+                הבחירה שלך נקלטה! ממתין לסיום הזמן...
+              </div>
+            )}
+          </div>
+        );
+      }
+      
       case 'scoringFeedback':
         return (
-          <div>
-            <h2 className="text-xl font-bold mb-4 text-center">
-              תוצאות
-              <span className="ml-2">{roundCounter - 1}</span>
-            </h2>
-            <Table className="w-full">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">שחקן</TableHead>
-                  <TableHead>תשובה</TableHead>
-                  <TableHead>תוצאה</TableHead>
-                  <TableHead className="text-right">ניקוד</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {players.map((player) => {
-                  const isCurrentPlayer = player.name === playerName;
-                  const playerDetails = isCurrentPlayer ? currentPlayer : {
-                    name: player.name,
-                    score: player.score,
-                    lastAnswer: undefined,
-                    lastAnswerCorrect: undefined,
-                    pendingAnswer: null
-                  };
-
-                  return (
-                    <TableRow key={player.id}>
-                      <TableCell className="font-medium">{player.name}</TableCell>
-                      <TableCell>
-                        {playerDetails.lastAnswer ? playerDetails.lastAnswer : 'לא ענה'}
-                      </TableCell>
-                      <TableCell>
-                        {playerDetails.lastAnswerCorrect === true ? (
-                          <CheckCircle2 className="text-green-500 inline-block align-middle" size={20} />
-                        ) : playerDetails.lastAnswerCorrect === false ? (
-                          <XCircle className="text-red-500 inline-block align-middle" size={20} />
-                        ) : (
-                          'לא ענה'
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">{player.score}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-            <div className="mt-4 text-center">
-              <AppButton onClick={advanceToNextPhase}>
-                לשלב הבא
+          <div className="flex flex-col items-center justify-center py-8 space-y-6">
+            {userSkippedQuestion ? (
+              <>
+                <div className="text-2xl font-bold text-secondary text-center">
+                  דילגת על השאלה
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-xl">
+                  <span>קיבלת</span>
+                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
+                  <span>נקודות</span>
+                </div>
+              </>
+            ) : currentPlayer.lastAnswerCorrect !== undefined ? (
+              <>
+                <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text-center`}>
+                  {currentPlayer.lastAnswerCorrect ? 'כל הכבוד! ענית נכון!' : 'אוי לא! טעית.'}
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-xl">
+                  <span>קיבלת</span>
+                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
+                  <span>נקודות</span>
+                </div>
+                
+                {currentPlayer.lastAnswer && (
+                  <div className="text-lg">
+                    {currentPlayer.lastAnswerCorrect ? 'תשובה נכונה:' : 'בחרת:'} {currentPlayer.lastAnswer}
+                  </div>
+                )}
+                
+                {!currentPlayer.lastAnswerCorrect && currentRound && !isTriviaRound && (
+                  <div className="text-lg font-semibold text-green-500">
+                    התשובה הנכונה: {currentRound.correctSong.title}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-lg text-gray-600 text-center">
+                ממתין לתוצאות...
+              </div>
+            )}
+            
+            {isHost && currentRound && !isTriviaRound && (
+              <AppButton 
+                variant="secondary" 
+                size="lg" 
+                onClick={playFullSong} 
+                className="max-w-xs mt-4"
+              >
+                השמע את הש��ר המלא
+                <Youtube className="mr-2" />
               </AppButton>
-            </div>
+            )}
           </div>
         );
+      
       case 'leaderboard':
         return (
-          <div>
-            <h2 className="text-2xl font-bold mb-4 text-center">
-              <Award className="inline-block mr-2" />
-              טבלת המובילים
-            </h2>
-            <Table className="w-full">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">מקום</TableHead>
-                  <TableHead>שחקן</TableHead>
-                  <TableHead className="text-right">ניקוד</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {players.map((player, index) => (
-                  <TableRow key={player.id}>
-                    <TableCell className="font-medium">
-                      {index === 0 ? (
-                        <Crown className="text-yellow-500 inline-block align-middle" size={20} />
-                      ) : index === 1 ? (
-                        <Award className="text-gray-500 inline-block align-middle" size={20} />
-                      ) : index === 2 ? (
-                        <Trophy className="text-orange-500 inline-block align-middle" size={20} />
-                      ) : (
-                        index + 1
-                      )}
-                    </TableCell>
-                    <TableCell>{player.name}</TableCell>
-                    <TableCell className="text-right">{player.score}</TableCell>
+          <div className="flex flex-col items-center justify-center py-8">
+            <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
+
+            <div className="w-full max-w-md">
+              <Table>
+                <TableHeader>
+                  <TableRow className="py-[32px]">
+                    <TableHead className="text-right">מיקום</TableHead>
+                    <TableHead className="text-right">שם</TableHead>
+                    <TableHead className="text-right">ניקוד</TableHead>
+                    <TableHead className="w-12"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="mt-4 text-center">
-              <AppButton onClick={advanceToNextPhase}>
-                לסיבוב הבא
+                </TableHeader>
+                <TableBody>
+                  {players.map((player, idx) => (
+                    <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
+                      <TableCell className="font-medium">{idx + 1}</TableCell>
+                      <TableCell className="font-semibold">{player.name}</TableCell>
+                      <TableCell className={`font-bold ${(player.score || 0) < 0 ? "text-red-500" : ""}`}>
+                        {player.score || 0}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
+                        {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
+                        {idx === 2 && <Award className="h-5 w-5 text-amber-700" />}
+                        {player.name === playerName && idx > 2 && <CheckCircle2 className="h-5 w-5 text-primary my-[30px]" />}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {isHost ? (
+              <AppButton 
+                variant="primary" 
+                size="lg" 
+                className="mt-4" 
+                onClick={nextRound}
+              >
+                התחל סיבוב חדש
               </AppButton>
+            ) : (
+              <div className="text-sm text-gray-500 mt-4">
+                המתן למארח להתחיל סיבוב חדש
+              </div>
+            )}
+          </div>
+        );
+      
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="text-lg text-gray-600 animate-pulse">
+              טוען...
             </div>
           </div>
         );
-      default:
-        return <div>שלב לא ידוע</div>;
     }
   };
+
+  useEffect(() => {
+    if (phase === 'answerOptions' && timeLeft <= 0.1) {
+      submitAllAnswers();
+    }
+  }, [phase, timeLeft]);
+  
+  useEffect(() => {
+    if (isHost && serverGamePhase === "playing") {
+      playSong();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, serverGamePhase]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
       <div className="container mx-auto px-4 py-6 relative z-10">
-        <div className="flex items-center justify-between mb-6 bg-white/30 backdrop-blur-sm p-2 rounded-lg shadow-sm">
-          <div className="flex items-center space-x-3">
-            <LeaveGameButton 
-              gameCode={gameCode || ''} 
-              isHost={isHost} 
-              className="rounded-full p-1.5 hover:bg-destructive/10 transition-colors" 
-            />
-            
-            <div className="bg-primary/5 px-2.5 py-1 rounded-full text-sm font-mono">
-              <span className="text-xs text-gray-600 mr-1">קוד:</span>
-              {gameCode}
-            </div>
+        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6 bg-white/50 backdrop-blur-sm p-4 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2 order-1 md:order-none">
+            <LeaveGameButton gameCode={gameCode || ''} isHost={isHost} />
+            {isHost && <EndGameButton gameCode={gameCode} />}
           </div>
           
-          <h1 className="text-3xl font-bold text-primary text-center flex-grow relative">
-            <MusicNote type="note3" className="absolute -top-4 -right-6 text-primary opacity-50" size={24} animation="float" />
-            <MusicNote type="note2" className="absolute -top-3 -left-4 text-secondary opacity-50" size={20} animation="float-alt" />
-            שיר על הדרך 🎶
+          <h1 className="flex items-center justify-center text-5xl font-bold text-primary text-center order-0 md:order-none relative">
+            <div className="flex items-center justify-center gap-3">
+              <MusicNote type="note3" className="absolute -top-6 -right-8 text-primary" size={32} animation="float" />
+              <MusicNote type="note2" className="absolute -top-4 -left-6 text-secondary" size={28} animation="float-alt" />
+              שיר על הדרך 🎶
+            </div>
           </h1>
           
-          {isHost && (
-            <Badge variant="secondary" className="text-sm">
-              מנחה
-            </Badge>
-          )}
+          <div className="flex flex-col md:flex-row items-center gap-4 order-2 md:order-none">
+            {isHost && <div className="text-sm text-gray-600">מנחה</div>}
+            <div className="flex items-center gap-2 bg-primary/5 px-3 py-1.5 rounded-md">
+              <span className="text-sm text-gray-600">קוד משחק: </span>
+              <span className="font-mono font-bold text-lg">{gameCode}</span>
+            </div>
+          </div>
         </div>
         
         {renderPhase()}
+      </div>
+      
+      <div className="w-full max-w-4xl mx-auto p-4 mb-8">
+        
       </div>
     </div>
   );
