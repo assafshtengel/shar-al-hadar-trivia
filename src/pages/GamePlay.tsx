@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -23,7 +22,6 @@ import { mashinaSongs } from "@/data/songs/mashina";
 import { adamSongs } from "@/data/songs/adam";
 import { Badge } from "@/components/ui/badge";
 
-// Updated GamePhase type to match with what's used in the component
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
 
 interface Player {
@@ -45,7 +43,6 @@ interface GameRound {
   correctAnswerIndex: number;
 }
 
-// Updated SupabasePlayer interface to include skipsLeft
 interface SupabasePlayer {
   id: string;
   name: string;
@@ -54,7 +51,7 @@ interface SupabasePlayer {
   joined_at: string;
   hasAnswered: boolean;
   isReady: boolean;
-  skipsLeft?: number; // Added to match database
+  skipsLeft: number;
 }
 
 interface PendingAnswerUpdate {
@@ -63,12 +60,10 @@ interface PendingAnswerUpdate {
   points: number;
 }
 
-// Extending GameSettings interface to include the missing properties
 declare module '@/contexts/GameStateContext' {
   interface GameSettings {
     songList?: string;
     triviaRoundChance?: number;
-    // Add other missing properties if needed
   }
 }
 
@@ -163,7 +158,6 @@ const GamePlay: React.FC = () => {
   const startGameRound = useCallback(async () => {
     if (!isHost || !gameCode) return;
 
-    // Determine if this round should be a trivia round
     const triviaChance = gameSettings?.triviaRoundChance || 0.2;
     const shouldBeTrivia = Math.random() < triviaChance;
     setIsTriviaRound(shouldBeTrivia);
@@ -172,12 +166,10 @@ const GamePlay: React.FC = () => {
     let triviaQuestion: TriviaQuestionType | null = null;
 
     if (shouldBeTrivia) {
-      // Select a random trivia question
       const randomIndex = Math.floor(Math.random() * triviaQuestions.length);
       triviaQuestion = triviaQuestions[randomIndex];
       setCurrentTriviaQuestion(triviaQuestion);
 
-      // Ensure the correct answer index is within the bounds of the options array
       if (triviaQuestion && triviaQuestion.correctAnswerIndex >= triviaQuestion.options.length) {
         console.error("Invalid correctAnswerIndex in trivia question:", triviaQuestion);
         toast({
@@ -188,15 +180,13 @@ const GamePlay: React.FC = () => {
         return;
       }
 
-      // Create a dummy song object for trivia rounds
       song = {
         id: 'trivia',
         title: 'Trivia Round',
         artist: 'Trivia',
-        embedUrl: '', // No song to play
+        embedUrl: '',
       };
     } else {
-      // Select a random song
       const selectedList = gameSettings?.songList || 'default';
       const songBank = selectedList === 'mashina' ? mashinaSongs : selectedList === 'adam' ? adamSongs : defaultSongBank;
       const randomIndex = Math.floor(Math.random() * songBank.length);
@@ -206,7 +196,6 @@ const GamePlay: React.FC = () => {
 
     setCurrentSong(song);
 
-    // Generate answer options
     const options = [song];
     while (options.length < 4) {
       const randomSong = defaultSongBank[Math.floor(Math.random() * defaultSongBank.length)];
@@ -224,12 +213,11 @@ const GamePlay: React.FC = () => {
     };
     setCurrentRound(round);
 
-    // Update game state on the server
     const { error } = await supabase
       .from('game_state')
       .update({
         game_phase: 'songPlayback',
-        current_song_id: song.id,
+        current_song_id: song.id.toString(),
         current_round: JSON.stringify(round),
         round_counter: roundCounter,
         is_trivia_round: shouldBeTrivia,
@@ -254,7 +242,6 @@ const GamePlay: React.FC = () => {
 
     setAnsweredEarly(timerActive);
 
-    // Optimistically update the local state
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
@@ -264,7 +251,6 @@ const GamePlay: React.FC = () => {
       pointsAwarded: false
     }));
 
-    // Update player state on the server
     const points = isCorrect ? 1 : 0;
     const { error } = await supabase
       .from('players')
@@ -283,7 +269,6 @@ const GamePlay: React.FC = () => {
         variant: "destructive"
       });
 
-      // Revert the optimistic update
       setCurrentPlayer(prev => ({
         ...prev,
         hasAnswered: false,
@@ -292,7 +277,6 @@ const GamePlay: React.FC = () => {
         pendingAnswer: null
       }));
     } else {
-      // Fetch the updated player list
       fetchPlayers();
     }
   }, [gameCode, playerName, currentPlayer.score, fetchPlayers, toast, currentRound, timerActive]);
@@ -300,7 +284,6 @@ const GamePlay: React.FC = () => {
   const handleTimeUp = useCallback(async () => {
     if (!gameCode || !playerName) return;
 
-    // Optimistically update the local state
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
@@ -310,7 +293,6 @@ const GamePlay: React.FC = () => {
       pointsAwarded: false
     }));
 
-    // Update player state on the server to reflect that the player has "answered" (ran out of time)
     const { error } = await supabase
       .from('players')
       .update({
@@ -327,7 +309,6 @@ const GamePlay: React.FC = () => {
         variant: "destructive"
       });
 
-      // Revert the optimistic update
       setCurrentPlayer(prev => ({
         ...prev,
         hasAnswered: false,
@@ -336,7 +317,6 @@ const GamePlay: React.FC = () => {
         pendingAnswer: null
       }));
     } else {
-      // Fetch the updated player list
       fetchPlayers();
     }
   }, [gameCode, playerName, fetchPlayers, toast]);
@@ -398,14 +378,12 @@ const GamePlay: React.FC = () => {
   const handleSkipSong = useCallback(async () => {
     if (!gameCode || !playerName) return;
 
-    // Optimistically update the local state
     setCurrentPlayer(prev => ({
       ...prev,
       skipsLeft: Math.max(0, prev.skipsLeft - 1),
     }));
     setUserSkippedQuestion(true);
 
-    // Update player skipsLeft on the server
     const { error } = await supabase
       .from('players')
       .update({
@@ -422,14 +400,12 @@ const GamePlay: React.FC = () => {
         variant: "destructive"
       });
 
-      // Revert the optimistic update
       setCurrentPlayer(prev => ({
         ...prev,
         skipsLeft: prev.skipsLeft + 1,
       }));
       setUserSkippedQuestion(false);
     } else {
-      // Fetch the updated player list
       fetchPlayers();
     }
   }, [gameCode, playerName, currentPlayer.skipsLeft, fetchPlayers, toast]);
@@ -459,7 +435,7 @@ const GamePlay: React.FC = () => {
             if (newGameState.current_song_id) {
               const selectedList = gameSettings?.songList || 'default';
               const songBank = selectedList === 'mashina' ? mashinaSongs : selectedList === 'adam' ? adamSongs : defaultSongBank;
-              const newSong = songBank.find(song => song.id === newGameState.current_song_id) || null;
+              const newSong = songBank.find(song => song.id.toString() === newGameState.current_song_id) || null;
               setCurrentSong(newSong);
             }
             if (newGameState.current_round) {
@@ -473,7 +449,7 @@ const GamePlay: React.FC = () => {
               }
             }
             if (newGameState.round_counter) {
-              setRoundCounter(newGameState.round_counter);
+              setRoundCounter(Number(newGameState.round_counter));
             }
             if (newGameState.is_trivia_round !== undefined) {
               setIsTriviaRound(newGameState.is_trivia_round);
