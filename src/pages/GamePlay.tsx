@@ -409,6 +409,17 @@ const GamePlay: React.FC = () => {
     if (!isHost) return;
     await resetPlayersReadyStatus();
     await resetPlayersAnsweredStatus();
+    
+    setCurrentPlayer(prev => ({
+      ...prev,
+      hasAnswered: false,
+      lastAnswer: undefined,
+      lastAnswerCorrect: undefined,
+      lastScore: undefined,
+      pendingAnswer: null,
+      pointsAwarded: false
+    }));
+    
     const gameRound = createGameRound();
     setCurrentRound(gameRound);
     setCurrentSong(gameRound.correctSong);
@@ -564,8 +575,8 @@ const GamePlay: React.FC = () => {
   };
 
   const handleAnswer = async (isCorrect: boolean, selectedIndex: number) => {
-    if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound || currentPlayer.pointsAwarded) {
-      console.log("Already answered or missing round data or points already awarded - ignoring selection");
+    if (selectedAnswer !== null || currentPlayer.hasAnswered) {
+      console.log("Already answered or missing round data - ignoring selection");
       return;
     }
     
@@ -593,73 +604,89 @@ const GamePlay: React.FC = () => {
     if (!isCorrect) {
       points = isFinalPhase ? -2 : 0;
     }
+    
     let currentScore = 0;
     let hasAlreadyAnswered = false;
+    
     if (gameCode && playerName) {
-      try {
-        const {
-          data
-        } = await supabase.from('players').select('score, hasAnswered').eq('game_code', gameCode).eq('name', playerName).maybeSingle();
-        if (data) {
-          currentScore = data.score || 0;
-          hasAlreadyAnswered = data.hasAnswered || false;
-          if (hasAlreadyAnswered) {
-            console.log(`Player ${playerName} has already answered this round. Not updating score.`);
-            setCurrentPlayer(prev => ({
-              ...prev,
-              hasAnswered: true,
-              lastAnswer: currentRound.options[selectedIndex].title,
-              lastAnswerCorrect: isCorrect,
-              lastScore: points,
-              pendingAnswer: selectedIndex,
-              pointsAwarded: true
-            }));
-            setShowAnswerConfirmation(true);
+      supabase
+        .from('players')
+        .select('score')
+        .eq('game_code', gameCode)
+        .eq('name', playerName)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error getting player score:', error);
             return;
           }
-        }
-      } catch (err) {
-        console.error('Error getting current player score:', err);
-      }
+          
+          if (data) {
+            currentScore = data.score || 0;
+            hasAlreadyAnswered = data.hasAnswered || false;
+            
+            if (hasAlreadyAnswered) {
+              console.log(`Player ${playerName} has already answered this round. Not updating score.`);
+              setCurrentPlayer(prev => ({
+                ...prev,
+                hasAnswered: true,
+                lastAnswer: currentRound?.options[selectedIndex].title,
+                lastAnswerCorrect: isCorrect,
+                lastScore: points
+              }));
+              setShowAnswerConfirmation(true);
+              return;
+            }
+          }
+        })
+        .catch(err => {
+          console.error('Exception when getting player score:', err);
+        });
     }
+    
     const updatedScore = currentScore + points;
     console.log(`Calculating new score: ${currentScore} + ${points} = ${updatedScore}`);
+    
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
-      lastAnswer: currentRound.options[selectedIndex].title,
+      lastAnswer: currentRound?.options[selectedIndex].title,
       lastAnswerCorrect: isCorrect,
       lastScore: points,
       pendingAnswer: selectedIndex,
       score: updatedScore,
       pointsAwarded: true
     }));
+    
     setShowAnswerConfirmation(true);
+    
     if (gameCode && playerName) {
-      try {
-        console.log(`Updating hasAnswered status and storing answer for player ${playerName}`);
-        const {
-          error
-        } = await supabase.from('players').update({
+      supabase
+        .from('players')
+        .update({
           hasAnswered: true,
           score: updatedScore
-        }).eq('game_code', gameCode).eq('name', playerName);
-        if (error) {
-          console.error('Error updating player answer status:', error);
-        } else {
-          console.log(`Successfully marked ${playerName} as having answered and updated score to ${updatedScore}`);
-        }
-      } catch (err) {
-        console.error('Exception when updating player answer status:', err);
-      }
+        })
+        .eq('game_code', gameCode)
+        .eq('name', playerName)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error updating player score:', error);
+          } else {
+            console.log(`Successfully updated ${playerName}'s score to ${updatedScore}`);
+          }
+        });
     }
+    
     setTimeout(() => {
       setShowAnswerConfirmation(false);
     }, 2000);
+    
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
       description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
+    
     if (timeLeft <= 0 || isFinalPhase) {
       submitAllAnswers();
     }
@@ -928,8 +955,8 @@ const GamePlay: React.FC = () => {
   };
 
   const handleTriviaAnswer = (isCorrect: boolean, selectedIndex: number) => {
-    if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
-      console.log("Already answered or points already awarded - ignoring selection");
+    if (currentPlayer.hasAnswered) {
+      console.log("Already answered - ignoring selection");
       return;
     }
     
@@ -941,6 +968,7 @@ const GamePlay: React.FC = () => {
     if (timeSinceStart <= 12) {
       setAnsweredEarly(true);
     }
+    
     let points = 0;
     const isFinalPhase = timeSinceStart > 8;
 
@@ -953,37 +981,66 @@ const GamePlay: React.FC = () => {
         points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
       }
     }
-    setCurrentPlayer(prev => ({
-      ...prev,
-      hasAnswered: true,
-      lastAnswerCorrect: isCorrect,
-      lastScore: points,
-      score: prev.score + points,
-      pointsAwarded: true
-    }));
-    if (gameCode && playerName) {
-      try {
-        console.log(`Updating score for player ${playerName} after trivia answer`);
-        supabase.from('players').update({
-          hasAnswered: true,
-          score: currentPlayer.score + points
-        }).eq('game_code', gameCode).eq('name', playerName).then(({
-          error
-        }) => {
-          if (error) {
-            console.error('Error updating player after trivia answer:', error);
-          } else {
-            console.log(`Successfully updated ${playerName} score after trivia answer`);
-          }
-        });
-      } catch (err) {
-        console.error('Exception when updating player after trivia answer:', err);
-      }
+    
+    if (!isCorrect) {
+      points = isFinalPhase ? -2 : 0;
     }
+    
+    if (gameCode && playerName) {
+      supabase
+        .from('players')
+        .select('score')
+        .eq('game_code', gameCode)
+        .eq('name', playerName)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error getting player score for trivia:', error);
+            return;
+          }
+          
+          if (data) {
+            const currentScore = data.score || 0;
+            const updatedScore = currentScore + points;
+            
+            console.log(`Trivia answer: Current score=${currentScore}, points=${points}, updated score=${updatedScore}`);
+            
+            setCurrentPlayer(prev => ({
+              ...prev,
+              hasAnswered: true,
+              lastAnswerCorrect: isCorrect,
+              lastScore: points,
+              score: updatedScore,
+              pointsAwarded: true
+            }));
+            
+            supabase
+              .from('players')
+              .update({
+                hasAnswered: true,
+                score: updatedScore
+              })
+              .eq('game_code', gameCode)
+              .eq('name', playerName)
+              .then(({ error: updateError }) => {
+                if (updateError) {
+                  console.error('Error updating player after trivia answer:', updateError);
+                } else {
+                  console.log(`Successfully updated ${playerName} score to ${updatedScore} after trivia`);
+                }
+              });
+          }
+        })
+        .catch(err => {
+          console.error('Exception when handling trivia answer:', err);
+        });
+    }
+    
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "תשובה נכונה!" : "התשובה שגוי��, נסה בפעם הבאה"
+      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
+    
     if (isFinalPhase) {
       submitAllAnswers();
     }
@@ -1012,7 +1069,7 @@ const GamePlay: React.FC = () => {
                 </AppButton>
               ) : (
                 <div className="text-lg text-gray-600 text-center">
-                  המתן למנהל המשחק להציג את שאלת הטריוויה
+                  המתן למנהל המשחק להצ��ג את שאלת הטריוויה
                 </div>
               )}
               {currentTriviaQuestion && (

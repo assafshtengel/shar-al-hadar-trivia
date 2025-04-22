@@ -107,6 +107,9 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     );
   }
 
+  // Ensure options are always displayed when they should be, for both trivia and song questions
+  const shouldDisplayOptions = showOptions || isTrivia;
+
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4">
       {isTrivia && (
@@ -118,36 +121,38 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
       <div className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg w-full mb-6 border-2 border-primary/20">
         <p className="text-xl font-medium mb-6 text-center">{question.question}</p>
         
-        <div className="grid grid-cols-1 gap-4">
-          {visibleOptions.map((item, index) => (
-            <div key={index} className="relative">
-              <AppButton
-                variant={selectedAnswer === item.originalIndex ? 'primary' : 'secondary'}
-                className={`w-full justify-start px-4 py-3 ${
-                  answered && item.originalIndex !== question.correctAnswerIndex && selectedAnswer === item.originalIndex
-                    ? 'bg-red-100 border-red-500'
-                    : ''
-                } ${
-                  answered && item.originalIndex === question.correctAnswerIndex
-                    ? 'bg-green-100 border-green-500'
-                    : ''
-                } ${answered && selectedAnswer !== item.originalIndex ? 'opacity-70' : ''}`}
-                onClick={() => handleSelectAnswer(item.originalIndex)}
-                disabled={answered || timeUp}
-              >
-                {item.option}
-                
-                {answered && item.originalIndex === question.correctAnswerIndex && (
-                  <CheckCircle2 className="ml-auto text-green-500" />
-                )}
-                
-                {answered && selectedAnswer === item.originalIndex && item.originalIndex !== question.correctAnswerIndex && (
-                  <XCircle className="ml-auto text-red-500" />
-                )}
-              </AppButton>
-            </div>
-          ))}
-        </div>
+        {shouldDisplayOptions && (
+          <div className="grid grid-cols-1 gap-4">
+            {visibleOptions.map((item, index) => (
+              <div key={index} className="relative">
+                <AppButton
+                  variant={selectedAnswer === item.originalIndex ? 'primary' : 'secondary'}
+                  className={`w-full justify-start px-4 py-3 ${
+                    answered && item.originalIndex !== question.correctAnswerIndex && selectedAnswer === item.originalIndex
+                      ? 'bg-red-100 border-red-500'
+                      : ''
+                  } ${
+                    answered && item.originalIndex === question.correctAnswerIndex
+                      ? 'bg-green-100 border-green-500'
+                      : ''
+                  } ${answered && selectedAnswer !== item.originalIndex ? 'opacity-70' : ''}`}
+                  onClick={() => handleSelectAnswer(item.originalIndex)}
+                  disabled={answered || timeUp}
+                >
+                  {item.option}
+                  
+                  {answered && item.originalIndex === question.correctAnswerIndex && (
+                    <CheckCircle2 className="ml-auto text-green-500" />
+                  )}
+                  
+                  {answered && selectedAnswer === item.originalIndex && item.originalIndex !== question.correctAnswerIndex && (
+                    <XCircle className="ml-auto text-red-500" />
+                  )}
+                </AppButton>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       
       {answered && (
