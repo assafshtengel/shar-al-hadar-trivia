@@ -40,6 +40,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   // Always show all options for trivia questions, regardless of showOptions prop
   const isTrivia = question.question !== "מה השיר?";
 
+  // Determine if this is a trivia round
   useEffect(() => {
     if (isFinalPhase && !answered && !hasAnsweredEarly) {
       const wrongAnswerIndices = question.options
@@ -117,7 +118,6 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
       <div className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg w-full mb-6 border-2 border-primary/20">
         <p className="text-xl font-medium mb-6 text-center">{question.question}</p>
         
-        {/* Important change: Always display options in answering phase */}
         <div className="grid grid-cols-1 gap-4">
           {visibleOptions.map((item, index) => (
             <div key={index} className="relative">
