@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -5,7 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import AppButton from '@/components/AppButton';
 import MusicNote from '@/components/MusicNote';
 import GameTimer from '@/components/GameTimer';
-import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, CheckCircle2, Youtube } from 'lucide-react';
+import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, CheckCircle2, Youtube, XCircle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
@@ -22,7 +23,9 @@ import { mashinaSongs } from "@/data/songs/mashina";
 import { adamSongs } from "@/data/songs/adam";
 import { Badge } from "@/components/ui/badge";
 
+// Updated GamePhase type to match with what's used in the component
 type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
+
 interface Player {
   name: string;
   score: number;
@@ -35,11 +38,14 @@ interface Player {
   pendingAnswer?: number | null;
   pointsAwarded?: boolean;
 }
+
 interface GameRound {
   correctSong: Song;
   options: Song[];
   correctAnswerIndex: number;
 }
+
+// Updated SupabasePlayer interface to include skipsLeft
 interface SupabasePlayer {
   id: string;
   name: string;
@@ -48,11 +54,22 @@ interface SupabasePlayer {
   joined_at: string;
   hasAnswered: boolean;
   isReady: boolean;
+  skipsLeft?: number; // Added to match database
 }
+
 interface PendingAnswerUpdate {
   player_name: string;
   is_correct: boolean;
   points: number;
+}
+
+// Extending GameSettings interface to include the missing properties
+declare module '@/contexts/GameStateContext' {
+  interface GameSettings {
+    songList?: string;
+    triviaRoundChance?: number;
+    // Add other missing properties if needed
+  }
 }
 
 const GamePlay: React.FC = () => {
@@ -147,7 +164,8 @@ const GamePlay: React.FC = () => {
     if (!isHost || !gameCode) return;
 
     // Determine if this round should be a trivia round
-    const shouldBeTrivia = Math.random() < (gameSettings?.triviaRoundChance || 0.2);
+    const triviaChance = gameSettings?.triviaRoundChance || 0.2;
+    const shouldBeTrivia = Math.random() < triviaChance;
     setIsTriviaRound(shouldBeTrivia);
 
     let song: Song;
@@ -179,7 +197,8 @@ const GamePlay: React.FC = () => {
       };
     } else {
       // Select a random song
-      const songBank = gameSettings?.songList === 'mashina' ? mashinaSongs : gameSettings?.songList === 'adam' ? adamSongs : defaultSongBank;
+      const selectedList = gameSettings?.songList || 'default';
+      const songBank = selectedList === 'mashina' ? mashinaSongs : selectedList === 'adam' ? adamSongs : defaultSongBank;
       const randomIndex = Math.floor(Math.random() * songBank.length);
       song = songBank[randomIndex];
       setCurrentTriviaQuestion(null);
@@ -206,15 +225,15 @@ const GamePlay: React.FC = () => {
     setCurrentRound(round);
 
     // Update game state on the server
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('game_state')
       .update({
         game_phase: 'songPlayback',
         current_song_id: song.id,
-        current_round: round,
+        current_round: JSON.stringify(round),
         round_counter: roundCounter,
         is_trivia_round: shouldBeTrivia,
-        current_trivia_question: triviaQuestion,
+        current_trivia_question: JSON.stringify(triviaQuestion),
       })
       .eq('game_code', gameCode);
 
@@ -228,7 +247,7 @@ const GamePlay: React.FC = () => {
     } else {
       setRoundCounter(prev => prev + 1);
     }
-  }, [gameCode, isHost, toast, gameSettings?.songList, gameSettings?.triviaRoundChance, roundCounter]);
+  }, [gameCode, isHost, toast, gameSettings, roundCounter]);
 
   const handleAnswerSelection = useCallback(async (selectedIndex: number, isCorrect: boolean) => {
     if (!gameCode || !playerName || !currentRound) return;
@@ -417,7 +436,7 @@ const GamePlay: React.FC = () => {
 
   useEffect(() => {
     if (serverGamePhase) {
-      setPhase(serverGamePhase);
+      setPhase(serverGamePhase as GamePhase);
     }
   }, [serverGamePhase]);
 
@@ -433,15 +452,25 @@ const GamePlay: React.FC = () => {
         { event: '*', schema: 'public', table: 'game_state', filter: `game_code=eq.${gameCode}` },
         (payload) => {
           if (payload.new) {
-            const newGameState = payload.new;
-            setPhase(newGameState.game_phase);
+            const newGameState = payload.new as any;
+            if (newGameState.game_phase) {
+              setPhase(newGameState.game_phase as GamePhase);
+            }
             if (newGameState.current_song_id) {
-              const songBank = gameSettings?.songList === 'mashina' ? mashinaSongs : gameSettings?.songList === 'adam' ? adamSongs : defaultSongBank;
+              const selectedList = gameSettings?.songList || 'default';
+              const songBank = selectedList === 'mashina' ? mashinaSongs : selectedList === 'adam' ? adamSongs : defaultSongBank;
               const newSong = songBank.find(song => song.id === newGameState.current_song_id) || null;
               setCurrentSong(newSong);
             }
             if (newGameState.current_round) {
-              setCurrentRound(newGameState.current_round);
+              try {
+                const roundData = typeof newGameState.current_round === 'string' 
+                  ? JSON.parse(newGameState.current_round) 
+                  : newGameState.current_round;
+                setCurrentRound(roundData);
+              } catch (e) {
+                console.error("Error parsing current_round:", e);
+              }
             }
             if (newGameState.round_counter) {
               setRoundCounter(newGameState.round_counter);
@@ -449,8 +478,15 @@ const GamePlay: React.FC = () => {
             if (newGameState.is_trivia_round !== undefined) {
               setIsTriviaRound(newGameState.is_trivia_round);
             }
-             if (newGameState.current_trivia_question) {
-              setCurrentTriviaQuestion(newGameState.current_trivia_question);
+            if (newGameState.current_trivia_question) {
+              try {
+                const questionData = typeof newGameState.current_trivia_question === 'string' 
+                  ? JSON.parse(newGameState.current_trivia_question) 
+                  : newGameState.current_trivia_question;
+                setCurrentTriviaQuestion(questionData);
+              } catch (e) {
+                console.error("Error parsing current_trivia_question:", e);
+              }
             }
           }
         }
@@ -472,7 +508,7 @@ const GamePlay: React.FC = () => {
       supabase.removeChannel(gameStateSubscription);
       supabase.removeChannel(playersSubscription);
     };
-  }, [gameCode, fetchPlayers, gameSettings?.songList]);
+  }, [gameCode, fetchPlayers, gameSettings]);
 
   useEffect(() => {
     const currentPlayer = players.find(p => p.name === playerName);
