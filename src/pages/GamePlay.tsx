@@ -96,6 +96,7 @@ const GamePlay: React.FC = () => {
   const gameStartTimeRef = useRef<number | null>(null);
   const [answeredEarly, setAnsweredEarly] = useState(false);
   const [userSkippedQuestion, setUserSkippedQuestion] = useState(false);
+  const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkAllPlayersAnswered = useCallback(async () => {
     if (!gameCode) return false;
@@ -1308,11 +1309,25 @@ const GamePlay: React.FC = () => {
   };
 
   useEffect(() => {
-    if (phase === 'answerOptions' && timeLeft <= 0.1) {
-      submitAllAnswers();
+    if (phase === 'answerOptions') {
+      if (phaseTimeoutRef.current) clearTimeout(phaseTimeoutRef.current);
+      phaseTimeoutRef.current = setTimeout(() => {
+        submitAllAnswers();
+      }, 8000);
+    } else {
+      if (phaseTimeoutRef.current) {
+        clearTimeout(phaseTimeoutRef.current);
+        phaseTimeoutRef.current = null;
+      }
     }
-  }, [phase, timeLeft]);
-  
+    return () => {
+      if (phaseTimeoutRef.current) {
+        clearTimeout(phaseTimeoutRef.current);
+        phaseTimeoutRef.current = null;
+      }
+    };
+  }, [phase]);
+
   useEffect(() => {
     if (isHost && serverGamePhase === "playing") {
       playSong();
