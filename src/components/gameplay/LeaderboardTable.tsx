@@ -1,0 +1,49 @@
+
+import React from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Trophy, Award, CheckCircle2 } from "lucide-react";
+
+interface Player {
+  id: string;
+  name: string;
+  score: number;
+}
+
+interface LeaderboardTableProps {
+  players: Player[];
+  playerName: string;
+}
+
+const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ players, playerName }) => (
+  <div className="w-full max-w-md">
+    <Table>
+      <TableHeader>
+        <TableRow className="py-[32px]">
+          <TableHead className="text-right">מיקום</TableHead>
+          <TableHead className="text-right">שם</TableHead>
+          <TableHead className="text-right">ניקוד</TableHead>
+          <TableHead className="w-12"></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {players.map((player, idx) => (
+          <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
+            <TableCell className="font-medium">{idx + 1}</TableCell>
+            <TableCell className="font-semibold">{player.name}</TableCell>
+            <TableCell className={`font-bold ${(player.score || 0) < 0 ? "text-red-500" : ""}`}>
+              {player.score || 0}
+            </TableCell>
+            <TableCell className="text-right">
+              {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
+              {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
+              {idx === 2 && <Award className="h-5 w-5 text-amber-700" />}
+              {player.name === playerName && idx > 2 && <CheckCircle2 className="h-5 w-5 text-primary my-[30px]" />}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </div>
+);
+
+export default LeaderboardTable;
