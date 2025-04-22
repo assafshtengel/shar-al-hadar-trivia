@@ -639,6 +639,7 @@ const GamePlay: React.FC = () => {
       console.error('Exception when submitting all answers:', err);
     }
   };
+
   return (
     <div className="min-h-screen bg-gray-50 text-center p-4 relative">
       <div className="flex justify-between items-center mb-4">
@@ -814,3 +815,67 @@ const GamePlay: React.FC = () => {
                 {players.map((player) => (
                   <TableRow key={player.id} className={player.name === playerName ? 'bg-primary/10' : ''}>
                     <TableCell className="font-medium">{player.name}</TableCell>
+                    <TableCell>{player.score}</TableCell>
+                    <TableCell>
+                      {player.name === playerName && currentPlayer.lastScore !== undefined && (
+                        <span className={`${currentPlayer.lastScore > 0 ? 'text-green-500' : currentPlayer.lastScore < 0 ? 'text-red-500' : 'text-gray-500'} font-bold`}>
+                          {currentPlayer.lastScore > 0 ? `+${currentPlayer.lastScore}` : currentPlayer.lastScore}
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          
+          {isHost && (
+            <div className="mt-8 flex space-x-4 rtl:space-x-reverse">
+              <AppButton onClick={nextRound} className="px-6 py-3 text-lg">
+                <Play className="mr-2" />
+                סיבוב הבא
+              </AppButton>
+              <AppButton variant="outline" onClick={resetAllPlayerScores} className="px-6 py-3 text-lg">
+                <Clock className="mr-2" />
+                איפוס ניקוד
+              </AppButton>
+            </div>
+          )}
+          
+          {!isHost && (
+            <div className="mt-8 p-4 bg-gray-100 rounded-lg">
+              <p className="text-lg font-medium">ממתין למנחה שיתחיל את הסיבוב הבא...</p>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {showYouTubeEmbed && currentRound?.correctSong.embedUrl && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/90 z-50">
+          <div className="relative w-full max-w-3xl">
+            <AppButton 
+              variant="outline" 
+              onClick={() => setShowYouTubeEmbed(false)} 
+              className="absolute top-4 right-4 z-10 bg-white/80"
+            >
+              סגור
+            </AppButton>
+            <SongPlayer
+              url={currentRound.correctSong.embedUrl}
+              isPlaying={true}
+              onEnded={() => setShowYouTubeEmbed(false)}
+              fullWidth={true}
+            />
+          </div>
+        </div>
+      )}
+      
+      <div className="fixed bottom-4 right-4 flex flex-col space-y-2">
+        <LeaveGameButton gameCode={gameCode || ''} />
+        {isHost && <EndGameButton />}
+      </div>
+    </div>
+  );
+};
+
+export default GamePlay;
