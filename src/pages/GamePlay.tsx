@@ -776,7 +776,7 @@ const GamePlay: React.FC = () => {
     if (error) {
       console.error('Error resetting players ready status:', error);
       toast({
-        title: "שגיאה באיפוס סטטוס מוכנות השחקנים",
+        title: "שגיאה באיפוס ��טטוס מוכנות השחקנים",
         description: "אירעה שגיאה באיפוס סטטוס מוכנות השחקנים",
         variant: "destructive"
       });
@@ -1179,6 +1179,10 @@ const GamePlay: React.FC = () => {
       case 'scoringFeedback':
         return (
           <div className="flex flex-col items-center justify-center py-8 space-y-6">
+            <div className="text-4xl font-bold text-primary text-center animate-pulse">
+              משקללים את התוצאות
+            </div>
+
             {userSkippedQuestion ? (
               <>
                 <div className="text-2xl font-bold text-secondary text-center">
