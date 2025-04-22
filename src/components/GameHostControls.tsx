@@ -20,6 +20,7 @@ interface GameHostControlsProps {
   onPlayNext: () => void;
   onResetScores: () => void;
   gamePhase: string | null;
+  className?: string;
 }
 
 const GameHostControls: React.FC<GameHostControlsProps> = ({
@@ -27,7 +28,8 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
   isTriviaRound,
   onPlayNext,
   onResetScores,
-  gamePhase
+  gamePhase,
+  className
 }) => {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const isPlayingPhase = gamePhase === 'playing';
@@ -44,7 +46,7 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 mt-4">
+    <div className={`flex flex-col items-center gap-4 mt-4 ${className || ''}`}>
       <AppButton 
         variant="primary" 
         size="lg" 
