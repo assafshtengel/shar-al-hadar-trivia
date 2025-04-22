@@ -18,8 +18,9 @@ interface GameHostControlsProps {
   roundCounter: number;
   isTriviaRound: boolean;
   onPlayNext: () => void;
-  onResetScores: () => void;
+  onResetScores: () => void; // Using the correct prop name
   gamePhase: string | null;
+  onEndGame?: () => void; // Adding optional prop for ending the game
 }
 
 const GameHostControls: React.FC<GameHostControlsProps> = ({
@@ -27,7 +28,8 @@ const GameHostControls: React.FC<GameHostControlsProps> = ({
   isTriviaRound,
   onPlayNext,
   onResetScores,
-  gamePhase
+  gamePhase,
+  onEndGame
 }) => {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const isPlayingPhase = gamePhase === 'playing';

@@ -11,9 +11,10 @@ import { useGameState } from '@/contexts/GameStateContext';
 interface LeaveGameButtonProps {
   gameCode: string;
   isHost?: boolean;
+  className?: string; // Adding className prop to support styling
 }
 
-const LeaveGameButton: React.FC<LeaveGameButtonProps> = ({ gameCode, isHost = false }) => {
+const LeaveGameButton: React.FC<LeaveGameButtonProps> = ({ gameCode, isHost = false, className }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { clearGameData, playerName } = useGameState();
@@ -105,7 +106,7 @@ const LeaveGameButton: React.FC<LeaveGameButtonProps> = ({ gameCode, isHost = fa
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" className="w-full">
+        <Button variant="destructive" className={`w-full ${className || ''}`}>
           עזוב משחק
           <X className="mr-2" />
         </Button>

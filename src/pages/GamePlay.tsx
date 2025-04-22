@@ -1162,19 +1162,22 @@ const GamePlay: React.FC = () => {
                     אפס ניקוד
                   </AppButton>
                   
-                  <EndGameButton className="flex-1" />
+                  <EndGameButton gameCode={gameCode} className="flex-1" />
                 </div>
               </div>
             )}
             
-            {!isHost && <LeaveGameButton className="mt-6 w-full" />}
+            {!isHost && <LeaveGameButton gameCode={gameCode || ""} className="mt-6 w-full" />}
           </div>
         )}
         
         {isHost && (
           <GameHostControls
-            onResetPlayerScores={resetAllPlayerScores}
-            onEndGame={() => updateGameState('end')}
+            roundCounter={roundCounter}
+            isTriviaRound={isTriviaRound}
+            onPlayNext={nextRound}
+            onResetScores={resetAllPlayerScores}
+            gamePhase={serverGamePhase}
           />
         )}
       </div>
