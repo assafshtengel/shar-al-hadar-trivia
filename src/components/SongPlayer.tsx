@@ -14,6 +14,11 @@ interface SongPlayerProps {
   onPlaybackError?: () => void;
   duration?: number;
   showOverlay?: boolean;
+  // Add these new props to match usage in GamePlay.tsx
+  url?: string;
+  onEnded?: () => void;
+  onError?: () => void;
+  fullWidth?: boolean;
 }
 
 const SongPlayer: React.FC<SongPlayerProps> = ({
@@ -23,7 +28,12 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   onPlaybackStarted,
   onPlaybackError,
   duration = 8000,
-  showOverlay = true
+  showOverlay = true,
+  // Support for alternate prop names
+  url,
+  onEnded,
+  onError,
+  fullWidth = false
 }) => {
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +41,9 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const [manualPlayNeeded, setManualPlayNeeded] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Use either direct url prop or song.embedUrl
+  const embedUrl = url || (song?.embedUrl);
 
   const ensureEmbedParams = (url: string | undefined): string => {
     if (!url) return '';
@@ -71,9 +84,9 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
       timeoutRef.current = null;
     }
 
-    if (isPlaying && song) {
-      if (song.embedUrl) {
-        console.log('Starting song playback:', song.title);
+    if (isPlaying && (song || url)) {
+      if (embedUrl) {
+        console.log('Starting song playback:', song?.title || url);
         
         if (isIOS) {
           setManualPlayNeeded(true);
@@ -88,16 +101,22 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           }
           
           timeoutRef.current = setTimeout(() => {
-            console.log('Song playback ended:', song.title);
+            console.log('Song playback ended:', song?.title || url);
             setShowYouTubeEmbed(false);
-            onPlaybackEnded();
+            // Call the appropriate callback
+            if (onEnded) {
+              onEnded();
+            } else if (onPlaybackEnded) {
+              onPlaybackEnded();
+            }
           }, duration);
         }
       } else {
-        console.error('Song has no embed URL:', song);
+        console.error('Song has no embed URL:', song || url);
         setError('לשיר זה אין קישור השמעה זמין');
-        if (onPlaybackError) {
-          onPlaybackError();
+        if (onPlaybackError || onError) {
+          if (onError) onError();
+          else if (onPlaybackError) onPlaybackError();
         }
         toast.error('לא ניתן להשמיע את השיר', {
           description: 'אין קישור השמעה זמין לשיר זה'
@@ -114,7 +133,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
         timeoutRef.current = null;
       }
     };
-  }, [isPlaying, song, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError, isIOS]);
+  }, [isPlaying, song, url, duration, onPlaybackEnded, onPlaybackStarted, onPlaybackError, isIOS, embedUrl, onEnded, onError]);
 
   const handleManualPlay = () => {
     setManualPlayNeeded(false);
@@ -124,9 +143,14 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     }
     
     timeoutRef.current = setTimeout(() => {
-      console.log('Song playback ended (iOS):', song?.title);
+      console.log('Song playback ended (iOS):', song?.title || url);
       setShowYouTubeEmbed(false);
-      onPlaybackEnded();
+      // Call the appropriate callback
+      if (onEnded) {
+        onEnded();
+      } else if (onPlaybackEnded) {
+        onPlaybackEnded();
+      }
     }, duration);
     
     toast.success('השיר מתנגן', {
@@ -134,7 +158,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
     });
   };
 
-  if (!song || !isPlaying) {
+  if ((!song && !url) || !isPlaying) {
     return null;
   }
 
@@ -150,21 +174,22 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   }
 
   return (
-    <div className="relative w-full h-40">
-      {showYouTubeEmbed && song.embedUrl ? (
+    <div className={`relative ${fullWidth ? 'w-full' : 'w-full h-40'}`}>
+      {showYouTubeEmbed && embedUrl ? (
         <>
           <iframe 
             ref={iframeRef}
-            width="0"
-            height="0"
-            src={ensureEmbedParams(song.embedUrl)} 
+            width={fullWidth ? "100%" : "0"}
+            height={fullWidth ? "315" : "0"}
+            src={ensureEmbedParams(embedUrl)} 
             frameBorder="0" 
             allow="autoplay; encrypted-media" 
             allowFullScreen 
-            className="absolute top-0 left-0 z-10"
+            className={`absolute top-0 left-0 z-10 ${fullWidth ? 'w-full h-full' : ''}`}
             onError={() => {
               setError('שגיאה בטעינת השיר');
-              if (onPlaybackError) onPlaybackError();
+              if (onError) onError();
+              else if (onPlaybackError) onPlaybackError();
             }}
           />
           
@@ -185,7 +210,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             </div>
           )}
           
-          {showOverlay && (
+          {showOverlay && !fullWidth && (
             <div className="absolute top-0 left-0 w-full h-full z-20 bg-black"></div>
           )}
         </>

@@ -7,19 +7,33 @@ interface GameTimerProps {
   initialSeconds: number;
   isActive: boolean;
   onTimeout: () => void;
+  // Add these new props to match usage in GamePlay.tsx
+  onTimerEnd?: () => void;
+  setTimeLeft?: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const GameTimer: React.FC<GameTimerProps> = ({
   initialSeconds,
   isActive,
-  onTimeout
+  onTimeout,
+  // Support for alternate prop names
+  onTimerEnd,
+  setTimeLeft
 }) => {
-  const [timeLeft, setTimeLeft] = useState(initialSeconds);
+  const [timeLeft, setTimeLeftInternal] = useState(initialSeconds);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const lastTickTimeRef = useRef<number>(Date.now());
   const timeoutTriggeredRef = useRef<boolean>(false);
   const forceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Update both internal and external timeLeft state
+  const updateTimeLeft = (value: number) => {
+    setTimeLeftInternal(value);
+    if (setTimeLeft) {
+      setTimeLeft(value);
+    }
+  };
 
   // Reset timer when props change
   useEffect(() => {
@@ -27,7 +41,7 @@ const GameTimer: React.FC<GameTimerProps> = ({
     
     if (isActive) {
       console.log(`Timer started with ${initialSeconds} seconds`);
-      setTimeLeft(initialSeconds);
+      updateTimeLeft(initialSeconds);
       startTimeRef.current = Date.now();
       lastTickTimeRef.current = Date.now();
       
@@ -40,7 +54,8 @@ const GameTimer: React.FC<GameTimerProps> = ({
         console.log('Force timeout triggered after timer duration');
         if (!timeoutTriggeredRef.current) {
           timeoutTriggeredRef.current = true;
-          onTimeout();
+          if (onTimerEnd) onTimerEnd();
+          else onTimeout();
         }
       }, initialSeconds * 1000 + 500); // Adding a small buffer
     } else {
@@ -62,7 +77,7 @@ const GameTimer: React.FC<GameTimerProps> = ({
         forceTimeoutRef.current = null;
       }
     };
-  }, [initialSeconds, isActive, onTimeout]);
+  }, [initialSeconds, isActive, onTimeout, onTimerEnd, setTimeLeft]);
 
   // Handle timer logic
   useEffect(() => {
@@ -75,8 +90,13 @@ const GameTimer: React.FC<GameTimerProps> = ({
         const elapsed = now - lastTickTimeRef.current;
         lastTickTimeRef.current = now;
         
-        setTimeLeft(prev => {
+        setTimeLeftInternal(prev => {
           const newTime = Math.max(prev - elapsed / 1000, 0);
+          
+          // Update external timeLeft state if provided
+          if (setTimeLeft) {
+            setTimeLeft(newTime);
+          }
           
           // Trigger timeout once when time reaches 0
           if (newTime <= 0.05 && !timeoutTriggeredRef.current) {
@@ -92,7 +112,8 @@ const GameTimer: React.FC<GameTimerProps> = ({
             // Use setTimeout to ensure the UI updates before the callback
             setTimeout(() => {
               console.log('Executing timeout callback');
-              onTimeout();
+              if (onTimerEnd) onTimerEnd();
+              else onTimeout();
             }, 10);
             
             return 0;
@@ -109,7 +130,7 @@ const GameTimer: React.FC<GameTimerProps> = ({
         timerRef.current = null;
       }
     };
-  }, [isActive, onTimeout]);
+  }, [isActive, onTimeout, onTimerEnd, setTimeLeft]);
 
   // Calculate percentage for progress bar
   const progressPercentage = timeLeft / initialSeconds * 100;

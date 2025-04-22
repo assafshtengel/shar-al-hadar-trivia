@@ -9,6 +9,7 @@ interface MusicNoteProps {
   size?: number;
   color?: string;
   animation?: 'float' | 'float-alt' | 'none';
+  isPlaying?: boolean; // Added this prop
 }
 
 const MusicNote: React.FC<MusicNoteProps> = ({ 
@@ -16,7 +17,8 @@ const MusicNote: React.FC<MusicNoteProps> = ({
   type = 'note1', 
   size = 24, 
   color = 'currentColor',
-  animation = 'none'
+  animation = 'none',
+  isPlaying // Added this prop but not using it internally yet
 }) => {
   const animationClass = animation === 'float' 
     ? 'animate-float' 
