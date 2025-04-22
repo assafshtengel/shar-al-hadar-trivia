@@ -5,7 +5,7 @@ import GameEndOverlay from '@/components/GameEndOverlay';
 import { useGamePhaseNavigation } from '@/hooks/useGamePhaseNavigation';
 import { toast } from 'sonner';
 
-type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
+export type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
 
 export interface GameSettings {
   scoreLimit: number | null; // null means no limit

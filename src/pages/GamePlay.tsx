@@ -20,7 +20,9 @@ import { triviaQuestions } from '@/data/triviaQuestions';
 import { mashinaSongs } from "@/data/songs/mashina";
 import { adamSongs } from "@/data/songs/adam";
 
-type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
+type LocalGamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
+type ServerGamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
+
 interface Player {
   name: string;
   score: number;
@@ -67,7 +69,7 @@ const GamePlay: React.FC = () => {
     answerTimeLimit,
     gameSettings
   } = useGameState();
-  const [phase, setPhase] = useState<GamePhase>('songPlayback');
+  const [phase, setPhase] = useState<LocalGamePhase>('songPlayback');
   const [timeLeft, setTimeLeft] = useState(6);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
@@ -125,13 +127,14 @@ const GamePlay: React.FC = () => {
     const intervalId = setInterval(fetchPlayers, 5000);
     return () => clearInterval(intervalId);
   }, [fetchPlayers]);
-  const updateGameState = async (newPhase: GamePhase) => {
+
+  const updateGameState = async (newServerPhase: ServerGamePhase) => {
     if (!isHost) return;
     try {
       const {
         error
       } = await supabase.from('game_state').update({
-        game_phase: newPhase
+        game_phase: newServerPhase
       }).eq('game_code', gameCode);
       if (error) {
         console.error('Error updating game state:', error);
@@ -141,12 +144,13 @@ const GamePlay: React.FC = () => {
           variant: "destructive"
         });
       } else {
-        console.log(`Game state updated to ${newPhase}`);
+        console.log(`Game state updated to ${newServerPhase}`);
       }
     } catch (err) {
       console.error('Exception when updating game state:', err);
     }
   };
+
   const resetPlayersReadyStatus = async () => {
     if (!isHost) return;
     try {
@@ -169,6 +173,7 @@ const GamePlay: React.FC = () => {
       console.error('Exception when resetting player ready statuses:', err);
     }
   };
+
   const resetPlayersAnsweredStatus = async () => {
     if (!isHost) return;
     try {
@@ -191,6 +196,7 @@ const GamePlay: React.FC = () => {
       console.error('Exception when resetting player answered statuses:', err);
     }
   };
+
   const createGameRound = () => {
     let availableSongs = [...defaultSongBank];
     if (gameSettings?.songFilter === "mashina") {
@@ -215,6 +221,7 @@ const GamePlay: React.FC = () => {
       correctAnswerIndex
     };
   };
+
   const playSong = async () => {
     if (!isHost) return;
     await resetPlayersReadyStatus();
@@ -258,6 +265,7 @@ const GamePlay: React.FC = () => {
       description: "מנגן כעת, האזן בקשב"
     });
   };
+
   const handleSongPlaybackEnded = () => {
     setShowYouTubeEmbed(false);
     setIsPlaying(false);
@@ -270,6 +278,7 @@ const GamePlay: React.FC = () => {
       setTimerActive(true);
     }
   };
+
   const handleSongPlaybackError = () => {
     toast({
       title: "שגיאה בהשמעת השיר",
@@ -279,6 +288,7 @@ const GamePlay: React.FC = () => {
     setIsPlaying(false);
     setShowYouTubeEmbed(false);
   };
+
   const handleTimerTimeout = () => {
     console.log('Timer timeout handler called');
     if (selectedAnswer === null && !currentPlayer.hasAnswered) {
@@ -291,6 +301,7 @@ const GamePlay: React.FC = () => {
       submitAllAnswers();
     }
   };
+
   const handleAnswer = async (isCorrect: boolean, selectedIndex: number) => {
     if (selectedAnswer !== null || currentPlayer.hasAnswered) {
       console.log("Already answered or missing round data - ignoring selection");
@@ -382,6 +393,7 @@ const GamePlay: React.FC = () => {
     });
     submitAllAnswers();
   };
+
   const handleSkip = async () => {
     if (selectedAnswer !== null || currentPlayer.skipsLeft <= 0 || !currentRound || currentPlayer.pointsAwarded) {
       console.log("Cannot skip: Already answered, no skips left, missing round data, or points already awarded");
@@ -426,6 +438,7 @@ const GamePlay: React.FC = () => {
       console.error('Exception when skipping question:', err);
     }
   };
+
   const handleTriviaAnswer = async (isCorrect: boolean, selectedIndex: number) => {
     if (selectedAnswer !== null || currentPlayer.hasAnswered) {
       console.log("Already answered or missing round data - ignoring trivia selection");
@@ -497,6 +510,7 @@ const GamePlay: React.FC = () => {
       description: isCorrect ? `קיבלת ${points} נקודות` : `איבדת ${Math.abs(points)} נקודות`
     });
   };
+
   const resetAllPlayerScores = async () => {
     if (!isHost || !gameCode) return;
     try {
@@ -523,6 +537,7 @@ const GamePlay: React.FC = () => {
       console.error('Exception when resetting player scores:', err);
     }
   };
+
   const nextRound = async () => {
     if (!isHost) return;
     setAnsweredEarly(false);
@@ -563,6 +578,7 @@ const GamePlay: React.FC = () => {
       pointsAwarded: false
     }));
   };
+
   const handleTimeout = async () => {
     if (currentPlayer.hasAnswered || selectedAnswer !== null) {
       console.log("Already answered or selected an answer - ignoring timeout");
@@ -604,6 +620,7 @@ const GamePlay: React.FC = () => {
       console.error('Exception when handling timeout:', err);
     }
   };
+
   const submitAllAnswers = async () => {
     if (!isHost) return;
     setTimerActive(false);
@@ -872,7 +889,7 @@ const GamePlay: React.FC = () => {
       
       <div className="fixed bottom-4 right-4 flex flex-col space-y-2">
         <LeaveGameButton gameCode={gameCode || ''} />
-        {isHost && <EndGameButton />}
+        {isHost && <EndGameButton gameCode={gameCode} />}
       </div>
     </div>
   );

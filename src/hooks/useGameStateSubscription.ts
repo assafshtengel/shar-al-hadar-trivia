@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { GameSettings } from '@/contexts/GameStateContext';
-
-type GamePhase = 'waiting' | 'playing' | 'answering' | 'results' | 'end';
+import { GamePhase, GameSettings } from '@/contexts/GameStateContext';
 
 interface UseGameStateSubscriptionProps {
   gameCode: string | null;
@@ -12,7 +10,7 @@ interface UseGameStateSubscriptionProps {
   setHostReady: (ready: boolean) => void;
   clearGameData: () => void;
   navigate: (path: string) => void;
-  gameSettings?: GameSettings; // Add game settings
+  gameSettings?: GameSettings;
 }
 
 export const useGameStateSubscription = ({
