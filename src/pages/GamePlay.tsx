@@ -154,14 +154,19 @@ const GamePlay: React.FC = () => {
           setTimerActive(true);
         }
         break;
-      case 'results':
-        setPhase('scoringFeedback');
+      case 'results': {
+        if (selectedAnswer !== null || currentPlayer.hasAnswered) {
+          setPhase('scoringFeedback');
+        } else {
+          setPhase('answerOptions');
+        }
         break;
+      }
       case 'end':
         setPhase('leaderboard');
         break;
     }
-  }, [serverGamePhase, isHost]);
+  }, [serverGamePhase, isHost, selectedAnswer, currentPlayer.hasAnswered]);
 
   useEffect(() => {
     if (!gameCode || phase !== 'answerOptions' || !timerActive) return;
@@ -659,7 +664,7 @@ const GamePlay: React.FC = () => {
     }, 2000);
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה ב��עם הבאה"
+      description: isCorrect ? "בחרת בתשובה הנכונה!" : "ה��שובה שגויה, נסה ב��עם הבאה"
     });
     if (timeLeft <= 0 || isFinalPhase) {
       submitAllAnswers();
