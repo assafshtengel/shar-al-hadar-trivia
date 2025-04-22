@@ -5,18 +5,16 @@ import { Progress } from "@/components/ui/progress";
 
 interface GameTimerProps {
   initialSeconds: number;
-  isActive: boolean;
-  onTimeout: () => void;
-  // Add these new props to match usage in GamePlay.tsx
+  isActive?: boolean;
+  onTimeout?: () => void;
   onTimerEnd?: () => void;
   setTimeLeft?: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const GameTimer: React.FC<GameTimerProps> = ({
   initialSeconds,
-  isActive,
+  isActive = true,
   onTimeout,
-  // Support for alternate prop names
   onTimerEnd,
   setTimeLeft
 }) => {
@@ -55,7 +53,7 @@ const GameTimer: React.FC<GameTimerProps> = ({
         if (!timeoutTriggeredRef.current) {
           timeoutTriggeredRef.current = true;
           if (onTimerEnd) onTimerEnd();
-          else onTimeout();
+          else if (onTimeout) onTimeout();
         }
       }, initialSeconds * 1000 + 500); // Adding a small buffer
     } else {
@@ -113,7 +111,7 @@ const GameTimer: React.FC<GameTimerProps> = ({
             setTimeout(() => {
               console.log('Executing timeout callback');
               if (onTimerEnd) onTimerEnd();
-              else onTimeout();
+              else if (onTimeout) onTimeout();
             }, 10);
             
             return 0;

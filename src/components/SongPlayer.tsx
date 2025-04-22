@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
 import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
@@ -7,14 +6,13 @@ import MusicNote from './MusicNote';
 import AppButton from './AppButton';
 
 interface SongPlayerProps {
-  song: Song | null;
+  song?: Song | null;
   isPlaying: boolean;
-  onPlaybackEnded: () => void;
+  onPlaybackEnded?: () => void;
   onPlaybackStarted?: () => void;
   onPlaybackError?: () => void;
   duration?: number;
   showOverlay?: boolean;
-  // Add these new props to match usage in GamePlay.tsx
   url?: string;
   onEnded?: () => void;
   onError?: () => void;
@@ -29,7 +27,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   onPlaybackError,
   duration = 8000,
   showOverlay = true,
-  // Support for alternate prop names
   url,
   onEnded,
   onError,
@@ -42,7 +39,6 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Use either direct url prop or song.embedUrl
   const embedUrl = url || (song?.embedUrl);
 
   const ensureEmbedParams = (url: string | undefined): string => {

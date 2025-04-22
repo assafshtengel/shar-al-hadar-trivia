@@ -9,7 +9,7 @@ interface MusicNoteProps {
   size?: number;
   color?: string;
   animation?: 'float' | 'float-alt' | 'none';
-  isPlaying?: boolean; // Added this prop
+  isPlaying?: boolean;
 }
 
 const MusicNote: React.FC<MusicNoteProps> = ({ 
@@ -18,7 +18,7 @@ const MusicNote: React.FC<MusicNoteProps> = ({
   size = 24, 
   color = 'currentColor',
   animation = 'none',
-  isPlaying // Added this prop but not using it internally yet
+  isPlaying = false
 }) => {
   const animationClass = animation === 'float' 
     ? 'animate-float' 
@@ -35,7 +35,7 @@ const MusicNote: React.FC<MusicNoteProps> = ({
   };
 
   return (
-    <div className={cn(animationClass, className)}>
+    <div className={cn(animationClass, isPlaying ? 'animate-pulse' : '', className)}>
       {icons[type]}
     </div>
   );
