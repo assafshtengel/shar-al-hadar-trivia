@@ -70,7 +70,7 @@ const GamePlay: React.FC = () => {
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
   const [timeLeft, setTimeLeft] = useState(6);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showYouTubeEmbed, setShowYouTubeEmbed = useState(false);
+  const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [currentRound, setCurrentRound] = useState<GameRound | null>(null);
   const [timerActive, setTimerActive] = useState(false);
@@ -820,8 +820,8 @@ const GamePlay: React.FC = () => {
         toast({
           title: "שגיאה באיפוס הניקוד",
           description: "אירעה שגיאה באיפוס ניקוד השחקנים",
-          variant: "destructive"
-        });
+        variant: "destructive"
+      });
       } else {
         console.log('Successfully reset all player scores to 0');
         toast({
