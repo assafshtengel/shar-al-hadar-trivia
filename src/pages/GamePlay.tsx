@@ -151,6 +151,7 @@ const GamePlay: React.FC = () => {
       case 'answering':
         setPhase('answerOptions');
         setSelectedAnswer(null);
+        setAnsweredEarly(false);
         if (!isHost) {
           setTimerActive(true);
         }
@@ -160,6 +161,7 @@ const GamePlay: React.FC = () => {
           setPhase('scoringFeedback');
         } else {
           setPhase('answerOptions');
+          setTimerActive(true);
         }
         break;
       }
@@ -436,7 +438,7 @@ const GamePlay: React.FC = () => {
       console.error('Error storing game round data:', error);
       toast({
         title: "שגיאה בשמירת נתוני הסיבוב",
-        description: "אירעה שגיאה בש��ירת נתוני הסיבוב",
+        description: "אירעה שגיאה בש��ירת נתוני הס��בוב",
         variant: "destructive"
       });
       return;
@@ -1011,7 +1013,7 @@ const GamePlay: React.FC = () => {
                 </AppButton>
               ) : (
                 <div className="text-lg text-gray-600 text-center">
-                  המתן למנהל המשחק להצ��ג את שאלת הטריוויה
+                  המתן למנהל המשחק להצ��ג את שאלת הט��יוויה
                 </div>
               )}
               {currentTriviaQuestion && (
