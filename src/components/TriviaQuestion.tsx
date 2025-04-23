@@ -95,9 +95,8 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     return null;
   }
 
-  // If a participant has answered early, and we're in the final phase, and they've already answered,
-  // show the "already answered" message
-  if (hasAnsweredEarly && isFinalPhase && answered) {
+  // If a participant has answered early, and we're in the final phase, show the "already answered" message
+  if (hasAnsweredEarly && isFinalPhase) {
     return (
       <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4">
         <div className="bg-gray-100 p-6 rounded-xl text-center">
