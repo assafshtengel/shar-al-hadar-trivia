@@ -903,7 +903,7 @@ const GamePlay: React.FC = () => {
         console.error('Error storing trivia data:', error);
         toast({
           title: "שגיאה בשמירת נתוני הטריוויה",
-          description: "אירעה שגיאה בשמירת נתוני הטריוויה",
+          description: "אירעה ש��יאה בשמירת נתוני הטריוויה",
           variant: "destructive"
         });
         return;
@@ -1174,6 +1174,12 @@ const GamePlay: React.FC = () => {
             {selectedAnswer !== null && (
               <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
                 הבחירה שלך נקלטה! ממתין לסיום הזמן...
+              </div>
+            )}
+
+            {currentPlayer.hasAnswered && !isFinalPhase && (
+              <div className="text-lg text-yellow-700 bg-yellow-100 border border-yellow-300 mt-4 p-4 rounded-md w-full text-center">
+                בחרת תשובה בסיבוב זה , אנו מחכים לתשובות משאר המשתתפים .
               </div>
             )}
           </div>
