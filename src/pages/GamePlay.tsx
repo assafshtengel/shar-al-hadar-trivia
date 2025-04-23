@@ -166,7 +166,7 @@ const GamePlay: React.FC = () => {
         }
         break;
       case 'results':
-        setPhase('leaderboard'); // Changed from 'scoringFeedback' to 'leaderboard'
+        setPhase('leaderboard');
         break;
       case 'end':
         setPhase('leaderboard');
@@ -186,7 +186,7 @@ const GamePlay: React.FC = () => {
           updateGameState('results');
         }
       }
-    }, 2000); // Check every 2 seconds
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [gameCode, phase, timerActive, checkAllPlayersAnswered, isHost]);
@@ -439,7 +439,7 @@ const GamePlay: React.FC = () => {
           console.log('Setting timer active after YouTube embed finishes (non-host)');
           setTimerActive(true);
         }
-      }, 12000); // Changed to 12 seconds
+      }, 12000);
 
       return () => clearTimeout(timer);
     }
@@ -457,7 +457,7 @@ const GamePlay: React.FC = () => {
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     setAllPlayersAnswered(false);
-    gameStartTimeRef.current = Date.now(); // Set start time for scoring
+    gameStartTimeRef.current = Date.now();
 
     const roundDataString = JSON.stringify(gameRound);
 
@@ -993,3 +993,319 @@ const GamePlay: React.FC = () => {
         console.error('Error storing trivia data:', error);
         toast({
           title: "שגיאה בשמירת נתוני הטריוויה",
+          description: "אירעה שגיאה בשמירת נתוני הטריוויה",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "שאלת טריוויה",
+        description: "הסיבוב הבא הוא סיבוב טריוויה!"
+      });
+    } else {
+      playSong();
+    }
+  };
+
+  const renderSongPlayback = () => {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold mb-2">
+            {isTriviaRound ? "סיבוב טריוויה!" : "מה השיר?"}
+          </h2>
+          <p className="text-gray-600">
+            {isTriviaRound ? "ענה על שאלת הטריוויה" : "האזן לשיר וזהה אותו"}
+          </p>
+        </div>
+
+        {isPlaying ? (
+          <div className="w-full max-w-lg">
+            {showYouTubeEmbed && currentSong?.embedUrl && !isTriviaRound && (
+              <SongPlayer
+                embedUrl={currentSong.embedUrl}
+                onEnded={handleSongPlaybackEnded}
+                onError={handleSongPlaybackError}
+              />
+            )}
+            
+            {isTriviaRound && currentTriviaQuestion && isHost && (
+              <div className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg mb-6">
+                <p className="text-xl font-medium text-center">
+                  {currentTriviaQuestion.question}
+                </p>
+              </div>
+            )}
+            
+            {!isHost && (
+              <p className="text-center text-gray-600 animate-pulse">
+                המתן בזמן שהשיר מתנגן...
+              </p>
+            )}
+            
+            {isHost && !isTriviaRound && (
+              <div className="flex justify-center mt-6">
+                <AppButton
+                  className="flex items-center gap-2"
+                  onClick={() => setShowYouTubeEmbed(false)}
+                >
+                  <span>סיים האזנה</span>
+                  <SkipForward size={18} />
+                </AppButton>
+              </div>
+            )}
+          </div>
+        ) : (
+          isHost && (
+            <div className="text-center">
+              <AppButton
+                className="flex items-center gap-2"
+                onClick={isTriviaRound ? nextRound : playSong}
+              >
+                <span>{isTriviaRound ? "התחל סיבוב טריוויה" : "השמע שיר"}</span>
+                <Play size={18} />
+              </AppButton>
+              
+              <div className="mt-8 text-gray-600 text-sm">
+                {gameSettings?.songFilter && (
+                  <p>סינון שירים: {gameSettings.songFilter === "mashina" ? "משינה" : gameSettings.songFilter === "adam" ? "עומר אדם" : "כל השירים"}</p>
+                )}
+                
+                <p>סיבוב: {roundCounter}</p>
+              </div>
+            </div>
+          )
+        )}
+      </div>
+    );
+  };
+
+  const renderAnswerOptions = () => {
+    if (isTriviaRound && currentTriviaQuestion) {
+      return (
+        <TriviaQuestion
+          question={currentTriviaQuestion}
+          onAnswer={handleAnswer}
+          timeUp={!timerActive}
+          showOptions={true}
+          isFinalPhase={true}
+          hasAnsweredEarly={answeredEarly}
+          onTimeUp={handleTimeout}
+        />
+      );
+    }
+
+    if (!currentRound) {
+      return (
+        <div className="text-center p-4">
+          <p>מחכה לשאלה...</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col items-center pt-4">
+        <div className="w-full max-w-2xl mb-8">
+          <h2 className="text-2xl font-bold text-center mb-6">מה השיר?</h2>
+          
+          {showAnswerConfirmation && (
+            <div className={`mb-4 p-3 rounded-lg text-center ${
+              currentPlayer.lastAnswerCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}>
+              {currentPlayer.lastAnswerCorrect 
+                ? 'כל הכבוד! תשובה נכונה!' 
+                : 'אופס, התשובה שגויה'}
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 gap-3">
+            {currentRound.options.map((song, index) => (
+              <AppButton
+                key={song.id || index}
+                onClick={() => handleAnswer(index === currentRound.correctAnswerIndex, index)}
+                disabled={selectedAnswer !== null || currentPlayer.hasAnswered || !timerActive}
+                variant={selectedAnswer === index ? 'primary' : 'secondary'}
+                className="justify-start"
+              >
+                {song.title}
+                {selectedAnswer === index && index === currentRound.correctAnswerIndex && (
+                  <CheckCircle2 className="ml-auto" />
+                )}
+              </AppButton>
+            ))}
+          </div>
+          
+          {currentPlayer.skipsLeft > 0 && !currentPlayer.hasAnswered && (
+            <div className="mt-4 flex justify-center">
+              <AppButton 
+                variant="outline" 
+                onClick={handleSkip}
+                disabled={selectedAnswer !== null || !timerActive || currentPlayer.pointsAwarded}
+              >
+                דלג ({currentPlayer.skipsLeft} נותרו)
+              </AppButton>
+            </div>
+          )}
+          
+          {userSkippedQuestion && (
+            <div className="mt-4 p-3 bg-blue-100 text-blue-800 rounded-lg text-center">
+              דילגת על שאלה זו וקיבלת 3 נקודות
+            </div>
+          )}
+        </div>
+        
+        {timerActive && (
+          <GameTimer 
+            seconds={answerTimeLimit} 
+            onTimeout={handleTimeout}
+            className="w-full max-w-md"
+          />
+        )}
+      </div>
+    );
+  };
+  
+  const renderLeaderboard = () => {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <h2 className="text-2xl font-bold text-center mb-8 flex items-center justify-center gap-2">
+          <Trophy className="text-yellow-500" />
+          <span>טבלת המובילים</span>
+        </h2>
+        
+        {currentRound && (
+          <div className="mb-8 p-4 bg-white/90 backdrop-blur-sm rounded-xl shadow-md">
+            <h3 className="font-bold text-lg mb-2 text-center">השיר היה:</h3>
+            <div className="flex items-center justify-center gap-4">
+              <MusicNote size={24} className="text-primary" />
+              <p className="text-xl font-medium">{currentRound.correctSong.title}</p>
+            </div>
+            {currentRound.correctSong.artist && (
+              <p className="text-center text-gray-600 mt-2">
+                מאת: {currentRound.correctSong.artist}
+              </p>
+            )}
+            {isHost && currentRound.correctSong.embedUrl && (
+              <div className="mt-4 flex justify-center">
+                <AppButton 
+                  variant="outline" 
+                  onClick={() => window.open(currentRound.correctSong.embedUrl?.replace('embed/', 'watch?v='), '_blank')}
+                  className="flex items-center gap-2"
+                >
+                  <Youtube size={18} />
+                  <span>צפה ביוטיוב</span>
+                </AppButton>
+              </div>
+            )}
+          </div>
+        )}
+        
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-center">#</TableHead>
+                <TableHead>שחקן</TableHead>
+                <TableHead className="text-center">ניקוד</TableHead>
+                <TableHead className="text-center">שינוי</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {players.map((player, index) => {
+                const isCurrentPlayer = player.name === playerName;
+                const lastScore = isCurrentPlayer ? currentPlayer.lastScore : undefined;
+                
+                return (
+                  <TableRow key={player.id || index} className={isCurrentPlayer ? "bg-primary/10" : ""}>
+                    <TableCell className="text-center">{index + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {index === 0 && <Crown className="text-yellow-500" size={16} />}
+                        {player.name}
+                        {isCurrentPlayer && <span className="text-xs bg-primary/20 rounded px-1">(אתה)</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center font-medium">{player.score}</TableCell>
+                    <TableCell className="text-center">
+                      {lastScore !== undefined && (
+                        <span className={`font-medium ${
+                          lastScore > 0 ? "text-green-600" : lastScore < 0 ? "text-red-600" : "text-gray-600"
+                        }`}>
+                          {lastScore > 0 ? `+${lastScore}` : lastScore}
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+        
+        {isHost && (
+          <div className="flex justify-center gap-4 mt-8">
+            <AppButton onClick={nextRound} className="gap-2">
+              <Play size={18} />
+              <span>סיבוב הבא</span>
+            </AppButton>
+            
+            <AppButton 
+              variant="outline" 
+              onClick={resetAllPlayerScores}
+              className="gap-2"
+            >
+              <span>איפוס ניקוד</span>
+            </AppButton>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  const renderCurrentPhase = () => {
+    switch (phase) {
+      case 'songPlayback':
+        return renderSongPlayback();
+      case 'answerOptions':
+        return renderAnswerOptions();
+      case 'leaderboard':
+        return renderLeaderboard();
+      default:
+        return <div>טוען...</div>;
+    }
+  };
+  
+  return (
+    <div className="min-h-[calc(100vh-4rem)] pt-4 pb-20 overflow-y-auto bg-gradient-to-b from-indigo-50 to-blue-100">
+      <div className="container mx-auto px-4 relative">
+        <header className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-2">
+            <Music size={24} className="text-primary" />
+            <h1 className="text-2xl font-bold text-primary">טריוויה מוזיקלית</h1>
+          </div>
+          
+          <div className="flex gap-2 items-center">
+            {isHost && (
+              <EndGameButton />
+            )}
+            <LeaveGameButton />
+          </div>
+        </header>
+        
+        <div className="bg-white/60 backdrop-blur-md p-4 md:p-6 rounded-xl shadow-lg min-h-[50vh]">
+          {renderCurrentPhase()}
+        </div>
+        
+        {isHost && (phase === 'songPlayback' || phase === 'leaderboard') && (
+          <GameHostControls
+            gameCode={gameCode}
+            gamePhase={serverGamePhase}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default GamePlay;
