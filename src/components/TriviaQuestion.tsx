@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import AppButton from '@/components/AppButton';
@@ -45,13 +46,19 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     })));
   }, [question.options]);
 
+  // New effect to handle automatic transition after 10 seconds
   useEffect(() => {
-    if (timeUp && !answered && onTimeUp) {
-      if (isFinalPhase) {
-        onTimeUp();
-      }
+    if (isFinalPhase) {
+      const timer = setTimeout(() => {
+        if (onTimeUp) {
+          console.log('Auto-transitioning to results after 10 seconds');
+          onTimeUp();
+        }
+      }, 10000); // 10 seconds
+
+      return () => clearTimeout(timer);
     }
-  }, [timeUp, answered, onTimeUp, isFinalPhase]);
+  }, [isFinalPhase, onTimeUp]);
 
   const handleSelectAnswer = (index: number) => {
     if (answered || timeUp) return;
