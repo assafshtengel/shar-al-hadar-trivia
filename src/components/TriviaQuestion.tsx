@@ -35,17 +35,46 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
-  // תמיד נציג את כל האפשרויות, לכן פשוט נשמר את האינדקסים של כולן
-  const visibleOptions = question.options.map((option, index) => ({
-    option, 
-    originalIndex: index
-  }));
+  const [visibleOptions, setVisibleOptions] = useState<{option: string, originalIndex: number}[]>([]);
 
   // Always show all options for trivia questions, regardless of showOptions prop
   const isTrivia = question.question !== "מה השיר?";
 
+  // Determine if this is a trivia round
+  useEffect(() => {
+    if (isFinalPhase && !answered && !hasAnsweredEarly) {
+      const wrongAnswerIndices = question.options
+        .map((_, index) => index)
+        .filter(index => index !== question.correctAnswerIndex);
+      
+      if (wrongAnswerIndices.length >= 2) {
+        const indicesToRemove = wrongAnswerIndices
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 2);
+        
+        const remainingOptions = question.options
+          .map((option, index) => ({ option, originalIndex: index }))
+          .filter(item => !indicesToRemove.includes(item.originalIndex));
+        
+        setVisibleOptions(remainingOptions.sort(() => Math.random() - 0.5));
+      } else {
+        setVisibleOptions(question.options.map((option, index) => ({ 
+          option, 
+          originalIndex: index 
+        })));
+      }
+    } else {
+      setVisibleOptions(question.options.map((option, index) => ({ 
+        option, 
+        originalIndex: index 
+      })));
+    }
+  }, [isFinalPhase, question.options, question.correctAnswerIndex, answered, hasAnsweredEarly]);
+
   useEffect(() => {
     if (timeUp && !answered && onTimeUp) {
+      // Don't auto-call onTimeUp here, as we need to show 50-50 options first
+      // This will be handled by the parent component based on isFinalPhase
       if (isFinalPhase) {
         onTimeUp();
       }
@@ -66,8 +95,9 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     return null;
   }
 
-  // If a participant has answered early, and we're in the final phase, show the "already answered" message
-  if (hasAnsweredEarly && isFinalPhase) {
+  // If a participant has answered early, and we're in the final phase, and they've already answered,
+  // show the "already answered" message
+  if (hasAnsweredEarly && isFinalPhase && answered) {
     return (
       <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4">
         <div className="bg-gray-100 p-6 rounded-xl text-center">

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameState } from '@/contexts/GameStateContext';
@@ -240,7 +241,7 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
           {players.length > 0 && `המנצח: ${players[0].name} עם ${players[0].score} נקודות`}
         </div>
         
-        {isHost && !isScoreLimitReached && (
+        {isHost ? (
           <AppButton 
             variant="primary" 
             size="lg"
@@ -249,11 +250,9 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
           >
             התחל סיבוב חדש
           </AppButton>
-        )}
-        
-        {isScoreLimitReached && (
+        ) : (
           <div className="text-sm text-gray-500 mb-3">
-            הגעת למגבלת הניקוד. המשחק הסתיים!
+            המתן למנחה להתחיל סיבוב חדש
           </div>
         )}
       </div>
