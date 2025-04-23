@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -200,7 +201,7 @@ const GamePlay: React.FC = () => {
                   <div>
                     <p className="font-bold">{currentRound.correctSong.title}</p>
                     <p className="text-sm text-gray-600">
-                      {currentRound.correctSong.artist} - {currentRound.correctSong.year}
+                      {currentRound.correctSong.artist}
                     </p>
                   </div>
                 </div>
