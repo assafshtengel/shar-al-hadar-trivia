@@ -95,8 +95,8 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     return null;
   }
 
-  // תיקון: הסרת התנאי שמציג הודעה "כבר ענית" בשלב ה-50-50, כדי לאפשר לשחקנים לענות בשלב זה
-  // גם אם ענו מוקדם יותר. הוספת תנאי שיאפשר תצוגת 50-50 למשתתפים שלא ענו.
+  // If a participant has answered early, and we're in the final phase, and they've already answered,
+  // show the "already answered" message
   if (hasAnsweredEarly && isFinalPhase && answered) {
     return (
       <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4">

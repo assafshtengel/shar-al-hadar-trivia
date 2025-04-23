@@ -160,8 +160,12 @@ const GamePlay: React.FC = () => {
         if (selectedAnswer !== null || currentPlayer.hasAnswered) {
           setPhase('scoringFeedback');
         } else {
-          setPhase('answerOptions');
-          setTimerActive(true);
+          if (!isHost) {
+            setPhase('answerOptions');
+            setTimerActive(true);
+          } else {
+            setPhase('scoringFeedback');
+          }
         }
         break;
       }
