@@ -59,7 +59,7 @@ export const useGamePhaseNavigation = ({
 
     // Don't navigate if we just saw this phase (prevents double navigation)
     if (lastPhaseRef.current === gamePhase && currentPath === '/gameplay' && 
-        (gamePhase === 'playing' || gamePhase === 'answering' || gamePhase === 'results')) {
+        (gamePhase === 'playing' || gamePhase === 'answering' || gamePhase === 'results' || gamePhase === 'end')) {
       console.log(`Skipping duplicate navigation for phase ${gamePhase}`);
       return;
     }

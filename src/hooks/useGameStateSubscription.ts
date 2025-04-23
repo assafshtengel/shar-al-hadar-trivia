@@ -264,6 +264,7 @@ export const useGameStateSubscription = ({
                 }
                 
                 setGamePhase(newPhase);
+                console.log(`Setting game phase to ${newPhase} from realtime update`);
                 
                 if ('host_ready' in payload.new) {
                   setHostReady(!!payload.new.host_ready);
@@ -324,6 +325,7 @@ export const useGameStateSubscription = ({
           }
           
           setGamePhase(currentPhase);
+          console.log(`Setting initial game phase to ${currentPhase}`);
           
           if ('host_ready' in data) {
             setHostReady(!!data.host_ready);
