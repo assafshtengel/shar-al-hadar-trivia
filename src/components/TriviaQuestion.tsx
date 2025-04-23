@@ -35,46 +35,17 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
-  const [visibleOptions, setVisibleOptions] = useState<{option: string, originalIndex: number}[]>([]);
+  // תמיד נציג את כל האפשרויות, לכן פשוט נשמר את האינדקסים של כולן
+  const visibleOptions = question.options.map((option, index) => ({
+    option, 
+    originalIndex: index
+  }));
 
   // Always show all options for trivia questions, regardless of showOptions prop
   const isTrivia = question.question !== "מה השיר?";
 
-  // Determine if this is a trivia round
-  useEffect(() => {
-    if (isFinalPhase && !answered && !hasAnsweredEarly) {
-      const wrongAnswerIndices = question.options
-        .map((_, index) => index)
-        .filter(index => index !== question.correctAnswerIndex);
-      
-      if (wrongAnswerIndices.length >= 2) {
-        const indicesToRemove = wrongAnswerIndices
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 2);
-        
-        const remainingOptions = question.options
-          .map((option, index) => ({ option, originalIndex: index }))
-          .filter(item => !indicesToRemove.includes(item.originalIndex));
-        
-        setVisibleOptions(remainingOptions.sort(() => Math.random() - 0.5));
-      } else {
-        setVisibleOptions(question.options.map((option, index) => ({ 
-          option, 
-          originalIndex: index 
-        })));
-      }
-    } else {
-      setVisibleOptions(question.options.map((option, index) => ({ 
-        option, 
-        originalIndex: index 
-      })));
-    }
-  }, [isFinalPhase, question.options, question.correctAnswerIndex, answered, hasAnsweredEarly]);
-
   useEffect(() => {
     if (timeUp && !answered && onTimeUp) {
-      // Don't auto-call onTimeUp here, as we need to show 50-50 options first
-      // This will be handled by the parent component based on isFinalPhase
       if (isFinalPhase) {
         onTimeUp();
       }
