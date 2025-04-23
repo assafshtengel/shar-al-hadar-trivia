@@ -98,7 +98,189 @@ const GamePlay: React.FC = () => {
   const [userSkippedQuestion, setUserSkippedQuestion] = useState(false);
   const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ... rest of the code remains unchanged until the return statement
+  const renderPhase = () => {
+    switch (phase) {
+      case 'songPlayback':
+        return (
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-bold text-center mb-4">
+              {isTriviaRound ? 'סיבוב טריוויה' : `סיבוב ${roundCounter}`}
+            </h2>
+            
+            {!isTriviaRound && (
+              <SongPlayer 
+                song={currentSong} 
+                isPlaying={isPlaying} 
+                onPlaybackEnded={() => {
+                  // Handle playback ended logic
+                }}
+                onPlaybackStarted={() => {
+                  // Handle playback started logic
+                }}
+                onPlaybackError={() => {
+                  // Handle playback error logic
+                }}
+              />
+            )}
+            
+            {isTriviaRound && currentTriviaQuestion && (
+              <TriviaQuestion 
+                question={currentTriviaQuestion}
+                onAnswer={(isCorrect, selectedIndex) => {
+                  // Handle answer logic
+                }}
+                timeUp={false}
+                showOptions={false}
+                isFinalPhase={false}
+                showQuestion={isPlaying}
+              />
+            )}
+          </div>
+        );
+        
+      case 'answerOptions':
+        return (
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">
+                {isTriviaRound ? 'שאלת טריוויה' : 'בחר את השיר הנכון'}
+              </h2>
+              
+              <GameTimer 
+                initialSeconds={timeLeft} 
+                isActive={timerActive} 
+                onTimeout={() => {
+                  // Handle timeout logic
+                }}
+              />
+            </div>
+            
+            {isTriviaRound && currentTriviaQuestion && (
+              <TriviaQuestion 
+                question={currentTriviaQuestion}
+                onAnswer={(isCorrect, selectedIndex) => {
+                  // Handle answer logic
+                }}
+                timeUp={false}
+                showOptions={true}
+                isFinalPhase={false}
+              />
+            )}
+            
+            {!isTriviaRound && currentRound && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                {currentRound.options.map((song, index) => (
+                  <AppButton
+                    key={index}
+                    variant={selectedAnswer === index ? 'primary' : 'secondary'}
+                    className="w-full text-start justify-start"
+                    onClick={() => {
+                      // Handle song selection logic
+                    }}
+                    disabled={showAnswerConfirmation}
+                  >
+                    {song.title}
+                  </AppButton>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+        
+      case 'scoringFeedback':
+        return (
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-bold text-center mb-6">תוצאות הסיבוב</h2>
+            
+            {!isTriviaRound && currentRound && (
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold mb-2">השיר הנכון הוא:</h3>
+                <div className="bg-green-100 p-4 rounded-lg flex items-center">
+                  <CheckCircle2 className="text-green-500 mr-2" />
+                  <div>
+                    <p className="font-bold">{currentRound.correctSong.title}</p>
+                    <p className="text-sm text-gray-600">
+                      {currentRound.correctSong.artist} - {currentRound.correctSong.year}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold mb-2">שחקנים שענו נכון:</h3>
+              <div className="space-y-2">
+                {/* Players who answered correctly would be rendered here */}
+              </div>
+            </div>
+            
+            {isHost && (
+              <div className="mt-8">
+                <AppButton 
+                  variant="primary" 
+                  className="w-full" 
+                  onClick={() => {
+                    // Handle next round logic
+                  }}
+                >
+                  המשך לסבב הבא
+                </AppButton>
+              </div>
+            )}
+          </div>
+        );
+        
+      case 'leaderboard':
+        return (
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-bold text-center mb-6">
+              <div className="flex items-center justify-center">
+                <Trophy className="text-yellow-500 mr-2" />
+                טבלת המובילים
+                <Crown className="text-yellow-500 ml-2" />
+              </div>
+            </h2>
+            
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">דירוג</TableHead>
+                  <TableHead className="text-right">שם</TableHead>
+                  <TableHead className="text-right">ניקוד</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {players.sort((a, b) => b.score - a.score).map((player, index) => (
+                  <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
+                    <TableCell className="font-medium">{index + 1}</TableCell>
+                    <TableCell>{player.name}</TableCell>
+                    <TableCell>{player.score}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            
+            {isHost && (
+              <GameHostControls
+                roundCounter={roundCounter}
+                isTriviaRound={isTriviaRound}
+                onPlayNext={() => {
+                  // Handle play next logic
+                }}
+                onResetScores={() => {
+                  // Handle reset scores logic
+                }}
+                gamePhase={serverGamePhase}
+                className="mt-8"
+              />
+            )}
+          </div>
+        );
+        
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
