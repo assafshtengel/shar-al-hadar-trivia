@@ -436,7 +436,7 @@ const GamePlay: React.FC = () => {
       console.error('Error storing game round data:', error);
       toast({
         title: "שגיאה בשמירת נתוני הסיבוב",
-        description: "אירעה שגיאה בשמירת נתוני הסיבוב",
+        description: "אירעה שגיאה בש��ירת נתוני הסיבוב",
         variant: "destructive"
       });
       return;
@@ -472,15 +472,7 @@ const GamePlay: React.FC = () => {
 
   const handleTimerTimeout = () => {
     console.log('Timer timeout handler called');
-    if (selectedAnswer === null && !currentPlayer.hasAnswered) {
-      if (timeLeft <= 0 && phase === 'answerOptions') {
-        handleTimeout();
-      } else {
-        console.log('Timer ended but not submitting answers yet - showing 50-50 options');
-      }
-    } else {
-      submitAllAnswers();
-    }
+    submitAllAnswers();
   };
 
   const submitAllAnswers = async () => {
