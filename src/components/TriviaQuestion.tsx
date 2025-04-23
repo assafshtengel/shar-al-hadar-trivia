@@ -19,6 +19,7 @@ interface TriviaQuestionProps {
   hasAnsweredEarly?: boolean;
   showQuestion?: boolean; // Added to control visibility of question during song playback
   onTimeUp?: () => void; // Callback for when time is up and no selection was made
+  isHost?: boolean; // חדש - לזיהוי מארח
 }
 
 const TriviaQuestion: React.FC<TriviaQuestionProps> = ({ 
@@ -31,7 +32,8 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   isFinalPhase,
   hasAnsweredEarly = false,
   showQuestion = true, // Default to showing question
-  onTimeUp
+  onTimeUp,
+  isHost = false // ברירת מחדל: false
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -40,9 +42,9 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   // Always show all options for trivia questions, regardless of showOptions prop
   const isTrivia = question.question !== "מה השיר?";
 
-  // Determine if this is a trivia round
   useEffect(() => {
-    if (isFinalPhase && !answered && !hasAnsweredEarly) {
+    // נבצע 50-50 רק כאשר זה לא Host
+    if (isFinalPhase && !answered && !hasAnsweredEarly && !isHost) {
       const wrongAnswerIndices = question.options
         .map((_, index) => index)
         .filter(index => index !== question.correctAnswerIndex);
@@ -64,17 +66,16 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
         })));
       }
     } else {
+      // מארח תמיד יצפה בכל האפשרויות (או אם לא בשלב סופי)
       setVisibleOptions(question.options.map((option, index) => ({ 
         option, 
         originalIndex: index 
       })));
     }
-  }, [isFinalPhase, question.options, question.correctAnswerIndex, answered, hasAnsweredEarly]);
+  }, [isFinalPhase, question.options, question.correctAnswerIndex, answered, hasAnsweredEarly, isHost]);
 
   useEffect(() => {
     if (timeUp && !answered && onTimeUp) {
-      // Don't auto-call onTimeUp here, as we need to show 50-50 options first
-      // This will be handled by the parent component based on isFinalPhase
       if (isFinalPhase) {
         onTimeUp();
       }
@@ -83,10 +84,8 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 
   const handleSelectAnswer = (index: number) => {
     if (answered || timeUp) return;
-    
     setSelectedAnswer(index);
     setAnswered(true);
-    
     const isCorrect = index === question.correctAnswerIndex;
     onAnswer(isCorrect, index);
   };
@@ -95,8 +94,6 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     return null;
   }
 
-  // If a participant has answered early, and we're in the final phase, and they've already answered,
-  // show the "already answered" message
   if (hasAnsweredEarly && isFinalPhase && answered) {
     return (
       <div className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto p-4">
@@ -168,3 +165,4 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 };
 
 export default TriviaQuestion;
+

@@ -1030,12 +1030,12 @@ const GamePlay: React.FC = () => {
                   showOptions={false}
                   isFinalPhase={false} 
                   showQuestion={true} 
+                  isHost={isHost}
                 />
               )}
             </div>
           );
         }
-
         return (
           <div className="flex flex-col items-center justify-center py-6 space-y-6">
             <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
@@ -1065,6 +1065,7 @@ const GamePlay: React.FC = () => {
                 showOptions={false} // Don't show options during song playback
                 isFinalPhase={false} 
                 showQuestion={true} 
+                isHost={isHost}
               />
             )}
             {isPlaying && !showYouTubeEmbed && (
@@ -1137,6 +1138,7 @@ const GamePlay: React.FC = () => {
                     submitAllAnswers();
                   }
                 }}
+                isHost={isHost}
               />
             ) : currentRound ? (
               <TriviaQuestion
@@ -1157,6 +1159,7 @@ const GamePlay: React.FC = () => {
                     submitAllAnswers();
                   }
                 }}
+                isHost={isHost}
               />
             ) : (
               <div className="text-lg text-gray-600 animate-pulse">
