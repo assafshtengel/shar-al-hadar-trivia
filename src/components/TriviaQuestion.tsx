@@ -40,10 +40,11 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   // Always show all options for trivia questions, regardless of showOptions prop
   const isTrivia = question.question !== "מה השיר?";
 
-  // Determine if this is a trivia round
+  // Determine which options to show based on game state
   useEffect(() => {
-    // Always show all options if the player has already answered early - no 50/50 in this case
+    // If player answered early, always show all options - never show 50/50
     if (hasAnsweredEarly) {
+      console.log("Player answered early, showing all options");
       setVisibleOptions(question.options.map((option, index) => ({ 
         option, 
         originalIndex: index 
@@ -53,6 +54,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
     
     // Apply 50/50 logic only in final phase and when player hasn't answered early
     if (isFinalPhase && !answered && !hasAnsweredEarly) {
+      console.log("Final phase, player hasn't answered early, applying 50/50 logic");
       const wrongAnswerIndices = question.options
         .map((_, index) => index)
         .filter(index => index !== question.correctAnswerIndex);
@@ -74,6 +76,7 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
         })));
       }
     } else {
+      // For all other cases, show all options
       setVisibleOptions(question.options.map((option, index) => ({ 
         option, 
         originalIndex: index 
