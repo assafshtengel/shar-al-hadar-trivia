@@ -42,36 +42,36 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
 
   // Determine if this is a trivia round
   useEffect(() => {
-    // אם השחקן ענה בשלב המוקדם, הראה את כל האפשרויות בשלב הסופי
-    if (isFinalPhase && !answered) {
-      if (hasAnsweredEarly) {
-        // אם השחקן כבר ענה מוקדם יותר, הצג את כל האפשרויות
+    // Always show all options if the player has already answered early - no 50/50 in this case
+    if (hasAnsweredEarly) {
+      setVisibleOptions(question.options.map((option, index) => ({ 
+        option, 
+        originalIndex: index 
+      })));
+      return;
+    }
+    
+    // Apply 50/50 logic only in final phase and when player hasn't answered early
+    if (isFinalPhase && !answered && !hasAnsweredEarly) {
+      const wrongAnswerIndices = question.options
+        .map((_, index) => index)
+        .filter(index => index !== question.correctAnswerIndex);
+      
+      if (wrongAnswerIndices.length >= 2) {
+        const indicesToRemove = wrongAnswerIndices
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 2);
+        
+        const remainingOptions = question.options
+          .map((option, index) => ({ option, originalIndex: index }))
+          .filter(item => !indicesToRemove.includes(item.originalIndex));
+        
+        setVisibleOptions(remainingOptions.sort(() => Math.random() - 0.5));
+      } else {
         setVisibleOptions(question.options.map((option, index) => ({ 
           option, 
           originalIndex: index 
         })));
-      } else {
-        // רק אם השחקן לא ענה מוקדם, הפעל את לוגיקת ה-50-50
-        const wrongAnswerIndices = question.options
-          .map((_, index) => index)
-          .filter(index => index !== question.correctAnswerIndex);
-        
-        if (wrongAnswerIndices.length >= 2) {
-          const indicesToRemove = wrongAnswerIndices
-            .sort(() => Math.random() - 0.5)
-            .slice(0, 2);
-          
-          const remainingOptions = question.options
-            .map((option, index) => ({ option, originalIndex: index }))
-            .filter(item => !indicesToRemove.includes(item.originalIndex));
-          
-          setVisibleOptions(remainingOptions.sort(() => Math.random() - 0.5));
-        } else {
-          setVisibleOptions(question.options.map((option, index) => ({ 
-            option, 
-            originalIndex: index 
-          })));
-        }
       }
     } else {
       setVisibleOptions(question.options.map((option, index) => ({ 
