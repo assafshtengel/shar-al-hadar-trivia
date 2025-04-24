@@ -584,7 +584,7 @@ const GamePlay: React.FC = () => {
       setAnsweredEarly(true);
     }
     let points = 0;
-    const isFinalPhase = timeSinceStart > 8;
+    const isFinalPhase = timeSinceStart > 11.9;
 
     if (isFinalPhase) {
       points = isCorrect ? 4 : -2;
@@ -595,40 +595,10 @@ const GamePlay: React.FC = () => {
         points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
       }
     }
-    if (!isCorrect) {
-      points = isFinalPhase ? -2 : 0;
+    if (!isCorrect && !isFinalPhase) {
+      points = 0;
     }
-    let currentScore = 0;
-    let hasAlreadyAnswered = false;
-    if (gameCode && playerName) {
-      try {
-        const {
-          data
-        } = await supabase.from('players').select('score, hasAnswered').eq('game_code', gameCode).eq('name', playerName).maybeSingle();
-        if (data) {
-          currentScore = data.score || 0;
-          hasAlreadyAnswered = data.hasAnswered || false;
-          if (hasAlreadyAnswered) {
-            console.log(`Player ${playerName} has already answered this round. Not updating score.`);
-            setCurrentPlayer(prev => ({
-              ...prev,
-              hasAnswered: true,
-              lastAnswer: currentRound.options[selectedIndex].title,
-              lastAnswerCorrect: isCorrect,
-              lastScore: points,
-              pendingAnswer: selectedIndex,
-              pointsAwarded: true
-            }));
-            setShowAnswerConfirmation(true);
-            return;
-          }
-        }
-      } catch (err) {
-        console.error('Error getting current player score:', err);
-      }
-    }
-    const updatedScore = currentScore + points;
-    console.log(`Calculating new score: ${currentScore} + ${points} = ${updatedScore}`);
+
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
@@ -636,31 +606,29 @@ const GamePlay: React.FC = () => {
       lastAnswerCorrect: isCorrect,
       lastScore: points,
       pendingAnswer: selectedIndex,
-      score: updatedScore,
+      score: prev.score + points,
       pointsAwarded: true
     }));
     setShowAnswerConfirmation(true);
     if (gameCode && playerName) {
       try {
-        console.log(`Updating hasAnswered status and storing answer for player ${playerName}`);
-        const {
-          error
-        } = await supabase.from('players').update({
+        console.log(`Updating score for player ${playerName} after answer`);
+        supabase.from('players').update({
           hasAnswered: true,
-          score: updatedScore
-        }).eq('game_code', gameCode).eq('name', playerName);
-        if (error) {
-          console.error('Error updating player answer status:', error);
-        } else {
-          console.log(`Successfully marked ${playerName} as having answered and updated score to ${updatedScore}`);
-        }
+          score: currentPlayer.score + points
+        }).eq('game_code', gameCode).eq('name', playerName).then(({
+          error
+        }) => {
+          if (error) {
+            console.error('Error updating player after answer:', error);
+          } else {
+            console.log(`Successfully updated ${playerName} score after answer`);
+          }
+        });
       } catch (err) {
-        console.error('Exception when updating player answer status:', err);
+        console.error('Exception when updating player after answer:', err);
       }
     }
-    setTimeout(() => {
-      setShowAnswerConfirmation(false);
-    }, 2000);
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
       description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
@@ -903,7 +871,7 @@ const GamePlay: React.FC = () => {
         console.error('Error storing trivia data:', error);
         toast({
           title: "שגיאה בשמירת נתוני הטריוויה",
-          description: "איר��ה שגיאה בשמירת נתוני הטריוויה",
+          description: "איר��ה שגיאה בשמי��ת נתוני הטריוויה",
           variant: "destructive"
         });
         return;
@@ -1173,7 +1141,7 @@ const GamePlay: React.FC = () => {
 
             {currentPlayer.hasAnswered && !isFinalPhase && (
               <div className="text-lg text-yellow-700 bg-yellow-100 border border-yellow-300 mt-4 p-4 rounded-md w-full text-center">
-                בחרת תשובה בסיבוב זה , אנו מחכים לתשובות משאר המשתתפים .
+                בחרת תשובה בסיבוב זה , אנו מחכים לתשובו�� משאר המשתתפים .
               </div>
             )}
           </div>
