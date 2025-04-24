@@ -112,6 +112,7 @@ export type Database = {
           id: string
           isReady: boolean | null
           joined_at: string | null
+          lastanswercorrect: boolean | null
           name: string
           score: number | null
         }
@@ -121,6 +122,7 @@ export type Database = {
           id?: string
           isReady?: boolean | null
           joined_at?: string | null
+          lastanswercorrect?: boolean | null
           name: string
           score?: number | null
         }
@@ -130,6 +132,7 @@ export type Database = {
           id?: string
           isReady?: boolean | null
           joined_at?: string | null
+          lastanswercorrect?: boolean | null
           name?: string
           score?: number | null
         }

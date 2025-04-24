@@ -47,7 +47,8 @@ export const useGamePlayPlayers = (gameCode: string | null, playerName: string |
               name: currentPlayerData.name,
               score: currentPlayerData.score || 0,
               hasAnswered: currentPlayerData.hasAnswered || false,
-              isReady: currentPlayerData.isReady || false
+              isReady: currentPlayerData.isReady || false,
+              lastAnswerCorrect: currentPlayerData.lastAnswerCorrect || false
             }));
           }
         }
