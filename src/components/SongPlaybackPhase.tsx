@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Song } from '@/data/songBank';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import { Music, Play } from 'lucide-react';
@@ -85,16 +85,19 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
   return (
     <div className="flex flex-col items-center justify-center py-6 space-y-6">
       <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
-      <SongPlayer 
-        song={currentSong} 
-        isPlaying={isPlaying && showYouTubeEmbed} 
-        onPlaybackEnded={onPlaybackEnded} 
-        onPlaybackError={onPlaybackError} 
-        onPlaybackStarted={onPlaybackStarted}
-        showOverlay={true}
-      />
       
-      {isPlaying && currentRound && (
+      {currentSong && (
+        <SongPlayer 
+          song={currentSong} 
+          isPlaying={isPlaying && showYouTubeEmbed} 
+          onPlaybackEnded={onPlaybackEnded} 
+          onPlaybackError={onPlaybackError} 
+          onPlaybackStarted={onPlaybackStarted}
+          showOverlay={true}
+        />
+      )}
+      
+      {currentRound && (
         <TriviaQuestion 
           question={{
             question: "מה השיר?",
@@ -123,7 +126,8 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
           </div>
         </div>
       )}
-      {!isHost && !isPlaying && (
+      
+      {!isHost && !isPlaying && !currentRound && (
         <div className="text-lg text-gray-600 text-center">
           המתן למנהל המשחק להשמיע את השיר הבא
         </div>

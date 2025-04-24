@@ -377,14 +377,15 @@ const GamePlay: React.FC = () => {
     setShowYouTubeEmbed(true);
     setAllPlayersAnswered(false);
     gameStartTimeRef.current = Date.now(); // Set start time for scoring
+    
+    // Store the round data immediately for all players
     const roundDataString = JSON.stringify(gameRound);
-    const {
-      error
-    } = await supabase.from('game_state').update({
+    const { error } = await supabase.from('game_state').update({
       current_song_name: roundDataString,
       current_song_url: gameRound.correctSong.embedUrl,
       game_phase: 'playing'
     }).eq('game_code', gameCode);
+    
     if (error) {
       console.error('Error storing game round data:', error);
       toast({
@@ -394,6 +395,7 @@ const GamePlay: React.FC = () => {
       });
       return;
     }
+    
     toast({
       title: "משמיע שיר...",
       description: "מנגן כעת, האזן בקשב"
