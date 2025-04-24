@@ -450,7 +450,35 @@ const GamePlay: React.FC = () => {
     if (!currentPlayer.pointsAwarded && playerName && selectedAnswer !== null) {
       console.log(`Processing answer for ${playerName} - points not yet awarded`);
       const isCorrect = selectedAnswer === currentRound.correctAnswerIndex;
-      const points = isCorrect ? 10 : 0;
+      let points = 0;
+
+      if (isCorrect) {
+        const { data: correctPlayers } = await supabase
+          .from('players')
+          .select('*')
+          .eq('game_code', gameCode)
+          .eq('hasAnswered', true)
+          .order('score', { ascending: false });
+        
+        const correctAnswersCount = correctPlayers?.filter(p => {
+          return p.lastanswercorrect === true;
+        }).length || 0;
+        
+        console.log(`Current correct answers count: ${correctAnswersCount}`);
+        
+        if (correctAnswersCount === 0) {
+          points = 15; // First correct answer
+        } else if (correctAnswersCount === 1) {
+          points = 12; // Second correct answer
+        } else {
+          points = Math.max(11 - correctAnswersCount, 1); // Subsequent answers decrease by 1, minimum 1 point
+        }
+      } else {
+        points = -2; // Incorrect answer penalty
+      }
+
+      console.log(`Points awarded: ${points} for ${isCorrect ? 'correct' : 'incorrect'} answer`);
+
       const pendingUpdate: PendingAnswerUpdate = {
         player_name: playerName,
         is_correct: isCorrect,
@@ -459,7 +487,7 @@ const GamePlay: React.FC = () => {
       setPendingAnswers([pendingUpdate]);
       setCurrentPlayer(prev => {
         const updatedScore = prev.score + points;
-        console.log(`Updating player score: ${prev.score} + ${points} = ${updatedScore} (first calculation)`);
+        console.log(`Updating player score: ${prev.score} + ${points} = ${updatedScore}`);
         return {
           ...prev,
           hasAnswered: true,
