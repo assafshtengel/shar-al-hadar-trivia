@@ -574,8 +574,6 @@ const GamePlay: React.FC = () => {
       return;
     }
     
-    setUserSkippedQuestion(false);
-    
     console.log(`Player ${playerName} selected answer: ${selectedIndex}`);
     setSelectedAnswer(selectedIndex);
     const currentTime = Date.now();
