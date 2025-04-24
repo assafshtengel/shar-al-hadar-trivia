@@ -18,6 +18,8 @@ interface TriviaQuestionProps {
   showQuestion?: boolean;
   hasAnsweredEarly?: boolean;
   skipsLeft?: number;
+  onTimeUp?: () => void;
+  isFinalPhase?: boolean;
 }
 
 const TriviaQuestion: React.FC<TriviaQuestionProps> = ({ 
@@ -29,7 +31,9 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
   elapsedTime = 0,
   showQuestion = true,
   hasAnsweredEarly = false,
-  skipsLeft = 0
+  skipsLeft = 0,
+  onTimeUp,
+  isFinalPhase = false
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -43,6 +47,15 @@ const TriviaQuestion: React.FC<TriviaQuestionProps> = ({
       originalIndex: index 
     })));
   }, [question.options]);
+
+  useEffect(() => {
+    if (isFinalPhase && onTimeUp && !answered && !timeUp) {
+      const timeout = setTimeout(() => {
+        onTimeUp();
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [isFinalPhase, onTimeUp, answered, timeUp]);
 
   const handleSelectAnswer = (index: number) => {
     if (answered || timeUp) return;

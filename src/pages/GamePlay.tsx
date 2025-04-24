@@ -1026,9 +1026,7 @@ const GamePlay: React.FC = () => {
                   onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} 
                   timeUp={false} 
                   answerStartTime={gameStartTimeRef.current || Date.now()} 
-                  elapsedTime={0} 
-                  showOptions={false}
-                  isFinalPhase={false} 
+                  elapsedTime={0}
                   showQuestion={true} 
                 />
               )}
@@ -1061,9 +1059,7 @@ const GamePlay: React.FC = () => {
                 onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} 
                 timeUp={timeLeft <= 0} 
                 answerStartTime={gameStartTimeRef.current || Date.now()} 
-                elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000} 
-                showOptions={false} // Don't show options during song playback
-                isFinalPhase={false} 
+                elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000}
                 showQuestion={true} 
               />
             )}
@@ -1129,7 +1125,6 @@ const GamePlay: React.FC = () => {
                 timeUp={timeLeft <= 0}
                 answerStartTime={gameStartTimeRef.current || Date.now()}
                 elapsedTime={timeSinceStart}
-                showOptions={true}
                 isFinalPhase={isFinalPhase}
                 hasAnsweredEarly={answeredEarly}
                 onTimeUp={() => {
@@ -1149,7 +1144,6 @@ const GamePlay: React.FC = () => {
                 timeUp={timeLeft <= 0}
                 answerStartTime={gameStartTimeRef.current || Date.now()}
                 elapsedTime={timeSinceStart}
-                showOptions={true}
                 isFinalPhase={isFinalPhase}
                 hasAnsweredEarly={answeredEarly}
                 onTimeUp={() => {
