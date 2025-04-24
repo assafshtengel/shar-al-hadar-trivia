@@ -778,7 +778,7 @@ const GamePlay: React.FC = () => {
       console.error('Error resetting players ready status:', error);
       toast({
         title: "שגיאה באיפוס סטטוס מוכנות השחקנים",
-        description: "אירעה שגיאה באיפוס סטטוס מוכנות השחקנים",
+        description: "אירעה שגיאה באיפוס סטטוס השחקנים",
         variant: "destructive"
       });
     }
@@ -912,3 +912,4 @@ const GamePlay: React.FC = () => {
     setPhase('songPlayback');
     
     toast({
+      title: "
