@@ -837,7 +837,7 @@ const GamePlay: React.FC = () => {
     if (phase === 'scoringFeedback') {
       const timer = setTimeout(() => {
         setPhase('leaderboard');
-      }, 6000);
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [phase, isHost]);
@@ -903,7 +903,7 @@ const GamePlay: React.FC = () => {
         console.error('Error storing trivia data:', error);
         toast({
           title: "שגיאה בשמירת נתוני הטריוויה",
-          description: "אירעה שגיאה בשמירת נתוני הטריוויה",
+          description: "איר��ה שגיאה בשמירת נתוני הטריוויה",
           variant: "destructive"
         });
         return;
