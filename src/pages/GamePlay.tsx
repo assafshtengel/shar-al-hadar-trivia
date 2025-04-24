@@ -912,16 +912,4 @@ const GamePlay: React.FC = () => {
     setPhase('songPlayback');
     
     toast({
-      title: "סיבוב חדש",
-      description: newIsTriviaRound ? "סיבוב טריוויה!" : "משמיע שיר חדש בקרוב..."
-    });
-  };
-
-  return (
-    <div>
-      {/* Component content */}
-    </div>
-  );
-};
-
-export default GamePlay;
+      title: "
