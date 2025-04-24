@@ -547,7 +547,9 @@ const GamePlay: React.FC = () => {
         .eq('hasAnswered', true)
         .order('score', { ascending: false });
       
-      const correctAnswersCount = correctPlayers?.filter(p => p.lastAnswerCorrect === true).length || 0;
+      const correctAnswersCount = correctPlayers?.filter(p => {
+        return p.lastAnswerCorrect === true;
+      }).length || 0;
       
       if (correctAnswersCount === 0) {
         points = 15; // First correct answer
@@ -576,7 +578,8 @@ const GamePlay: React.FC = () => {
         console.log(`Updating score for player ${playerName} after answer`);
         supabase.from('players').update({
           hasAnswered: true,
-          score: currentPlayer.score + points
+          score: currentPlayer.score + points,
+          lastAnswerCorrect: isCorrect
         }).eq('game_code', gameCode).eq('name', playerName).then(({
           error
         }) => {
@@ -619,7 +622,9 @@ const GamePlay: React.FC = () => {
         .eq('hasAnswered', true)
         .order('score', { ascending: false });
       
-      const correctAnswersCount = correctPlayers?.filter(p => p.lastAnswerCorrect === true).length || 0;
+      const correctAnswersCount = correctPlayers?.filter(p => {
+        return p.lastAnswerCorrect === true;
+      }).length || 0;
       
       if (correctAnswersCount === 0) {
         points = 15; // First correct answer
@@ -645,7 +650,8 @@ const GamePlay: React.FC = () => {
         console.log(`Updating score for player ${playerName} after trivia answer`);
         supabase.from('players').update({
           hasAnswered: true,
-          score: currentPlayer.score + points
+          score: currentPlayer.score + points,
+          lastAnswerCorrect: isCorrect
         }).eq('game_code', gameCode).eq('name', playerName).then(({
           error
         }) => {
@@ -776,7 +782,7 @@ const GamePlay: React.FC = () => {
       console.error('Error resetting players ready status:', error);
       toast({
         title: "שגיאה באיפוס סטטוס מוכנות השחקנים",
-        description: "אירעה שגיאה באיפוס סטטוס מוכנות השחקנים",
+        description: "אירעה שגיאה באיפוס סטטוס מוכ��ות השחקנים",
         variant: "destructive"
       });
     }
