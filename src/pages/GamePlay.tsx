@@ -1,62 +1,25 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
-import AppButton from '@/components/AppButton';
-import MusicNote from '@/components/MusicNote';
-import GameTimer from '@/components/GameTimer';
-import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, CheckCircle2, Youtube } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
+import { Music, Play } from 'lucide-react';
 import { useGameState } from '@/contexts/GameStateContext';
 import { supabase } from '@/integrations/supabase/client';
-import EndGameButton from '@/components/EndGameButton';
-import { defaultSongBank, Song } from '@/data/songBank';
+import { defaultSongBank } from '@/data/songBank';
 import SongPlayer from '@/components/SongPlayer';
-import LeaveGameButton from '@/components/LeaveGameButton';
-import GameHostControls from '@/components/GameHostControls';
-import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import TriviaQuestion from '@/components/TriviaQuestion';
 import { triviaQuestions } from '@/data/triviaQuestions';
 import { mashinaSongs } from "@/data/songs/mashina";
 import { adamSongs } from "@/data/songs/adam";
-
-type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
-interface Player {
-  name: string;
-  score: number;
-  lastScore?: number;
-  skipsLeft: number;
-  hasAnswered: boolean;
-  isReady: boolean;
-  lastAnswer?: string;
-  lastAnswerCorrect?: boolean;
-  pendingAnswer?: number | null;
-  pointsAwarded?: boolean;
-}
-interface GameRound {
-  correctSong: Song;
-  options: Song[];
-  correctAnswerIndex: number;
-}
-interface SupabasePlayer {
-  id: string;
-  name: string;
-  score: number;
-  game_code: string;
-  joined_at: string;
-  hasAnswered: boolean;
-  isReady: boolean;
-}
-interface PendingAnswerUpdate {
-  player_name: string;
-  is_correct: boolean;
-  points: number;
-}
+import MusicNote from '@/components/MusicNote';
+import GameTimer from '@/components/GameTimer';
+import { GamePhase, GameRound, PendingAnswerUpdate } from '@/types/game';
+import { useGamePlayPlayers } from '@/hooks/useGamePlayPlayers';
+import GameHeader from '@/components/GameHeader';
+import GameLeaderboard from '@/components/GameLeaderboard';
+import ScoringFeedback from '@/components/ScoringFeedback';
 
 const GamePlay: React.FC = () => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -64,9 +27,11 @@ const GamePlay: React.FC = () => {
     playerName,
     isHost,
     gamePhase: serverGamePhase,
-    answerTimeLimit,
     gameSettings
   } = useGameState();
+
+  const { players, currentPlayer, setCurrentPlayer } = useGamePlayPlayers(gameCode, playerName);
+  
   const [phase, setPhase] = useState<GamePhase>('songPlayback');
   const [timeLeft, setTimeLeft] = useState(6);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -78,24 +43,15 @@ const GamePlay: React.FC = () => {
   const [playerReady, setPlayerReady] = useState(false);
   const [showAnswerConfirmation, setShowAnswerConfirmation] = useState(false);
   const [pendingAnswers, setPendingAnswers] = useState<PendingAnswerUpdate[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const [players, setPlayers] = useState<SupabasePlayer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [currentPlayer, setCurrentPlayer] = useState<Player>({
-    name: playerName || "שחקן נוכחי",
-    score: 0,
-    skipsLeft: 3,
-    hasAnswered: false,
-    isReady: false,
-    pendingAnswer: null,
-    pointsAwarded: false
-  });
   const [roundCounter, setRoundCounter] = useState<number>(1);
   const [isTriviaRound, setIsTriviaRound] = useState<boolean>(false);
   const [currentTriviaQuestion, setCurrentTriviaQuestion] = useState<TriviaQuestionType | null>(null);
-  const gameStartTimeRef = useRef<number | null>(null);
   const [answeredEarly, setAnsweredEarly] = useState(false);
   const [userSkippedQuestion, setUserSkippedQuestion] = useState(false);
+  
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const gameStartTimeRef = useRef<number | null>(null);
   const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkAllPlayersAnswered = useCallback(async () => {
@@ -358,9 +314,7 @@ const GamePlay: React.FC = () => {
 
   const updateGameState = async (phase: string) => {
     if (!isHost || !gameCode) return;
-    const {
-      error
-    } = await supabase.from('game_state').update({
+    const { error } = await supabase.from('game_state').update({
       game_phase: phase
     }).eq('game_code', gameCode);
     if (error) {
@@ -976,7 +930,7 @@ const GamePlay: React.FC = () => {
                   onClick={() => {
                     updateGameState('answering');
                     setPhase('answerOptions');
-                    gameStartTimeRef.current = Date.now(); // Set start time for trivia question
+                    gameStartTimeRef.current = Date.now();
                   }} 
                   className="max-w-xs"
                 >
@@ -1051,7 +1005,7 @@ const GamePlay: React.FC = () => {
           </div>
         );
 
-      case 'answerOptions': {
+      case 'answerOptions':
         const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
         const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6;
 
@@ -1146,121 +1100,29 @@ const GamePlay: React.FC = () => {
             )}
           </div>
         );
-      }
       
       case 'scoringFeedback':
         return (
-          <div className="flex flex-col items-center justify-center py-8 space-y-6">
-            <div className="text-4xl font-bold text-primary text-center animate-pulse">
-              משקללים את התוצאות
-            </div>
-
-            {userSkippedQuestion ? (
-              <>
-                <div className="text-2xl font-bold text-secondary text-center">
-                  דילגת על השאלה
-                </div>
-                
-                <div className="flex items-center justify-center gap-2 text-xl">
-                  <span>קיבלת</span>
-                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
-                  <span>נקודות</span>
-                </div>
-              </>
-            ) : currentPlayer.lastAnswerCorrect !== undefined ? (
-              <>
-                <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text-center`}>
-                  {currentPlayer.lastAnswerCorrect ? 'כל הכבוד! ענית נכון!' : 'אוי לא! טעית.'}
-                </div>
-                
-                <div className="flex items-center justify-center gap-2 text-xl">
-                  <span>קיבלת</span>
-                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
-                  <span>נקודות</span>
-                </div>
-                
-                {currentPlayer.lastAnswer && (
-                  <div className="text-lg">
-                    {currentPlayer.lastAnswerCorrect ? 'תשובה נכונה:' : 'בחרת:'} {currentPlayer.lastAnswer}
-                  </div>
-                )}
-                
-                {!currentPlayer.lastAnswerCorrect && currentRound && !isTriviaRound && (
-                  <div className="text-lg font-semibold text-green-500">
-                    התשובה הנכונה: {currentRound.correctSong.title}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-lg text-gray-600 text-center">
-                ממתין לתוצאות...
-              </div>
-            )}
-            
-            {isHost && currentRound && !isTriviaRound && (
-              <AppButton 
-                variant="secondary" 
-                size="lg" 
-                onClick={playFullSong} 
-                className="max-w-xs mt-4"
-              >
-                השמע את השיר המלא
-                <Youtube className="mr-2" />
-              </AppButton>
-            )}
-          </div>
+          <ScoringFeedback
+            userSkippedQuestion={userSkippedQuestion}
+            lastScore={currentPlayer.lastScore}
+            lastAnswerCorrect={currentPlayer.lastAnswerCorrect}
+            lastAnswer={currentPlayer.lastAnswer}
+            currentRound={currentRound}
+            isTriviaRound={isTriviaRound}
+            isHost={isHost}
+            onPlayFullSong={playFullSong}
+          />
         );
       
       case 'leaderboard':
         return (
-          <div className="flex flex-col items-center justify-center py-8">
-            <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
-
-            <div className="w-full max-w-md">
-              <Table>
-                <TableHeader>
-                  <TableRow className="py-[32px]">
-                    <TableHead className="text-right">מיקום</TableHead>
-                    <TableHead className="text-right">שם</TableHead>
-                    <TableHead className="text-right">ניקוד</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {players.map((player, idx) => (
-                    <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
-                      <TableCell className="font-medium">{idx + 1}</TableCell>
-                      <TableCell className="font-semibold">{player.name}</TableCell>
-                      <TableCell className={`font-bold ${(player.score || 0) < 0 ? "text-red-500" : ""}`}>
-                        {player.score || 0}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
-                        {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
-                        {idx === 2 && <Award className="h-5 w-5 text-amber-700" />}
-                        {player.name === playerName && idx > 2 && <CheckCircle2 className="h-5 w-5 text-primary my-[30px]" />}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {isHost ? (
-              <AppButton 
-                variant="primary" 
-                size="lg" 
-                className="mt-4" 
-                onClick={nextRound}
-              >
-                התחל סיבוב חדש
-              </AppButton>
-            ) : (
-              <div className="text-sm text-gray-500 mt-4">
-                המתן למארח להתחיל סיבוב חדש
-              </div>
-            )}
-          </div>
+          <GameLeaderboard
+            players={players}
+            playerName={playerName || ''}
+            isHost={isHost}
+            onNextRound={nextRound}
+          />
         );
       
       default:
@@ -1304,35 +1166,10 @@ const GamePlay: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
       <div className="container mx-auto px-4 py-6 relative z-10">
-        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6 bg-white/50 backdrop-blur-sm p-4 rounded-lg shadow-sm">
-          <div className="flex items-center gap-2 order-1 md:order-none">
-            <LeaveGameButton gameCode={gameCode || ''} isHost={isHost} />
-            {isHost && <EndGameButton gameCode={gameCode} />}
-          </div>
-          
-          <h1 className="flex items-center justify-center text-5xl font-bold text-primary text-center order-0 md:order-none relative">
-            <div className="flex items-center justify-center gap-3">
-              <MusicNote type="note3" className="absolute -top-6 -right-8 text-primary" size={32} animation="float" />
-              <MusicNote type="note2" className="absolute -top-4 -left-6 text-secondary" size={28} animation="float-alt" />
-              שיר על הדרך 🎶
-            </div>
-          </h1>
-          
-          <div className="flex flex-col md:flex-row items-center gap-4 order-2 md:order-none">
-            {isHost && <div className="text-sm text-gray-600">מנחה</div>}
-            <div className="flex items-center gap-2 bg-primary/5 px-3 py-1.5 rounded-md">
-              <span className="text-sm text-gray-600">קוד משחק: </span>
-              <span className="font-mono font-bold text-lg">{gameCode}</span>
-            </div>
-          </div>
-        </div>
-        
+        <GameHeader gameCode={gameCode} isHost={isHost} />
         {renderPhase()}
       </div>
-      
-      <div className="w-full max-w-4xl mx-auto p-4 mb-8">
-        
-      </div>
+      <div className="w-full max-w-4xl mx-auto p-4 mb-8"></div>
     </div>
   );
 };
