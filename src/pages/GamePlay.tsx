@@ -388,7 +388,7 @@ const GamePlay: React.FC = () => {
     const randomIndex = Math.floor(Math.random() * songList.length);
     const correctSong = songList[randomIndex];
     const otherSongs = songList.filter(song => song.id !== correctSong.id && song.title);
-    const shuffledWrongSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
+    const shuffledWrongSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);\
     const allOptions = [correctSong, ...shuffledWrongSongs];
     const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
     const correctSongTitle = correctSong.title || '';
