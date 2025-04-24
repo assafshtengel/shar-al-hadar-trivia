@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Song } from '@/data/songBank';
 import { Youtube, AlertTriangle, Music, Play } from 'lucide-react';
@@ -22,7 +21,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   onPlaybackEnded,
   onPlaybackStarted,
   onPlaybackError,
-  duration = 8000, // Keep this at 8 seconds
+  duration = 8000, // Keeping this at 8 seconds
   showOverlay = true
 }) => {
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
@@ -88,10 +87,11 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
           }
           
           // Always end playback after the set duration (8 seconds by default)
+          // This directly triggers the transition to scoring feedback
           timeoutRef.current = setTimeout(() => {
-            console.log('Song playback ended:', song.title);
+            console.log('Song playback ended after timeout:', song.title);
             setShowYouTubeEmbed(false);
-            onPlaybackEnded();
+            onPlaybackEnded(); // This will now directly move to scoring feedback
           }, duration);
         }
       } else {

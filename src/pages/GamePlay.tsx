@@ -404,12 +404,7 @@ const GamePlay: React.FC = () => {
     setShowYouTubeEmbed(false);
     setIsPlaying(false);
     
-    if (selectedAnswer !== null) {
-      submitAllAnswers();
-    } else {
-      submitAllAnswers();
-    }
-    
+    submitAllAnswers();
     setPhase('scoringFeedback');
     
     if (isHost) {
