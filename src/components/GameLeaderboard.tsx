@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trophy, Award, CheckCircle2 } from 'lucide-react';
+import { Trophy, Award, CheckCircle2, Youtube } from 'lucide-react';
 import AppButton from './AppButton';
 import { SupabasePlayer } from '@/types/game';
 
@@ -10,12 +10,27 @@ interface GameLeaderboardProps {
   playerName: string;
   isHost: boolean;
   onNextRound: () => void;
+  lastRoundScore?: number;
+  onPlayLastSong?: () => void;
 }
 
-const GameLeaderboard: React.FC<GameLeaderboardProps> = ({ players, playerName, isHost, onNextRound }) => {
+const GameLeaderboard: React.FC<GameLeaderboardProps> = ({ 
+  players, 
+  playerName, 
+  isHost, 
+  onNextRound,
+  lastRoundScore,
+  onPlayLastSong
+}) => {
   return (
     <div className="flex flex-col items-center justify-center py-8">
       <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
+
+      {lastRoundScore !== undefined && (
+        <div className="text-lg mb-4 text-primary">
+          ניקוד בסיבוב האחרון: {lastRoundScore}
+        </div>
+      )}
 
       <div className="w-full max-w-md">
         <Table>
@@ -47,20 +62,33 @@ const GameLeaderboard: React.FC<GameLeaderboardProps> = ({ players, playerName, 
         </Table>
       </div>
 
-      {isHost ? (
-        <AppButton 
-          variant="primary" 
-          size="lg" 
-          className="mt-4" 
-          onClick={onNextRound}
-        >
-          התחל סיבוב חדש
-        </AppButton>
-      ) : (
-        <div className="text-sm text-gray-500 mt-4">
-          המתן למארח להתחיל סיבוב חדש
-        </div>
-      )}
+      <div className="mt-4 flex flex-col gap-2 items-center">
+        {isHost && onPlayLastSong && (
+          <AppButton 
+            variant="secondary" 
+            size="sm" 
+            className="mb-2" 
+            onClick={onPlayLastSong}
+          >
+            <Youtube className="h-4 w-4 ml-2" />
+            השמע את השיר המלא
+          </AppButton>
+        )}
+
+        {isHost ? (
+          <AppButton 
+            variant="primary" 
+            size="lg"
+            onClick={onNextRound}
+          >
+            התחל סיבוב חדש
+          </AppButton>
+        ) : (
+          <div className="text-sm text-gray-500">
+            המתן למארח להתחיל סיבוב חדש
+          </div>
+        )}
+      </div>
     </div>
   );
 };

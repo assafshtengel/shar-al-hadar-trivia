@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -988,6 +987,8 @@ const GamePlay: React.FC = () => {
             playerName={playerName || ''}
             isHost={isHost}
             onNextRound={nextRound}
+            lastRoundScore={currentPlayer.lastScore}
+            onPlayLastSong={isHost ? playFullSong : undefined}
           />
         );
       
