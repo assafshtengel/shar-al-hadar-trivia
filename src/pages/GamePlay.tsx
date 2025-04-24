@@ -549,14 +549,11 @@ const GamePlay: React.FC = () => {
     if (isFinalPhase) {
       points = isCorrect ? 4 : -2;
     } else {
-      if (timeSinceStart <= 3) {
-        points = 13;
-      } else if (timeSinceStart <= 8) {
-        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
+      if (isCorrect) {
+        points = Math.max(13 - Math.floor(timeSinceStart), 4);
+      } else {
+        points = 0;
       }
-    }
-    if (!isCorrect && !isFinalPhase) {
-      points = 0;
     }
 
     setCurrentPlayer(prev => ({
@@ -594,6 +591,70 @@ const GamePlay: React.FC = () => {
       description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
     if (timeLeft <= 0 || isFinalPhase) {
+      submitAllAnswers();
+    }
+  };
+
+  const handleTriviaAnswer = (isCorrect: boolean, selectedIndex: number) => {
+    if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
+      console.log("Already answered or points already awarded - ignoring selection");
+      return;
+    }
+    
+    setUserSkippedQuestion(false);
+    
+    console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${isCorrect}`);
+    const currentTime = Date.now();
+    const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
+    if (timeSinceStart <= 12) {
+      setAnsweredEarly(true);
+    }
+    
+    let points = 0;
+    const isFinalPhase = timeSinceStart > 11.9;
+
+    if (isFinalPhase) {
+      points = isCorrect ? 4 : -2;
+    } else {
+      if (isCorrect) {
+        points = Math.max(13 - Math.floor(timeSinceStart), 4);
+      } else {
+        points = 0;
+      }
+    }
+
+    setCurrentPlayer(prev => ({
+      ...prev,
+      hasAnswered: true,
+      lastAnswerCorrect: isCorrect,
+      lastScore: points,
+      score: prev.score + points,
+      pointsAwarded: true
+    }));
+    if (gameCode && playerName) {
+      try {
+        console.log(`Updating score for player ${playerName} after trivia answer`);
+        supabase.from('players').update({
+          hasAnswered: true,
+          score: currentPlayer.score + points
+        }).eq('game_code', gameCode).eq('name', playerName).then(({
+          error
+        }) => {
+          if (error) {
+            console.error('Error updating player after trivia answer:', error);
+          } else {
+            console.log(`Successfully updated ${playerName} score after trivia answer`);
+          }
+        });
+      } catch (err) {
+        console.error('Exception when updating player after trivia answer:', err);
+      }
+    }
+    toast({
+      title: isCorrect ? "כל הכבוד!" : "אופס!",
+      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה, נסה בפעם הבאה"
+    });
+    if (isFinalPhase) {
       submitAllAnswers();
     }
   };
@@ -857,68 +918,6 @@ const GamePlay: React.FC = () => {
     if (currentRound.correctSong.fullUrl) {
       console.log(`Playing full song from YouTube: ${currentRound.correctSong.fullUrl}`);
       window.open(currentRound.correctSong.fullUrl, '_blank');
-    }
-  };
-
-  const handleTriviaAnswer = (isCorrect: boolean, selectedIndex: number) => {
-    if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
-      console.log("Already answered or points already awarded - ignoring selection");
-      return;
-    }
-    
-    setUserSkippedQuestion(false);
-    
-    console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${isCorrect}`);
-    const currentTime = Date.now();
-    const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
-    if (timeSinceStart <= 12) {
-      setAnsweredEarly(true);
-    }
-    let points = 0;
-    const isFinalPhase = timeSinceStart > 8;
-
-    if (isFinalPhase) {
-      points = isCorrect ? 4 : -2;
-    } else {
-      if (timeSinceStart <= 3) {
-        points = 13;
-      } else if (timeSinceStart <= 8) {
-        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
-      }
-    }
-    setCurrentPlayer(prev => ({
-      ...prev,
-      hasAnswered: true,
-      lastAnswerCorrect: isCorrect,
-      lastScore: points,
-      score: prev.score + points,
-      pointsAwarded: true
-    }));
-    if (gameCode && playerName) {
-      try {
-        console.log(`Updating score for player ${playerName} after trivia answer`);
-        supabase.from('players').update({
-          hasAnswered: true,
-          score: currentPlayer.score + points
-        }).eq('game_code', gameCode).eq('name', playerName).then(({
-          error
-        }) => {
-          if (error) {
-            console.error('Error updating player after trivia answer:', error);
-          } else {
-            console.log(`Successfully updated ${playerName} score after trivia answer`);
-          }
-        });
-      } catch (err) {
-        console.error('Exception when updating player after trivia answer:', err);
-      }
-    }
-    toast({
-      title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה, נסה בפעם הבאה"
-    });
-    if (isFinalPhase) {
-      submitAllAnswers();
     }
   };
 
