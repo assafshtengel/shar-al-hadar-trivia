@@ -26,7 +26,7 @@ const GameLeaderboard: React.FC<GameLeaderboardProps> = ({
     <div className="flex flex-col items-center justify-center py-8">
       <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
 
-      {lastRoundScore !== undefined && (
+      {(lastRoundScore !== undefined) && (
         <div className="text-lg mb-4 text-primary">
           ניקוד בסיבוב האחרון: {lastRoundScore}
         </div>
