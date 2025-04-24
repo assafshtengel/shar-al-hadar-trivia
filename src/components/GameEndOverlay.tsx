@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameState } from '@/contexts/GameStateContext';
@@ -103,6 +102,15 @@ const GameEndOverlay: React.FC<GameEndOverlayProps> = ({ isVisible, isHost }) =>
         console.log('Displaying game end overlay');
         setShowOverlay(true);
         overlayTimerRef.current = null;
+
+        // Add auto-dismiss timer
+        const dismissTimer = setTimeout(() => {
+          console.log('Auto-dismissing game end overlay after 4 seconds');
+          handleCloseOverlay();
+        }, 4000);
+
+        // Clean up dismiss timer when component unmounts or overlay changes
+        return () => clearTimeout(dismissTimer);
       }, 1000);
     } else {
       console.log('Game end state cleared');
