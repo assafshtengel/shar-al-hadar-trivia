@@ -1,229 +1,57 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
-import { Music, Play, SkipForward } from 'lucide-react';
+import AppButton from '@/components/AppButton';
+import MusicNote from '@/components/MusicNote';
+import GameTimer from '@/components/GameTimer';
+import { Music, Play, SkipForward, Clock, Award, Crown, Trophy, CheckCircle2, Youtube } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { useGameState } from '@/contexts/GameStateContext';
 import { supabase } from '@/integrations/supabase/client';
-import { defaultSongBank } from '@/data/songBank';
+import EndGameButton from '@/components/EndGameButton';
+import { defaultSongBank, Song } from '@/data/songBank';
 import SongPlayer from '@/components/SongPlayer';
+import LeaveGameButton from '@/components/LeaveGameButton';
+import GameHostControls from '@/components/GameHostControls';
+import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import TriviaQuestion from '@/components/TriviaQuestion';
 import { triviaQuestions } from '@/data/triviaQuestions';
 import { mashinaSongs } from "@/data/songs/mashina";
 import { adamSongs } from "@/data/songs/adam";
-import { GamePhase, GameRound, PendingAnswerUpdate } from '@/types/game';
-import { useGamePlayPlayers } from '@/hooks/useGamePlayPlayers';
-import GameHeader from '@/components/GameHeader';
-import GameLeaderboard from '@/components/GameLeaderboard';
-import ScoringFeedback from '@/components/ScoringFeedback';
-import AppButton from '@/components/AppButton';
-import MusicNote from '@/components/MusicNote';
-import GameTimer from '@/components/GameTimer';
-import { Song } from '@/types/game';
-import { Clock, Award, Crown, Trophy, CheckCircle2, Youtube } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
 
-interface SongPlaybackProps {
-  currentSong: Song | null;
-  isPlaying: boolean;
-  showYouTubeEmbed: boolean;
-  isHost: boolean;
-  currentRound: GameRound | null;
-  handleSongPlaybackEnded: () => void;
-  handleSongPlaybackError: () => void;
-  gameStartTimeRef: React.MutableRefObject<number | null>;
-  updateGameState: (phase: string) => Promise<void>;
-  setPhase: React.Dispatch<React.SetStateAction<GamePhase>>;
+type GamePhase = 'songPlayback' | 'answerOptions' | 'scoringFeedback' | 'leaderboard';
+interface Player {
+  name: string;
+  score: number;
+  lastScore?: number;
+  skipsLeft: number;
+  hasAnswered: boolean;
+  isReady: boolean;
+  lastAnswer?: string;
+  lastAnswerCorrect?: boolean;
+  pendingAnswer?: number | null;
+  pointsAwarded?: boolean;
 }
-
-const SongPlayback: React.FC<SongPlaybackProps> = ({
-  currentSong,
-  isPlaying,
-  showYouTubeEmbed,
-  isHost,
-  currentRound,
-  handleSongPlaybackEnded,
-  handleSongPlaybackError,
-  gameStartTimeRef,
-  updateGameState,
-  setPhase
-}) => {
-  const [isTriviaRound, setIsTriviaRound] = useState<boolean>(false);
-  const [currentTriviaQuestion, setCurrentTriviaQuestion] = useState<any | null>(null);
-
-  useEffect(() => {
-    if (currentRound) {
-      setIsTriviaRound(false);
-      setCurrentTriviaQuestion(null);
-    }
-  }, [currentRound]);
-
-  useEffect(() => {
-    if (currentTriviaQuestion) {
-      setIsTriviaRound(true);
-    } else {
-      setIsTriviaRound(false);
-    }
-  }, [currentTriviaQuestion]);
-
-  return (
-    <div className="flex flex-col items-center justify-center py-6 space-y-6">
-      <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
-      <SongPlayer 
-        song={currentSong} 
-        isPlaying={isPlaying && showYouTubeEmbed} 
-        onPlaybackEnded={handleSongPlaybackEnded} 
-        onPlaybackError={handleSongPlaybackError} 
-        onPlaybackStarted={() => {
-          if (currentRound) {
-            gameStartTimeRef.current = Date.now();
-          }
-        }} 
-        showOverlay={true}
-      />
-      {currentRound && (
-        <TriviaQuestion 
-          question={{
-            question: "מה השיר?",
-            options: currentRound.options.map(song => song.title || ''),
-            correctAnswerIndex: currentRound.correctAnswerIndex
-          }} 
-          onAnswer={() => {}}
-          timeUp={false} 
-          answerStartTime={gameStartTimeRef.current || Date.now()} 
-          elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000}
-          showQuestion={true} 
-        />
-      )}
-      {isPlaying && !showYouTubeEmbed && (
-        <div className="relative w-40 h-40 flex items-center justify-center">
-          <div className="absolute w-full h-full">
-            <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
-            <MusicNote type="note2" className="absolute top-10 left-0 text-secondary animate-float-alt" size={28} />
-            <MusicNote type="note3" className="absolute bottom-10 right-10 text-accent animate-float" size={36} />
-          </div>
-          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
-            <Music className="w-10 h-10 text-primary" />
-          </div>
-        </div>
-      )}
-      {!isHost && !isPlaying && (
-        <div className="text-lg text-gray-600 text-center">
-          המתן למנהל המשחק להשמיע את השיר הבא
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface AnswerOptionsProps {
-  timerActive: boolean;
-  currentPlayer: any;
-  currentRound: GameRound | null;
-  isTriviaRound: boolean;
-  timeLeft: number;
-  selectedAnswer: number | null;
-  answeredEarly: boolean;
-  handleSkip: () => Promise<void>;
-  handleAnswer: (isCorrect: boolean, selectedIndex: number) => Promise<void>;
-  submitAllAnswers: () => Promise<void>;
-  gameStartTimeRef: React.MutableRefObject<number | null>;
+interface GameRound {
+  correctSong: Song;
+  options: Song[];
+  correctAnswerIndex: number;
 }
-
-const AnswerOptions: React.FC<AnswerOptionsProps> = ({
-  timerActive,
-  currentPlayer,
-  currentRound,
-  isTriviaRound,
-  timeLeft,
-  selectedAnswer,
-  answeredEarly,
-  handleSkip,
-  handleAnswer,
-  submitAllAnswers,
-  gameStartTimeRef
-}) => {
-  const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
-  const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6;
-
-  return (
-    <div className="flex flex-col items-center py-6 space-y-6">
-      <GameTimer initialSeconds={8} isActive={timerActive} onTimeout={submitAllAnswers} />
-
-      <div className="text-xl font-semibold text-primary">
-        הניקוד שלך בסיבוב זה: {currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}
-      </div>
-
-      <div className="flex items-center">
-        <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
-        <SkipForward className="ml-2 text-secondary" />
-      </div>
-
-      {isTriviaRound ? (
-        <TriviaQuestion
-          question={{
-            question: "שאלת טריוויה",
-            options: [],
-            correctAnswerIndex: 0
-          }}
-          onAnswer={() => {}}
-          timeUp={timeLeft <= 0}
-          answerStartTime={gameStartTimeRef.current || Date.now()}
-          elapsedTime={timeSinceStart}
-          isFinalPhase={isFinalPhase}
-          hasAnsweredEarly={answeredEarly}
-          onTimeUp={() => {
-            if (isFinalPhase) {
-              submitAllAnswers();
-            }
-          }}
-        />
-      ) : currentRound ? (
-        <TriviaQuestion
-          question={{
-            question: "מה השיר?",
-            options: currentRound.options.map(song => song.title || ''),
-            correctAnswerIndex: currentRound.correctAnswerIndex
-          }}
-          onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)}
-          timeUp={timeLeft <= 0}
-          answerStartTime={gameStartTimeRef.current || Date.now()}
-          elapsedTime={timeSinceStart}
-          isFinalPhase={isFinalPhase}
-          hasAnsweredEarly={answeredEarly}
-          onTimeUp={() => {
-            if (isFinalPhase) {
-              submitAllAnswers();
-            }
-          }}
-        />
-      ) : (
-        <div className="text-lg text-gray-600 animate-pulse">
-          טוען אפשרויות...
-        </div>
-      )}
-
-      {!currentPlayer.hasAnswered && (
-        <AppButton variant="secondary" className="mt-4 max-w-xs" disabled={selectedAnswer !== null || currentPlayer.skipsLeft <= 0} onClick={handleSkip}>
-          דלג ({currentPlayer.skipsLeft})
-          <SkipForward className="mr-2" />
-        </AppButton>
-      )}
-
-      {selectedAnswer !== null && (
-        <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
-          הבחירה שלך נקלטה! ממתין לסיום הזמן...
-        </div>
-      )}
-
-      {currentPlayer.hasAnswered && !isFinalPhase && (
-        <div className="text-lg text-yellow-700 bg-yellow-100 border border-yellow-300 mt-4 p-4 rounded-md w-full text-center">
-          בחרת תשובה בסיבוב זה , אנו מחכים לתשובות משאר המשתתפים .
-        </div>
-      )}
-    </div>
-  );
-};
+interface SupabasePlayer {
+  id: string;
+  name: string;
+  score: number;
+  game_code: string;
+  joined_at: string;
+  hasAnswered: boolean;
+  isReady: boolean;
+}
+interface PendingAnswerUpdate {
+  player_name: string;
+  is_correct: boolean;
+  points: number;
+}
 
 const GamePlay: React.FC = () => {
   const {
@@ -251,27 +79,42 @@ const GamePlay: React.FC = () => {
   const [showAnswerConfirmation, setShowAnswerConfirmation] = useState(false);
   const [pendingAnswers, setPendingAnswers] = useState<PendingAnswerUpdate[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [players, setPlayers] = useState<SupabasePlayer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [currentPlayer, setCurrentPlayer] = useState<Player>({
+    name: playerName || "שחקן נוכחי",
+    score: 0,
+    skipsLeft: 3,
+    hasAnswered: false,
+    isReady: false,
+    pendingAnswer: null,
+    pointsAwarded: false
+  });
   const [roundCounter, setRoundCounter] = useState<number>(1);
   const [isTriviaRound, setIsTriviaRound] = useState<boolean>(false);
-  const [currentTriviaQuestion, setCurrentTriviaQuestion] = useState<any | null>(null);
+  const [currentTriviaQuestion, setCurrentTriviaQuestion] = useState<TriviaQuestionType | null>(null);
   const gameStartTimeRef = useRef<number | null>(null);
   const [answeredEarly, setAnsweredEarly] = useState(false);
   const [userSkippedQuestion, setUserSkippedQuestion] = useState(false);
   const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const {
-    players,
-    setPlayers,
-    currentPlayer,
-    setCurrentPlayer,
-    checkAllPlayersAnswered,
-    checkAllPlayersReady,
-    resetPlayersAnsweredStatus,
-    resetPlayersReadyStatus,
-    resetAllPlayerScores,
-    batchUpdatePlayerScores
-  } = useGamePlayPlayers(gameCode, playerName);
+  const checkAllPlayersAnswered = useCallback(async () => {
+    if (!gameCode) return false;
+    const {
+      data
+    } = await supabase.from('players').select('hasAnswered').eq('game_code', gameCode);
+    if (!data) return false;
+    return data.every(player => player.hasAnswered === true);
+  }, [gameCode]);
+
+  const checkAllPlayersReady = useCallback(async () => {
+    if (!gameCode) return false;
+    const {
+      data
+    } = await supabase.from('players').select('isReady').eq('game_code', gameCode);
+    if (!data) return false;
+    return data.every(player => player.isReady === true);
+  }, [gameCode]);
 
   useEffect(() => {
     if (!gameCode) {
@@ -573,7 +416,7 @@ const GamePlay: React.FC = () => {
       }, 12000); // Changed to 12 seconds
       return () => clearTimeout(timer);
     }
-  }, [showYouTubeEmbed, isHost, updateGameState, setPhase]);
+  }, [showYouTubeEmbed, isHost]);
 
   const playSong = async () => {
     if (!isHost) return;
@@ -677,11 +520,61 @@ const GamePlay: React.FC = () => {
     setPhase('scoringFeedback');
   };
 
+  const batchUpdatePlayerScores = async (updates: PendingAnswerUpdate[]) => {
+    if (!gameCode || updates.length === 0) {
+      return;
+    }
+    console.log('Batch updating player scores:', updates);
+    try {
+      for (const update of updates) {
+        const {
+          data: playerData,
+          error: fetchError
+        } = await supabase.from('players').select('score, hasAnswered').eq('game_code', gameCode).eq('name', update.player_name).maybeSingle();
+        if (fetchError) {
+          console.error(`Error fetching player ${update.player_name}:`, fetchError);
+          continue;
+        }
+        if (!playerData) {
+          console.error(`Player ${update.player_name} not found`);
+          continue;
+        }
+        if (playerData.hasAnswered) {
+          console.log(`Player ${update.player_name} has already answered this round. Skipping score update.`);
+          continue;
+        }
+        const currentScore = playerData.score || 0;
+        const newScore = currentScore + update.points;
+        console.log(`Player ${update.player_name}: Current score=${currentScore}, adding ${update.points}, new score=${newScore}`);
+        const {
+          error: updateError
+        } = await supabase.from('players').update({
+          score: newScore,
+          hasAnswered: true
+        }).eq('game_code', gameCode).eq('name', update.player_name);
+        if (updateError) {
+          console.error(`Error updating player ${update.player_name}:`, updateError);
+        } else {
+          console.log(`Successfully updated player ${update.player_name} score to ${newScore}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error in batchUpdatePlayerScores:', error);
+      toast({
+        title: "שגיאה בעדכון הניקוד",
+        description: "אירעה שגיאה בעדכון הניקוד",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleAnswer = async (isCorrect: boolean, selectedIndex: number) => {
     if (selectedAnswer !== null || currentPlayer.hasAnswered || !currentRound || currentPlayer.pointsAwarded) {
       console.log("Already answered or missing round data or points already awarded - ignoring selection");
       return;
     }
+    
+    setUserSkippedQuestion(false);
     
     console.log(`Player ${playerName} selected answer: ${selectedIndex}`);
     setSelectedAnswer(selectedIndex);
@@ -826,6 +719,42 @@ const GamePlay: React.FC = () => {
     submitAllAnswers();
   };
 
+  const resetPlayersAnsweredStatus = async () => {
+    if (!isHost || !gameCode) return;
+    const {
+      error
+    } = await supabase.from('players').update({
+      hasAnswered: false
+    }).eq('game_code', gameCode);
+    if (error) {
+      console.error('Error resetting players answered status:', error);
+      toast({
+        title: "שגיאה באיפוס סטטוס השחקנים",
+        description: "אירעה שגיאה באיפוס סטטוס השחקנים",
+        variant: "destructive"
+      });
+    } else {
+      console.log('Successfully reset all players answered status');
+    }
+  };
+
+  const resetPlayersReadyStatus = async () => {
+    if (!isHost || !gameCode) return;
+    const {
+      error
+    } = await supabase.from('players').update({
+      isReady: false
+    }).eq('game_code', gameCode);
+    if (error) {
+      console.error('Error resetting players ready status:', error);
+      toast({
+        title: "שגיאה באיפוס סטטוס מוכנות השחקנים",
+        description: "אירעה שגיאה באיפוס סטטוס מוכנות השחקנים",
+        variant: "destructive"
+      });
+    }
+  };
+
   const markPlayerReady = async () => {
     if (!gameCode || !playerName) return;
     setPlayerReady(true);
@@ -845,6 +774,33 @@ const GamePlay: React.FC = () => {
     }
   };
 
+  const resetAllPlayerScores = async () => {
+    if (!isHost || !gameCode) return;
+    try {
+      const {
+        error
+      } = await supabase.from('players').update({
+        score: 0
+      }).eq('game_code', gameCode);
+      if (error) {
+        console.error('Error resetting player scores:', error);
+        toast({
+          title: "שגיאה באיפוס הניקוד",
+          description: "אירעה שגיאה באיפוס ניקוד השחקנים",
+          variant: "destructive"
+        });
+      } else {
+        console.log('Successfully reset all player scores to 0');
+        toast({
+          title: "ניקוד אופס",
+          description: "ניקוד כל השחקנים אופס בהצלחה"
+        });
+      }
+    } catch (err) {
+      console.error('Exception when resetting player scores:', err);
+    }
+  };
+
   useEffect(() => {
     if (phase === 'scoringFeedback') {
       const timer = setTimeout(() => {
@@ -852,7 +808,7 @@ const GamePlay: React.FC = () => {
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [phase]);
+  }, [phase, isHost]);
 
   const nextRound = async () => {
     if (!isHost) return;
@@ -900,3 +856,485 @@ const GamePlay: React.FC = () => {
       const randomIndex = Math.floor(Math.random() * triviaQuestions.length);
       const selectedQuestion = triviaQuestions[randomIndex];
       setCurrentTriviaQuestion(selectedQuestion);
+      
+      const triviaData = {
+        type: "trivia",
+        question: selectedQuestion
+      };
+      
+      const { error } = await supabase.from('game_state').update({
+        current_song_name: JSON.stringify(triviaData),
+        game_phase: 'playing'
+      }).eq('game_code', gameCode);
+      
+      if (error) {
+        console.error('Error storing trivia data:', error);
+        toast({
+          title: "שגיאה בשמירת נתוני הטריוויה",
+          description: "איר��ה שגיאה בשמי��ת נתוני הטריוויה",
+          variant: "destructive"
+        });
+        return;
+      }
+    } else {
+      updateGameState('playing');
+    }
+    
+    setPhase('songPlayback');
+    
+    toast({
+      title: "מתכוננים לסיבוב הבא",
+      description: newIsTriviaRound ? "סיבוב טריוויה עומד להתחיל" : "סיבוב חדש עומד להתחיל"
+    });
+  };
+
+  const playFullSong = () => {
+    if (!isHost || !currentRound) return;
+    toast({
+      title: "משמיע את השיר המלא",
+      description: "השיר המלא מתנגן כעת"
+    });
+    if (currentRound.correctSong.fullUrl) {
+      console.log(`Playing full song from YouTube: ${currentRound.correctSong.fullUrl}`);
+      window.open(currentRound.correctSong.fullUrl, '_blank');
+    }
+  };
+
+  const handleTriviaAnswer = (isCorrect: boolean, selectedIndex: number) => {
+    if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
+      console.log("Already answered or points already awarded - ignoring selection");
+      return;
+    }
+    
+    setUserSkippedQuestion(false);
+    
+    console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${isCorrect}`);
+    const currentTime = Date.now();
+    const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
+    if (timeSinceStart <= 12) {
+      setAnsweredEarly(true);
+    }
+    let points = 0;
+    const isFinalPhase = timeSinceStart > 8;
+
+    if (isFinalPhase) {
+      points = isCorrect ? 4 : -2;
+    } else {
+      if (timeSinceStart <= 3) {
+        points = 13;
+      } else if (timeSinceStart <= 8) {
+        points = Math.max(13 - Math.floor(timeSinceStart - 2), 5);
+      }
+    }
+    setCurrentPlayer(prev => ({
+      ...prev,
+      hasAnswered: true,
+      lastAnswerCorrect: isCorrect,
+      lastScore: points,
+      score: prev.score + points,
+      pointsAwarded: true
+    }));
+    if (gameCode && playerName) {
+      try {
+        console.log(`Updating score for player ${playerName} after trivia answer`);
+        supabase.from('players').update({
+          hasAnswered: true,
+          score: currentPlayer.score + points
+        }).eq('game_code', gameCode).eq('name', playerName).then(({
+          error
+        }) => {
+          if (error) {
+            console.error('Error updating player after trivia answer:', error);
+          } else {
+            console.log(`Successfully updated ${playerName} score after trivia answer`);
+          }
+        });
+      } catch (err) {
+        console.error('Exception when updating player after trivia answer:', err);
+      }
+    }
+    toast({
+      title: isCorrect ? "כל הכבוד!" : "אופס!",
+      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה, נסה בפעם הבאה"
+    });
+    if (isFinalPhase) {
+      submitAllAnswers();
+    }
+  };
+
+  const renderPhase = () => {
+    switch (phase) {
+      case 'songPlayback':
+        if (isTriviaRound && currentTriviaQuestion) {
+          return (
+            <div className="flex flex-col items-center justify-center py-6 space-y-6">
+              <h2 className="text-2xl font-bold text-primary">שאלת טריוויה במוזיקה ישראלית</h2>
+              {isHost ? (
+                <AppButton 
+                  variant="primary" 
+                  size="lg" 
+                  onClick={() => {
+                    updateGameState('answering');
+                    setPhase('answerOptions');
+                    gameStartTimeRef.current = Date.now(); // Set start time for trivia question
+                  }} 
+                  className="max-w-xs"
+                >
+                  הצג שאלת טריוויה
+                  <Play className="mr-2" />
+                </AppButton>
+              ) : (
+                <div className="text-lg text-gray-600 text-center">
+                  המתן למנהל המשחק להציג את שאלת הטריוויה
+                </div>
+              )}
+              {currentTriviaQuestion && (
+                <TriviaQuestion 
+                  question={currentTriviaQuestion} 
+                  onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)} 
+                  timeUp={false} 
+                  answerStartTime={gameStartTimeRef.current || Date.now()} 
+                  elapsedTime={0}
+                  showQuestion={true} 
+                />
+              )}
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex flex-col items-center justify-center py-6 space-y-6">
+            <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
+            <SongPlayer 
+              song={currentSong} 
+              isPlaying={isPlaying && showYouTubeEmbed} 
+              onPlaybackEnded={handleSongPlaybackEnded} 
+              onPlaybackError={handleSongPlaybackError} 
+              onPlaybackStarted={() => {
+                if (currentRound) {
+                  gameStartTimeRef.current = Date.now();
+                }
+              }} 
+              showOverlay={true}
+            />
+            {currentRound && (
+              <TriviaQuestion 
+                question={{
+                  question: "מה השיר?",
+                  options: currentRound.options.map(song => song.title || ''),
+                  correctAnswerIndex: currentRound.correctAnswerIndex
+                }} 
+                onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)} 
+                timeUp={timeLeft <= 0} 
+                answerStartTime={gameStartTimeRef.current || Date.now()} 
+                elapsedTime={(Date.now() - (gameStartTimeRef.current || Date.now())) / 1000}
+                showQuestion={true} 
+              />
+            )}
+            {isPlaying && !showYouTubeEmbed && (
+              <div className="relative w-40 h-40 flex items-center justify-center">
+                <div className="absolute w-full h-full">
+                  <MusicNote type="note1" className="absolute top-0 right-0 text-primary animate-float" size={32} />
+                  <MusicNote type="note2" className="absolute top-10 left-0 text-secondary animate-float-alt" size={28} />
+                  <MusicNote type="note3" className="absolute bottom-10 right-10 text-accent animate-float" size={36} />
+                </div>
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
+                  <Music className="w-10 h-10 text-primary" />
+                </div>
+              </div>
+            )}
+            {!isHost && !isPlaying && (
+              <div className="text-lg text-gray-600 text-center">
+                המתן למנהל המשחק להשמיע את השיר הבא
+              </div>
+            )}
+          </div>
+        );
+
+      case 'answerOptions': {
+        const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
+        const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6;
+
+        if (
+          isHost &&
+          currentPlayer.hasAnswered &&
+          isFinalPhase
+        ) {
+          return (
+            <div className="flex flex-col items-center py-6 space-y-6">
+              <GameTimer initialSeconds={6} isActive={true} onTimeout={handleTimerTimeout} />
+              <div className="text-xl font-semibold text-primary">
+                הבחירה שלך נקלטה! ממתין לשאר המשתתפים...
+              </div>
+              <div className="text-md text-gray-600 bg-gray-100 rounded-lg border p-5 max-w-xl mt-8 text-center">
+                לאחר שכל המשתתפים יענו או שייגמר הזמן, יעברו כל השחקנים לצפייה בתוצאה, ניקוד, ושם השיר הנכון כולל אפשרות להשמעתו.
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex flex-col items-center py-6 space-y-6">
+            <GameTimer initialSeconds={8} isActive={timerActive} onTimeout={handleTimerTimeout} />
+
+            <div className="text-xl font-semibold text-primary">
+              הניקוד שלך בסיבוב זה: {currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}
+            </div>
+
+            <div className="flex items-center">
+              <span className="font-bold">{currentPlayer.skipsLeft} דילוגים נותרו</span>
+              <SkipForward className="ml-2 text-secondary" />
+            </div>
+
+            {isTriviaRound && currentTriviaQuestion ? (
+              <TriviaQuestion
+                question={currentTriviaQuestion}
+                onAnswer={(isCorrect, selectedIndex) => handleTriviaAnswer(isCorrect, selectedIndex)}
+                timeUp={timeLeft <= 0}
+                answerStartTime={gameStartTimeRef.current || Date.now()}
+                elapsedTime={timeSinceStart}
+                isFinalPhase={isFinalPhase}
+                hasAnsweredEarly={answeredEarly}
+                onTimeUp={() => {
+                  if (isFinalPhase) {
+                    submitAllAnswers();
+                  }
+                }}
+              />
+            ) : currentRound ? (
+              <TriviaQuestion
+                question={{
+                  question: "מה השיר?",
+                  options: currentRound.options.map(song => song.title || ''),
+                  correctAnswerIndex: currentRound.correctAnswerIndex
+                }}
+                onAnswer={(isCorrect, selectedIndex) => handleAnswer(isCorrect, selectedIndex)}
+                timeUp={timeLeft <= 0}
+                answerStartTime={gameStartTimeRef.current || Date.now()}
+                elapsedTime={timeSinceStart}
+                isFinalPhase={isFinalPhase}
+                hasAnsweredEarly={answeredEarly}
+                onTimeUp={() => {
+                  if (isFinalPhase) {
+                    submitAllAnswers();
+                  }
+                }}
+              />
+            ) : (
+              <div className="text-lg text-gray-600 animate-pulse">
+                טוען אפשרויות...
+              </div>
+            )}
+
+            {!currentPlayer.hasAnswered && (
+              <AppButton variant="secondary" className="mt-4 max-w-xs" disabled={selectedAnswer !== null || currentPlayer.skipsLeft <= 0} onClick={handleSkip}>
+                דלג ({currentPlayer.skipsLeft})
+                <SkipForward className="mr-2" />
+              </AppButton>
+            )}
+
+            {selectedAnswer !== null && (
+              <div className="text-lg text-gray-600 bg-gray-100 p-4 rounded-md w-full text-center">
+                הבחירה שלך נקלטה! ממתין לסיום הזמן...
+              </div>
+            )}
+
+            {currentPlayer.hasAnswered && !isFinalPhase && (
+              <div className="text-lg text-yellow-700 bg-yellow-100 border border-yellow-300 mt-4 p-4 rounded-md w-full text-center">
+                בחרת תשובה בסיבוב זה , אנו מחכים לתשובו�� משאר המשתתפים .
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      case 'scoringFeedback':
+        return (
+          <div className="flex flex-col items-center justify-center py-8 space-y-6">
+            <div className="text-4xl font-bold text-primary text-center animate-pulse">
+              משקללים את התוצאות
+            </div>
+
+            {userSkippedQuestion ? (
+              <>
+                <div className="text-2xl font-bold text-secondary text-center">
+                  דילגת על השאלה
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-xl">
+                  <span>קיבלת</span>
+                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
+                  <span>נקודות</span>
+                </div>
+              </>
+            ) : currentPlayer.lastAnswerCorrect !== undefined ? (
+              <>
+                <div className={`text-3xl font-bold ${currentPlayer.lastAnswerCorrect ? 'text-green-500' : 'text-red-500'} text-center`}>
+                  {currentPlayer.lastAnswerCorrect ? 'כל הכבוד! ענית נכון!' : 'אוי לא! טעית.'}
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-xl">
+                  <span>קיבלת</span>
+                  <span className="font-bold text-primary text-2xl">{currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}</span>
+                  <span>נקודות</span>
+                </div>
+                
+                {currentPlayer.lastAnswer && (
+                  <div className="text-lg">
+                    {currentPlayer.lastAnswerCorrect ? 'תשובה נכונה:' : 'בחרת:'} {currentPlayer.lastAnswer}
+                  </div>
+                )}
+                
+                {!currentPlayer.lastAnswerCorrect && currentRound && !isTriviaRound && (
+                  <div className="text-lg font-semibold text-green-500">
+                    התשובה הנכונה: {currentRound.correctSong.title}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-lg text-gray-600 text-center">
+                ממתין לתוצאות...
+              </div>
+            )}
+            
+            {isHost && currentRound && !isTriviaRound && (
+              <AppButton 
+                variant="secondary" 
+                size="lg" 
+                onClick={playFullSong} 
+                className="max-w-xs mt-4"
+              >
+                השמע את השיר המלא
+                <Youtube className="mr-2" />
+              </AppButton>
+            )}
+          </div>
+        );
+      
+      case 'leaderboard':
+        return (
+          <div className="flex flex-col items-center justify-center py-8">
+            <h2 className="text-2xl font-bold text-primary mb-6">טבלת המובילים</h2>
+
+            <div className="w-full max-w-md">
+              <Table>
+                <TableHeader>
+                  <TableRow className="py-[32px]">
+                    <TableHead className="text-right">מיקום</TableHead>
+                    <TableHead className="text-right">שם</TableHead>
+                    <TableHead className="text-right">ניקוד</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {players.map((player, idx) => (
+                    <TableRow key={player.id} className={player.name === playerName ? "bg-primary/10" : ""}>
+                      <TableCell className="font-medium">{idx + 1}</TableCell>
+                      <TableCell className="font-semibold">{player.name}</TableCell>
+                      <TableCell className={`font-bold ${(player.score || 0) < 0 ? "text-red-500" : ""}`}>
+                        {player.score || 0}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {idx === 0 && <Trophy className="h-5 w-5 text-yellow-500" />}
+                        {idx === 1 && <Award className="h-5 w-5 text-gray-400" />}
+                        {idx === 2 && <Award className="h-5 w-5 text-amber-700" />}
+                        {player.name === playerName && idx > 2 && <CheckCircle2 className="h-5 w-5 text-primary my-[30px]" />}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {isHost ? (
+              <AppButton 
+                variant="primary" 
+                size="lg" 
+                className="mt-4" 
+                onClick={nextRound}
+              >
+                התחל סיבוב חדש
+              </AppButton>
+            ) : (
+              <div className="text-sm text-gray-500 mt-4">
+                המתן למארח להתחיל סיבוב חדש
+              </div>
+            )}
+          </div>
+        );
+      
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="text-lg text-gray-600 animate-pulse">
+              טוען...
+            </div>
+          </div>
+        );
+    }
+  };
+
+  useEffect(() => {
+    if (phase === 'answerOptions') {
+      if (phaseTimeoutRef.current) clearTimeout(phaseTimeoutRef.current);
+      phaseTimeoutRef.current = setTimeout(() => {
+        submitAllAnswers();
+      }, 8000);
+    } else {
+      if (phaseTimeoutRef.current) {
+        clearTimeout(phaseTimeoutRef.current);
+        phaseTimeoutRef.current = null;
+      }
+    }
+    return () => {
+      if (phaseTimeoutRef.current) {
+        clearTimeout(phaseTimeoutRef.current);
+        phaseTimeoutRef.current = null;
+      }
+    };
+  }, [phase]);
+
+  useEffect(() => {
+    if (isHost && serverGamePhase === "playing") {
+      playSong();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, serverGamePhase]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
+      <div className="container mx-auto px-4 py-6 relative z-10">
+        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6 bg-white/50 backdrop-blur-sm p-4 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2 order-1 md:order-none">
+            <LeaveGameButton gameCode={gameCode || ''} isHost={isHost} />
+            {isHost && <EndGameButton gameCode={gameCode} />}
+          </div>
+          
+          <h1 className="flex items-center justify-center text-5xl font-bold text-primary text-center order-0 md:order-none relative">
+            <div className="flex items-center justify-center gap-3">
+              <MusicNote type="note3" className="absolute -top-6 -right-8 text-primary" size={32} animation="float" />
+              <MusicNote type="note2" className="absolute -top-4 -left-6 text-secondary" size={28} animation="float-alt" />
+              שיר על הדרך 🎶
+            </div>
+          </h1>
+          
+          <div className="flex flex-col md:flex-row items-center gap-4 order-2 md:order-none">
+            {isHost && <div className="text-sm text-gray-600">מנחה</div>}
+            <div className="flex items-center gap-2 bg-primary/5 px-3 py-1.5 rounded-md">
+              <span className="text-sm text-gray-600">קוד משחק: </span>
+              <span className="font-mono font-bold text-lg">{gameCode}</span>
+            </div>
+          </div>
+        </div>
+        
+        {renderPhase()}
+      </div>
+      
+      <div className="w-full max-w-4xl mx-auto p-4 mb-8">
+        
+      </div>
+    </div>
+  );
+};
+
+export default GamePlay;
