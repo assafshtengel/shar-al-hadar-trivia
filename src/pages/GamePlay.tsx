@@ -547,7 +547,7 @@ const GamePlay: React.FC = () => {
         .eq('hasAnswered', true)
         .order('score', { ascending: false });
       
-      const correctAnswersCount = correctPlayers?.filter(p => p.lastAnswerCorrect).length || 0;
+      const correctAnswersCount = correctPlayers?.filter(p => p.lastAnswerCorrect === true).length || 0;
       
       if (correctAnswersCount === 0) {
         points = 15; // First correct answer
@@ -594,7 +594,7 @@ const GamePlay: React.FC = () => {
       title: isCorrect ? "כל הכבוד!" : "אופס!",
       description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
-    if (timeLeft <= 0 || isFinalPhase) {
+    if (timeLeft <= 0) {
       submitAllAnswers();
     }
   };
@@ -619,7 +619,7 @@ const GamePlay: React.FC = () => {
         .eq('hasAnswered', true)
         .order('score', { ascending: false });
       
-      const correctAnswersCount = correctPlayers?.filter(p => p.lastAnswerCorrect).length || 0;
+      const correctAnswersCount = correctPlayers?.filter(p => p.lastAnswerCorrect === true).length || 0;
       
       if (correctAnswersCount === 0) {
         points = 15; // First correct answer
@@ -663,9 +663,6 @@ const GamePlay: React.FC = () => {
       title: isCorrect ? "כל הכבוד!" : "אופס!",
       description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
-    if (isFinalPhase) {
-      submitAllAnswers();
-    }
   };
 
   const handleSkip = async () => {
