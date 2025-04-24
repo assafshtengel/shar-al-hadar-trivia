@@ -536,24 +536,28 @@ const GamePlay: React.FC = () => {
     
     console.log(`Player ${playerName} selected answer: ${selectedIndex}`);
     setSelectedAnswer(selectedIndex);
-    const currentTime = Date.now();
-    const timeSinceStart = (currentTime - (gameStartTimeRef.current || currentTime)) / 1000;
-    
-    if (timeSinceStart <= 12) {
-      setAnsweredEarly(true);
-    }
-    
-    let points = 0;
-    const isFinalPhase = timeSinceStart > 11.9;
 
-    if (isFinalPhase) {
-      points = isCorrect ? 4 : -2;
-    } else {
-      if (isCorrect) {
-        points = Math.max(13 - Math.floor(timeSinceStart), 4);
+    let points = 0;
+    
+    if (isCorrect) {
+      const { data: correctPlayers } = await supabase
+        .from('players')
+        .select('*')
+        .eq('game_code', gameCode)
+        .eq('hasAnswered', true)
+        .order('score', { ascending: false });
+      
+      const correctAnswersCount = correctPlayers?.filter(p => p.lastAnswerCorrect).length || 0;
+      
+      if (correctAnswersCount === 0) {
+        points = 15; // First correct answer
+      } else if (correctAnswersCount === 1) {
+        points = 12; // Second correct answer
       } else {
-        points = 0;
+        points = Math.max(11 - correctAnswersCount, 1); // Subsequent answers decrease by 1, minimum 1 point
       }
+    } else {
+      points = -2; // Incorrect answer penalty remains the same
     }
 
     setCurrentPlayer(prev => ({
@@ -595,7 +599,7 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  const handleTriviaAnswer = (isCorrect: boolean, selectedIndex: number) => {
+  const handleTriviaAnswer = async (isCorrect: boolean, selectedIndex: number) => {
     if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
       console.log("Already answered or points already awarded - ignoring selection");
       return;
@@ -604,23 +608,28 @@ const GamePlay: React.FC = () => {
     setUserSkippedQuestion(false);
     
     console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${isCorrect}`);
-    const currentTime = Date.now();
-    const timeSinceStart = (currentTime - (gameStartTimeRef.current || Date.now())) / 1000;
-    if (timeSinceStart <= 12) {
-      setAnsweredEarly(true);
-    }
-    
-    let points = 0;
-    const isFinalPhase = timeSinceStart > 11.9;
 
-    if (isFinalPhase) {
-      points = isCorrect ? 4 : -2;
-    } else {
-      if (isCorrect) {
-        points = Math.max(13 - Math.floor(timeSinceStart), 4);
+    let points = 0;
+    
+    if (isCorrect) {
+      const { data: correctPlayers } = await supabase
+        .from('players')
+        .select('*')
+        .eq('game_code', gameCode)
+        .eq('hasAnswered', true)
+        .order('score', { ascending: false });
+      
+      const correctAnswersCount = correctPlayers?.filter(p => p.lastAnswerCorrect).length || 0;
+      
+      if (correctAnswersCount === 0) {
+        points = 15; // First correct answer
+      } else if (correctAnswersCount === 1) {
+        points = 12; // Second correct answer
       } else {
-        points = 0;
+        points = Math.max(11 - correctAnswersCount, 1); // Subsequent answers decrease by 1, minimum 1 point
       }
+    } else {
+      points = -2; // Incorrect answer penalty remains the same
     }
 
     setCurrentPlayer(prev => ({
