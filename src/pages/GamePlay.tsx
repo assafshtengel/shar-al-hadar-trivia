@@ -751,10 +751,10 @@ const GamePlay: React.FC = () => {
     if (phase === 'scoringFeedback') {
       const timer = setTimeout(() => {
         setPhase('leaderboard');
-      }, 100);
+      }, 4000); // Changed from 100 to 4000 milliseconds
       return () => clearTimeout(timer);
     }
-  }, [phase, isHost]);
+  }, [phase]);
 
   const nextRound = async () => {
     if (!isHost) return;
