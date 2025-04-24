@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Song } from '@/data/songBank';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
@@ -48,20 +47,6 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
   hasAnswered = false,
   gameStartTime
 }) => {
-  // Calculate elapsed time for scoring purposes
-  const [elapsedTime, setElapsedTime] = useState(0);
-  
-  // Update elapsed time while song is playing
-  useEffect(() => {
-    if (!isPlaying || !gameStartTime) return;
-    
-    const timer = setInterval(() => {
-      setElapsedTime((Date.now() - gameStartTime) / 1000);
-    }, 100);
-    
-    return () => clearInterval(timer);
-  }, [isPlaying, gameStartTime]);
-
   if (isTriviaRound && currentTriviaQuestion) {
     return (
       <div className="flex flex-col items-center justify-center py-6 space-y-6">
@@ -87,7 +72,7 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
             onAnswer={onAnswer}
             timeUp={!isPlaying} 
             answerStartTime={gameStartTime || Date.now()} 
-            elapsedTime={elapsedTime}
+            elapsedTime={gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0}
             showQuestion={true}
             onSkip={onSkip}
             skipsLeft={skipsLeft}
@@ -109,7 +94,6 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
         showOverlay={true}
       />
       
-      {/* Show answer options while the song is playing */}
       {isPlaying && currentRound && (
         <TriviaQuestion 
           question={{
@@ -120,7 +104,7 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
           onAnswer={onAnswer}
           timeUp={!isPlaying} 
           answerStartTime={gameStartTime || Date.now()} 
-          elapsedTime={elapsedTime}
+          elapsedTime={gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0}
           showQuestion={true}
           onSkip={onSkip}
           skipsLeft={skipsLeft}

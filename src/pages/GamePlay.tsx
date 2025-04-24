@@ -526,9 +526,11 @@ const GamePlay: React.FC = () => {
     setSelectedAnswer(selectedIndex);
     const currentTime = Date.now();
     const timeSinceStart = (currentTime - (gameStartTimeRef.current || currentTime)) / 1000;
+    
     if (timeSinceStart <= 12) {
       setAnsweredEarly(true);
     }
+    
     let points = 0;
     const isFinalPhase = timeSinceStart > 11.9;
 
