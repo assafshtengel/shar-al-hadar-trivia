@@ -31,7 +31,7 @@ export interface SupabasePlayer {
   joined_at: string;
   hasAnswered: boolean;
   isReady: boolean;
-  lastAnswerCorrect: boolean | null;
+  lastanswercorrect: boolean | null;
 }
 
 export interface PendingAnswerUpdate {

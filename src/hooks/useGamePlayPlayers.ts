@@ -38,7 +38,7 @@ export const useGamePlayPlayers = (gameCode: string | null, playerName: string |
       }
 
       if (data) {
-        setPlayers(data);
+        setPlayers(data as SupabasePlayer[]);
         if (playerName) {
           const currentPlayerData = data.find(p => p.name === playerName);
           if (currentPlayerData) {
@@ -48,7 +48,7 @@ export const useGamePlayPlayers = (gameCode: string | null, playerName: string |
               score: currentPlayerData.score || 0,
               hasAnswered: currentPlayerData.hasAnswered || false,
               isReady: currentPlayerData.isReady || false,
-              lastAnswerCorrect: currentPlayerData.lastAnswerCorrect || false
+              lastAnswerCorrect: currentPlayerData.lastanswercorrect || false
             }));
           }
         }

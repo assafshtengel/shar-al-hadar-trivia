@@ -177,7 +177,7 @@ const GamePlay: React.FC = () => {
       }
       if (data) {
         console.log('Fetched players:', data);
-        setPlayers(data);
+        setPlayers(data as SupabasePlayer[]);
         if (playerName) {
           const currentPlayerData = data.find(p => p.name === playerName);
           if (currentPlayerData) {
@@ -187,7 +187,8 @@ const GamePlay: React.FC = () => {
               name: currentPlayerData.name,
               score: currentPlayerData.score || 0,
               hasAnswered: currentPlayerData.hasAnswered || false,
-              isReady: currentPlayerData.isReady || false
+              isReady: currentPlayerData.isReady || false,
+              lastAnswerCorrect: currentPlayerData.lastanswercorrect || false
             }));
           } else {
             console.log('Current player not found in database. Player name:', playerName);
@@ -548,7 +549,7 @@ const GamePlay: React.FC = () => {
         .order('score', { ascending: false });
       
       const correctAnswersCount = correctPlayers?.filter(p => {
-        return p.lastAnswerCorrect === true;
+        return p.lastanswercorrect === true;
       }).length || 0;
       
       if (correctAnswersCount === 0) {
@@ -566,7 +567,7 @@ const GamePlay: React.FC = () => {
       ...prev,
       hasAnswered: true,
       lastAnswer: currentRound.options[selectedIndex].title,
-      lastAnswerCorrect: isCorrect,
+      lastanswercorrect: isCorrect,
       lastScore: points,
       pendingAnswer: selectedIndex,
       score: prev.score + points,
@@ -579,7 +580,7 @@ const GamePlay: React.FC = () => {
         supabase.from('players').update({
           hasAnswered: true,
           score: currentPlayer.score + points,
-          lastAnswerCorrect: isCorrect
+          lastanswercorrect: isCorrect
         }).eq('game_code', gameCode).eq('name', playerName).then(({
           error
         }) => {
@@ -623,7 +624,7 @@ const GamePlay: React.FC = () => {
         .order('score', { ascending: false });
       
       const correctAnswersCount = correctPlayers?.filter(p => {
-        return p.lastAnswerCorrect === true;
+        return p.lastanswercorrect === true;
       }).length || 0;
       
       if (correctAnswersCount === 0) {
@@ -640,7 +641,7 @@ const GamePlay: React.FC = () => {
     setCurrentPlayer(prev => ({
       ...prev,
       hasAnswered: true,
-      lastAnswerCorrect: isCorrect,
+      lastanswercorrect: isCorrect,
       lastScore: points,
       score: prev.score + points,
       pointsAwarded: true
@@ -651,7 +652,7 @@ const GamePlay: React.FC = () => {
         supabase.from('players').update({
           hasAnswered: true,
           score: currentPlayer.score + points,
-          lastAnswerCorrect: isCorrect
+          lastanswercorrect: isCorrect
         }).eq('game_code', gameCode).eq('name', playerName).then(({
           error
         }) => {
@@ -996,7 +997,7 @@ const GamePlay: React.FC = () => {
           <ScoringFeedback
             userSkippedQuestion={userSkippedQuestion}
             lastScore={currentPlayer.lastScore}
-            lastAnswerCorrect={currentPlayer.lastAnswerCorrect}
+            lastAnswerCorrect={currentPlayer.lastanswercorrect}
             lastAnswer={currentPlayer.lastAnswer}
             currentRound={currentRound}
             isTriviaRound={isTriviaRound}
