@@ -25,8 +25,21 @@ interface GameStateContextType {
   updateGameSettings: (settings: GameSettings) => void;
 }
 
-// Create and export the context
-export const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
+// Create default context values to prevent "undefined" errors
+const defaultContextValues: GameStateContextType = {
+  gameCode: null,
+  playerName: null,
+  gamePhase: null,
+  isHost: false,
+  setGameData: () => {},
+  clearGameData: () => {},
+  answerTimeLimit: 30,
+  gameSettings: { scoreLimit: null, gameDuration: null },
+  updateGameSettings: () => {}
+};
+
+// Create and export the context with default values
+export const GameStateContext = createContext<GameStateContextType>(defaultContextValues);
 
 export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
@@ -133,7 +146,7 @@ export const GameStateProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
 export const useGameState = (): GameStateContextType => {
   const context = useContext(GameStateContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useGameState must be used within a GameStateProvider');
   }
   return context;
