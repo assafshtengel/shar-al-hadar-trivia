@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { defaultSongBank } from '@/data/songBank';
 import SongPlayer from '@/components/SongPlayer';
 import TriviaQuestion from '@/components/TriviaQuestion';
-import { triviaQuestions } from '@/data/triviaQuestions';
+import { triviaQuestions, TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import { mashinaSongs } from "@/data/songs/mashina";
 import { adamSongs } from "@/data/songs/adam";
 import MusicNote from '@/components/MusicNote';
@@ -34,7 +34,7 @@ const GamePlay: React.FC = () => {
     gameSettings
   } = useGameState();
 
-  const { players, currentPlayer, setCurrentPlayer } = useGamePlayPlayers(gameCode, playerName);
+  const { players, currentPlayer, setCurrentPlayer, setPlayers } = useGamePlayPlayers(gameCode, playerName);
   const { 
     currentRound,
     setCurrentRound,
@@ -208,7 +208,7 @@ const GamePlay: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gameCode, toast, playerName, setCurrentPlayer]);
+  }, [gameCode, toast, playerName, setCurrentPlayer, setPlayers]);
 
   useEffect(() => {
     if (!gameCode) return;
@@ -347,23 +347,6 @@ const GamePlay: React.FC = () => {
     return defaultSongBank;
   };
 
-  function createGameRound(): GameRound {
-    const songList = getFilteredSongs().filter(song => song.embedUrl || song.spotifyUrl);
-    const randomIndex = Math.floor(Math.random() * songList.length);
-    const correctSong = songList[randomIndex];
-    const otherSongs = songList.filter(song => song.id !== correctSong.id && song.title);
-    const shuffledWrongSongs = [...otherSongs].sort(() => Math.random() - 0.5).slice(0, 3);
-    const allOptions = [correctSong, ...shuffledWrongSongs];
-    const shuffledOptions = [...allOptions].sort(() => Math.random() - 0.5);
-    const correctSongTitle = correctSong.title || '';
-    const correctIndex = shuffledOptions.findIndex(song => song.title === correctSongTitle);
-    return {
-      correctSong,
-      options: shuffledOptions,
-      correctAnswerIndex: correctIndex
-    };
-  }
-
   useEffect(() => {
     if (showYouTubeEmbed) {
       const timer = setTimeout(() => {
@@ -380,7 +363,7 @@ const GamePlay: React.FC = () => {
       }, 12000); // Changed to 12 seconds
       return () => clearTimeout(timer);
     }
-  }, [showYouTubeEmbed, isHost]);
+  }, [showYouTubeEmbed, isHost, updateGameState]);
 
   const playSong = async () => {
     if (!isHost) return;
@@ -926,131 +909,4 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  const renderPhase = () => {
-    switch (phase) {
-      case 'songPlayback':
-        return (
-          <SongPlaybackPhase
-            isTriviaRound={isTriviaRound}
-            currentTriviaQuestion={currentTriviaQuestion}
-            isHost={isHost}
-            onStartTrivia={() => {
-              updateGameState('answering');
-              setPhase('answerOptions');
-              gameStartTimeRef.current = Date.now();
-            }}
-            currentSong={currentSong}
-            isPlaying={isPlaying}
-            showYouTubeEmbed={showYouTubeEmbed}
-            currentRound={currentRound}
-            onPlaybackEnded={handleSongPlaybackEnded}
-            onPlaybackError={handleSongPlaybackError}
-            onPlaybackStarted={() => {
-              if (currentRound) {
-                gameStartTimeRef.current = Date.now();
-              }
-            }}
-            onAnswer={handleAnswer}
-            timeLeft={timeLeft}
-          />
-        );
-
-      case 'answerOptions':
-        const timeSinceStart = (Date.now() - (gameStartTimeRef.current || Date.now())) / 1000;
-        const isFinalPhase = timeSinceStart > 8 || timeLeft <= 6;
-
-        return (
-          <AnswerOptionsPhase
-            isTriviaRound={isTriviaRound}
-            currentTriviaQuestion={currentTriviaQuestion}
-            currentRound={currentRound}
-            timerActive={timerActive}
-            timeLeft={timeLeft}
-            onTimerTimeout={handleTimerTimeout}
-            isHost={isHost}
-            currentPlayerScore={currentPlayer.lastScore !== undefined ? currentPlayer.lastScore : 0}
-            skipsLeft={currentPlayer.skipsLeft}
-            hasAnswered={currentPlayer.hasAnswered}
-            selectedAnswer={selectedAnswer}
-            isFinalPhase={isFinalPhase}
-            answeredEarly={answeredEarly}
-            onAnswer={isTriviaRound ? handleTriviaAnswer : handleAnswer}
-            onSkip={handleSkip}
-            gameStartTime={gameStartTimeRef.current}
-          />
-        );
-
-      case 'scoringFeedback':
-        return (
-          <ScoringFeedback
-            userSkippedQuestion={userSkippedQuestion}
-            lastScore={currentPlayer.lastScore}
-            lastAnswerCorrect={currentPlayer.lastAnswerCorrect}
-            lastAnswer={currentPlayer.lastAnswer}
-            currentRound={currentRound}
-            isTriviaRound={isTriviaRound}
-            isHost={isHost}
-            onPlayFullSong={playFullSong}
-          />
-        );
-      
-      case 'leaderboard':
-        return (
-          <GameLeaderboard
-            players={players}
-            playerName={playerName || ''}
-            isHost={isHost}
-            onNextRound={nextRound}
-          />
-        );
-      
-      default:
-        return (
-          <div className="flex flex-col items-center justify-center h-full">
-            <div className="text-lg text-gray-600 animate-pulse">
-              טוען...
-            </div>
-          </div>
-        );
-    }
-  };
-
-  useEffect(() => {
-    if (phase === 'answerOptions') {
-      if (phaseTimeoutRef.current) clearTimeout(phaseTimeoutRef.current);
-      phaseTimeoutRef.current = setTimeout(() => {
-        submitAllAnswers();
-      }, 8000);
-    } else {
-      if (phaseTimeoutRef.current) {
-        clearTimeout(phaseTimeoutRef.current);
-        phaseTimeoutRef.current = null;
-      }
-    }
-    return () => {
-      if (phaseTimeoutRef.current) {
-        clearTimeout(phaseTimeoutRef.current);
-        phaseTimeoutRef.current = null;
-      }
-    };
-  }, [phase]);
-
-  useEffect(() => {
-    if (isHost && serverGamePhase === "playing") {
-      playSong();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHost, serverGamePhase]);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-accent/10">
-      <div className="container mx-auto px-4 py-6 relative z-10">
-        <GameHeader gameCode={gameCode} isHost={isHost} />
-        {renderPhase()}
-      </div>
-      <div className="w-full max-w-4xl mx-auto p-4 mb-8"></div>
-    </div>
-  );
-};
-
-export default GamePlay;
+  const
