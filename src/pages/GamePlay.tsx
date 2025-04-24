@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -751,7 +752,7 @@ const GamePlay: React.FC = () => {
     if (phase === 'scoringFeedback') {
       const timer = setTimeout(() => {
         setPhase('leaderboard');
-      }, 4000); // Changed from 100 to 4000 milliseconds
+      }, 4000); // Consistent 4-second delay
       return () => clearTimeout(timer);
     }
   }, [phase]);
