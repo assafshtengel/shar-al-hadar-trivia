@@ -105,7 +105,7 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
             correctAnswerIndex: currentRound.correctAnswerIndex
           }} 
           onAnswer={onAnswer}
-          timeUp={!isPlaying} 
+          timeUp={false} 
           answerStartTime={gameStartTime || Date.now()} 
           elapsedTime={gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0}
           showQuestion={true}

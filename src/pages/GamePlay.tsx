@@ -213,14 +213,17 @@ const GamePlay: React.FC = () => {
   useEffect(() => {
     if (!gameCode) return;
     const fetchGameRoundData = async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('game_state').select('current_song_name, current_song_url, game_phase').eq('game_code', gameCode).maybeSingle();
+      const { data, error } = await supabase
+        .from('game_state')
+        .select('current_song_name, current_song_url, game_phase')
+        .eq('game_code', gameCode)
+        .maybeSingle();
+        
       if (error) {
         console.error('Error fetching game round data:', error);
         return;
       }
+
       if (data) {
         const fetchCurrentRoundNumber = async () => {
           try {
@@ -261,7 +264,7 @@ const GamePlay: React.FC = () => {
             const randomIndex = Math.floor(Math.random() * triviaQuestions.length);
             setCurrentTriviaQuestion(triviaQuestions[randomIndex]);
           }
-        } else if (data.current_song_name) {
+        } else if (data.current_song_name && !data.current_song_name.includes("trivia")) {
           try {
             const roundData = JSON.parse(data.current_song_name);
             if (roundData && roundData.correctSong && roundData.options) {
@@ -269,6 +272,9 @@ const GamePlay: React.FC = () => {
               setCurrentRound(roundData);
               if (roundData.correctSong) {
                 setCurrentSong(roundData.correctSong);
+                if (!isHost) {
+                  setTimerActive(true);
+                }
               }
             }
           } catch (parseError) {
@@ -308,6 +314,9 @@ const GamePlay: React.FC = () => {
               setCurrentRound(roundData);
               if (roundData.correctSong) {
                 setCurrentSong(roundData.correctSong);
+                if (!isHost) {
+                  setTimerActive(true);
+                }
               }
             }
           } catch (parseError) {
@@ -376,7 +385,8 @@ const GamePlay: React.FC = () => {
     setIsPlaying(true);
     setShowYouTubeEmbed(true);
     setAllPlayersAnswered(false);
-    gameStartTimeRef.current = Date.now(); // Set start time for scoring
+    setTimerActive(true); // Enable timer immediately for all players
+    gameStartTimeRef.current = Date.now();
     
     // Store the round data immediately for all players
     const roundDataString = JSON.stringify(gameRound);
