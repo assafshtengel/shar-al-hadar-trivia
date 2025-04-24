@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -12,7 +13,7 @@ import { mashinaSongs } from "@/data/songs/mashina";
 import { adamSongs } from "@/data/songs/adam";
 import MusicNote from '@/components/MusicNote';
 import GameTimer from '@/components/GameTimer';
-import { GamePhase, GameRound, PendingAnswerUpdate } from '@/types/game';
+import { GamePhase, GameRound, PendingAnswerUpdate, SupabasePlayer } from '@/types/game';
 import { useGamePlayPlayers } from '@/hooks/useGamePlayPlayers';
 import GameHeader from '@/components/GameHeader';
 import GameLeaderboard from '@/components/GameLeaderboard';
@@ -997,7 +998,7 @@ const GamePlay: React.FC = () => {
           <ScoringFeedback
             userSkippedQuestion={userSkippedQuestion}
             lastScore={currentPlayer.lastScore}
-            lastAnswerCorrect={currentPlayer.lastanswercorrect}
+            lastAnswerCorrect={currentPlayer.lastAnswerCorrect}
             lastAnswer={currentPlayer.lastAnswer}
             currentRound={currentRound}
             isTriviaRound={isTriviaRound}
