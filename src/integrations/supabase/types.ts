@@ -234,11 +234,47 @@ export type Database = {
         }
         Relationships: []
       }
+      survey_responses: {
+        Row: {
+          comments: string | null
+          created_at: string
+          flow: number
+          id: string
+          interesting: number
+          new_learning: number
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          flow: number
+          id?: string
+          interesting: number
+          new_learning: number
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          flow?: number
+          id?: string
+          interesting?: number
+          new_learning?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      insert_survey_response: {
+        Args: {
+          p_interesting: number
+          p_new_learning: number
+          p_flow: number
+          p_comments: string
+        }
+        Returns: undefined
+      }
       update_game_mode: {
         Args: { p_game_code: string; p_game_mode: string }
         Returns: undefined

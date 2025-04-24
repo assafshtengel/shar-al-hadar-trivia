@@ -442,7 +442,7 @@ const GamePlay: React.FC = () => {
       console.error('Error storing game round data:', error);
       toast({
         title: "שגיאה בשמירת נתוני הסיבוב",
-        description: "אירעה שגיאה בש��ירת נתוני הס��בוב",
+        description: "אירעה שגיאה בשמירת נתוני הסיבוב",
         variant: "destructive"
       });
       return;
@@ -663,7 +663,7 @@ const GamePlay: React.FC = () => {
     }, 2000);
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "בחרת בתשובה הנכונה!" : "ה��שובה שגויה, נסה ב��עם הבאה"
+      description: isCorrect ? "בחרת בתשובה הנכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
     if (timeLeft <= 0 || isFinalPhase) {
       submitAllAnswers();
@@ -780,7 +780,7 @@ const GamePlay: React.FC = () => {
     if (error) {
       console.error('Error resetting players ready status:', error);
       toast({
-        title: "שגיאה באיפוס ��טטוס מוכנות השחקנים",
+        title: "שגיאה באיפוס סטטוס מוכנות השחקנים",
         description: "אירעה שגיאה באיפוס סטטוס מוכנות השחקנים",
         variant: "destructive"
       });
@@ -903,7 +903,7 @@ const GamePlay: React.FC = () => {
         console.error('Error storing trivia data:', error);
         toast({
           title: "שגיאה בשמירת נתוני הטריוויה",
-          description: "אירעה ש��יאה בשמירת נתוני הטריוויה",
+          description: "אירעה שגיאה בשמירת נתוני הטריוויה",
           variant: "destructive"
         });
         return;
@@ -987,7 +987,7 @@ const GamePlay: React.FC = () => {
     }
     toast({
       title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "תשובה נכונה!" : "התשובה שגוי��, נסה בפעם הבאה"
+      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה, נסה בפעם הבאה"
     });
     if (isFinalPhase) {
       submitAllAnswers();
@@ -1017,7 +1017,7 @@ const GamePlay: React.FC = () => {
                 </AppButton>
               ) : (
                 <div className="text-lg text-gray-600 text-center">
-                  המתן למנהל המשחק להצ��ג את שאלת הט��יוויה
+                  המתן למנהל המשחק להציג את שאלת הטריוויה
                 </div>
               )}
               {currentTriviaQuestion && (
@@ -1242,7 +1242,7 @@ const GamePlay: React.FC = () => {
                 onClick={playFullSong} 
                 className="max-w-xs mt-4"
               >
-                השמע את הש��ר המלא
+                השמע את השיר המלא
                 <Youtube className="mr-2" />
               </AppButton>
             )}
