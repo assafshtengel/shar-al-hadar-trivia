@@ -22,7 +22,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   onPlaybackEnded,
   onPlaybackStarted,
   onPlaybackError,
-  duration = 8000,
+  duration = 8000, // Keep this at 8 seconds
   showOverlay = true
 }) => {
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);
@@ -87,6 +87,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             onPlaybackStarted();
           }
           
+          // Always end playback after the set duration (8 seconds by default)
           timeoutRef.current = setTimeout(() => {
             console.log('Song playback ended:', song.title);
             setShowYouTubeEmbed(false);

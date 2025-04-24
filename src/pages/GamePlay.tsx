@@ -403,13 +403,17 @@ const GamePlay: React.FC = () => {
   const handleSongPlaybackEnded = () => {
     setShowYouTubeEmbed(false);
     setIsPlaying(false);
-    if (isHost) {
-      updateGameState('answering');
+    
+    if (selectedAnswer !== null) {
+      submitAllAnswers();
+    } else {
+      submitAllAnswers();
     }
-    setPhase('answerOptions');
-    if (!isHost) {
-      console.log('Setting timer active after YouTube embed finishes (non-host)');
-      setTimerActive(true);
+    
+    setPhase('scoringFeedback');
+    
+    if (isHost) {
+      updateGameState('results');
     }
   };
 
@@ -935,6 +939,10 @@ const GamePlay: React.FC = () => {
             }}
             onAnswer={handleAnswer}
             timeLeft={timeLeft}
+            onSkip={handleSkip}
+            skipsLeft={currentPlayer.skipsLeft}
+            hasAnswered={currentPlayer.hasAnswered}
+            gameStartTime={gameStartTimeRef.current}
           />
         );
 
@@ -999,17 +1007,18 @@ const GamePlay: React.FC = () => {
   };
 
   useEffect(() => {
-    if (phase === 'answerOptions') {
-      if (phaseTimeoutRef.current) clearTimeout(phaseTimeoutRef.current);
-      phaseTimeoutRef.current = setTimeout(() => {
-        submitAllAnswers();
-      }, 8000);
-    } else {
+    if (phase === 'songPlayback') {
       if (phaseTimeoutRef.current) {
         clearTimeout(phaseTimeoutRef.current);
         phaseTimeoutRef.current = null;
       }
+    } else if (phase === 'scoringFeedback') {
+      const timer = setTimeout(() => {
+        setPhase('leaderboard');
+      }, 100);
+      return () => clearTimeout(timer);
     }
+    
     return () => {
       if (phaseTimeoutRef.current) {
         clearTimeout(phaseTimeoutRef.current);

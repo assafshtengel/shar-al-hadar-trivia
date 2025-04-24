@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Song } from '@/data/songBank';
 import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import { Music, Play } from 'lucide-react';
@@ -23,6 +23,10 @@ interface SongPlaybackPhaseProps {
   onPlaybackStarted: () => void;
   onAnswer: (isCorrect: boolean, selectedIndex: number) => void;
   timeLeft: number;
+  onSkip?: () => void;
+  skipsLeft?: number;
+  hasAnswered?: boolean;
+  gameStartTime: number | null;
 }
 
 const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
@@ -38,8 +42,26 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
   onPlaybackError,
   onPlaybackStarted,
   onAnswer,
-  timeLeft
+  timeLeft,
+  onSkip,
+  skipsLeft = 0,
+  hasAnswered = false,
+  gameStartTime
 }) => {
+  // Calculate elapsed time for scoring purposes
+  const [elapsedTime, setElapsedTime] = useState(0);
+  
+  // Update elapsed time while song is playing
+  useEffect(() => {
+    if (!isPlaying || !gameStartTime) return;
+    
+    const timer = setInterval(() => {
+      setElapsedTime((Date.now() - gameStartTime) / 1000);
+    }, 100);
+    
+    return () => clearInterval(timer);
+  }, [isPlaying, gameStartTime]);
+
   if (isTriviaRound && currentTriviaQuestion) {
     return (
       <div className="flex flex-col items-center justify-center py-6 space-y-6">
@@ -63,10 +85,12 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
           <TriviaQuestion 
             question={currentTriviaQuestion} 
             onAnswer={onAnswer}
-            timeUp={false} 
-            answerStartTime={Date.now()} 
-            elapsedTime={0}
-            showQuestion={true} 
+            timeUp={!isPlaying} 
+            answerStartTime={gameStartTime || Date.now()} 
+            elapsedTime={elapsedTime}
+            showQuestion={true}
+            onSkip={onSkip}
+            skipsLeft={skipsLeft}
           />
         )}
       </div>
@@ -84,7 +108,7 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
         onPlaybackStarted={onPlaybackStarted}
         showOverlay={true}
       />
-      {currentRound && (
+      {isPlaying && currentRound && (
         <TriviaQuestion 
           question={{
             question: "מה השיר?",
@@ -92,10 +116,12 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
             correctAnswerIndex: currentRound.correctAnswerIndex
           }} 
           onAnswer={onAnswer}
-          timeUp={timeLeft <= 0} 
-          answerStartTime={Date.now()} 
-          elapsedTime={0}
-          showQuestion={true} 
+          timeUp={!isPlaying} 
+          answerStartTime={gameStartTime || Date.now()} 
+          elapsedTime={elapsedTime}
+          showQuestion={true}
+          onSkip={onSkip}
+          skipsLeft={skipsLeft}
         />
       )}
       {isPlaying && !showYouTubeEmbed && (
