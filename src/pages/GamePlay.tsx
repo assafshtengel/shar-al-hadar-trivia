@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -8,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { defaultSongBank } from '@/data/songBank';
 import SongPlayer from '@/components/SongPlayer';
 import TriviaQuestion from '@/components/TriviaQuestion';
-import { triviaQuestions, TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import { mashinaSongs } from "@/data/songs/mashina";
 import { adamSongs } from "@/data/songs/adam";
 import MusicNote from '@/components/MusicNote';
@@ -22,6 +20,7 @@ import SongPlaybackPhase from '@/components/SongPlaybackPhase';
 import AnswerOptionsPhase from '@/components/AnswerOptionsPhase';
 import { useGameRound } from '@/hooks/useGameRound';
 import { toast } from 'sonner';
+import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 
 const GamePlay: React.FC = () => {
   const { toast } = useToast();
@@ -56,8 +55,6 @@ const GamePlay: React.FC = () => {
   const [pendingAnswers, setPendingAnswers] = useState<PendingAnswerUpdate[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [roundCounter, setRoundCounter] = useState<number>(1);
-  const [isTriviaRound, setIsTriviaRound] = useState<boolean>(false);
-  const [currentTriviaQuestion, setCurrentTriviaQuestion] = useState<TriviaQuestionType | null>(null);
   const [answeredEarly, setAnsweredEarly] = useState(false);
   const [userSkippedQuestion, setUserSkippedQuestion] = useState(false);
   
@@ -248,25 +245,8 @@ const GamePlay: React.FC = () => {
         };
         
         const roundCounter = await fetchCurrentRoundNumber();
-        const isTrivia = roundCounter % 5 === 0;
-        setIsTriviaRound(isTrivia);
         
-        if (isTrivia) {
-          console.log('Fetching trivia question for all participants');
-          try {
-            if (data.current_song_name && data.current_song_name.includes("trivia")) {
-              const triviaData = JSON.parse(data.current_song_name);
-              setCurrentTriviaQuestion(triviaData.question);
-            } else if (!isHost) {
-              const randomIndex = Math.floor(Math.random() * triviaQuestions.length);
-              setCurrentTriviaQuestion(triviaQuestions[randomIndex]);
-            }
-          } catch (parseError) {
-            console.error('Error parsing trivia data:', parseError);
-            const randomIndex = Math.floor(Math.random() * triviaQuestions.length);
-            setCurrentTriviaQuestion(triviaQuestions[randomIndex]);
-          }
-        } else if (data.current_song_name && !data.current_song_name.includes("trivia")) {
+        if (data.current_song_name) {
           try {
             const roundData = JSON.parse(data.current_song_name);
             if (roundData && roundData.correctSong && roundData.options) {
@@ -300,15 +280,7 @@ const GamePlay: React.FC = () => {
           fetchGameRoundData();
         }
         
-        if (payload.new.current_song_name && payload.new.current_song_name.includes("trivia")) {
-          try {
-            const triviaData = JSON.parse(payload.new.current_song_name);
-            setCurrentTriviaQuestion(triviaData.question);
-            setIsTriviaRound(true);
-          } catch (parseError) {
-            console.error('Error parsing trivia data from real-time update:', parseError);
-          }
-        } else if (payload.new.current_song_name) {
+        if (payload.new.current_song_name) {
           try {
             const roundData = JSON.parse(payload.new.current_song_name);
             if (roundData && roundData.correctSong && roundData.options) {
@@ -632,75 +604,6 @@ const GamePlay: React.FC = () => {
     }
   };
 
-  const handleTriviaAnswer = async (isCorrect: boolean, selectedIndex: number) => {
-    if (currentPlayer.hasAnswered || currentPlayer.pointsAwarded) {
-      console.log("Already answered or points already awarded - ignoring selection");
-      return;
-    }
-    
-    setUserSkippedQuestion(false);
-    
-    console.log(`Player ${playerName} selected trivia answer: ${selectedIndex}, correct: ${isCorrect}`);
-
-    let points = 0;
-    
-    if (isCorrect) {
-      const { data: correctPlayers } = await supabase
-        .from('players')
-        .select('*')
-        .eq('game_code', gameCode)
-        .eq('hasAnswered', true)
-        .order('score', { ascending: false });
-      
-      const correctAnswersCount = correctPlayers?.filter(p => {
-        return p.lastanswercorrect === true;
-      }).length || 0;
-      
-      if (correctAnswersCount === 0) {
-        points = 15; // First correct answer
-      } else if (correctAnswersCount === 1) {
-        points = 12; // Second correct answer
-      } else {
-        points = Math.max(11 - correctAnswersCount, 1); // Subsequent answers decrease by 1, minimum 1 point
-      }
-    } else {
-      points = -2; // Incorrect answer penalty remains the same
-    }
-
-    setCurrentPlayer(prev => ({
-      ...prev,
-      hasAnswered: true,
-      lastanswercorrect: isCorrect,
-      lastScore: points,
-      score: prev.score + points,
-      pointsAwarded: true
-    }));
-    if (gameCode && playerName) {
-      try {
-        console.log(`Updating score for player ${playerName} after trivia answer`);
-        supabase.from('players').update({
-          hasAnswered: true,
-          score: currentPlayer.score + points,
-          lastanswercorrect: isCorrect
-        }).eq('game_code', gameCode).eq('name', playerName).then(({
-          error
-        }) => {
-          if (error) {
-            console.error('Error updating player after trivia answer:', error);
-          } else {
-            console.log(`Successfully updated ${playerName} score after trivia answer`);
-          }
-        });
-      } catch (err) {
-        console.error('Exception when updating player after trivia answer:', err);
-      }
-    }
-    toast({
-      title: isCorrect ? "כל הכבוד!" : "אופס!",
-      description: isCorrect ? "תשובה נכונה!" : "התשובה שגויה, נסה בפעם הבאה"
-    });
-  };
-
   const handleSkip = async () => {
     if (selectedAnswer !== null || currentPlayer.skipsLeft <= 0 || !currentRound || currentPlayer.pointsAwarded) {
       console.log("Cannot skip: Already answered, no skips left, missing round data, or points already awarded");
@@ -812,7 +715,7 @@ const GamePlay: React.FC = () => {
       console.error('Error resetting players ready status:', error);
       toast({
         title: "שגיאה באיפוס סטטוס מוכנות השחקנים",
-        description: "אירעה שגיאה באיפוס סטטוס מוכ��ות השחקנים",
+        description: "אירעה שגיאה באיפוס סטטוס מוכנות השחקנים",
         variant: "destructive"
       });
     }
@@ -881,73 +784,14 @@ const GamePlay: React.FC = () => {
     setPlayerReady(false);
     setUserSkippedQuestion(false);
     setRoundCounter(prev => prev + 1);
-    const newRoundCounter = roundCounter + 1;
-    const newIsTriviaRound = newRoundCounter % 5 === 0;
-    setIsTriviaRound(newIsTriviaRound);
     
-    if (timerRef.current) {
-      console.log('Clearing timer before starting next round');
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    
-    setCurrentPlayer(prev => ({
-      ...prev,
-      hasAnswered: false,
-      isReady: false,
-      lastAnswer: undefined,
-      lastAnswerCorrect: undefined,
-      lastScore: undefined,
-      pendingAnswer: null,
-      pointsAwarded: false
-    }));
-    
-    try {
-      const { error: roundUpdateError } = await supabase
-        .from('game_state')
-        .update({ current_round: newRoundCounter })
-        .eq('game_code', gameCode);
-        
-      if (roundUpdateError) {
-        console.error('Error updating round number:', roundUpdateError);
-      }
-    } catch (err) {
-      console.error('Exception updating round number:', err);
-    }
-    
-    if (newIsTriviaRound) {
-      const randomIndex = Math.floor(Math.random() * triviaQuestions.length);
-      const selectedQuestion = triviaQuestions[randomIndex];
-      setCurrentTriviaQuestion(selectedQuestion);
-      
-      const triviaData = {
-        type: "trivia",
-        question: selectedQuestion
-      };
-      
-      const { error } = await supabase.from('game_state').update({
-        current_song_name: JSON.stringify(triviaData),
-        game_phase: 'playing'
-      }).eq('game_code', gameCode);
-      
-      if (error) {
-        console.error('Error storing trivia data:', error);
-        toast({
-          title: "שגיאה בשמירת נתוני הטריוויה",
-          description: "אירעה שגיאה בשמירת נתוני הטריוויה",
-          variant: "destructive"
-        });
-        return;
-      }
-    } else {
-      updateGameState('playing');
-    }
+    updateGameState('playing');
     
     setPhase('songPlayback');
     
     toast({
       title: "מתכוננים לסיבוב הבא",
-      description: newIsTriviaRound ? "סיבוב טריוויה עומד להתחיל" : "סיבוב חדש עומד להתחיל"
+      description: "סיבוב חדש עומד להתחיל"
     });
   };
 
@@ -968,14 +812,8 @@ const GamePlay: React.FC = () => {
       case 'songPlayback':
         return (
           <SongPlaybackPhase
-            isTriviaRound={isTriviaRound}
-            currentTriviaQuestion={currentTriviaQuestion}
+            isTriviaRound={false}
             isHost={isHost}
-            onStartTrivia={() => {
-              updateGameState('answering');
-              setPhase('answerOptions');
-              gameStartTimeRef.current = Date.now();
-            }}
             currentSong={currentSong}
             isPlaying={isPlaying}
             showYouTubeEmbed={showYouTubeEmbed}
@@ -1002,8 +840,7 @@ const GamePlay: React.FC = () => {
 
         return (
           <AnswerOptionsPhase
-            isTriviaRound={isTriviaRound}
-            currentTriviaQuestion={currentTriviaQuestion}
+            isTriviaRound={false}
             currentRound={currentRound}
             timerActive={timerActive}
             timeLeft={timeLeft}
@@ -1015,7 +852,7 @@ const GamePlay: React.FC = () => {
             selectedAnswer={selectedAnswer}
             isFinalPhase={isFinalPhase}
             answeredEarly={answeredEarly}
-            onAnswer={isTriviaRound ? handleTriviaAnswer : handleAnswer}
+            onAnswer={handleAnswer}
             onSkip={handleSkip}
             gameStartTime={gameStartTimeRef.current}
           />
@@ -1029,7 +866,7 @@ const GamePlay: React.FC = () => {
             lastAnswerCorrect={currentPlayer.lastAnswerCorrect}
             lastAnswer={currentPlayer.lastAnswer}
             currentRound={currentRound}
-            isTriviaRound={isTriviaRound}
+            isTriviaRound={false}
             isHost={isHost}
             onPlayFullSong={playFullSong}
           />

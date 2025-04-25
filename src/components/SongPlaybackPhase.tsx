@@ -1,6 +1,6 @@
+
 import React from 'react';
 import { Song } from '@/data/songBank';
-import { TriviaQuestion as TriviaQuestionType } from '@/data/triviaQuestions';
 import { Music, Play } from 'lucide-react';
 import SongPlayer from './SongPlayer';
 import TriviaQuestion from './TriviaQuestion';
@@ -10,9 +10,7 @@ import { GameRound } from '@/types/game';
 
 interface SongPlaybackPhaseProps {
   isTriviaRound: boolean;
-  currentTriviaQuestion: TriviaQuestionType | null;
   isHost: boolean;
-  onStartTrivia: () => void;
   currentSong: Song | null;
   isPlaying: boolean;
   showYouTubeEmbed: boolean;
@@ -30,9 +28,7 @@ interface SongPlaybackPhaseProps {
 
 const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
   isTriviaRound,
-  currentTriviaQuestion,
   isHost,
-  onStartTrivia,
   currentSong,
   isPlaying,
   showYouTubeEmbed,
@@ -47,41 +43,6 @@ const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
   hasAnswered = false,
   gameStartTime
 }) => {
-  if (isTriviaRound && currentTriviaQuestion) {
-    return (
-      <div className="flex flex-col items-center justify-center py-6 space-y-6">
-        <h2 className="text-2xl font-bold text-primary">שאלת טריוויה במוזיקה ישראלית</h2>
-        {isHost ? (
-          <AppButton 
-            variant="primary" 
-            size="lg" 
-            onClick={onStartTrivia} 
-            className="max-w-xs"
-          >
-            הצג שאלת טריוויה
-            <Play className="mr-2" />
-          </AppButton>
-        ) : (
-          <div className="text-lg text-gray-600 text-center">
-            המתן למנהל המשחק להציג את שאלת הטריוויה
-          </div>
-        )}
-        {currentTriviaQuestion && (
-          <TriviaQuestion 
-            question={currentTriviaQuestion} 
-            onAnswer={onAnswer}
-            timeUp={!isPlaying} 
-            answerStartTime={gameStartTime || Date.now()} 
-            elapsedTime={gameStartTime ? (Date.now() - gameStartTime) / 1000 : 0}
-            showQuestion={true}
-            onSkip={onSkip}
-            skipsLeft={skipsLeft}
-          />
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col items-center justify-center py-6 space-y-6">
       <h2 className="text-2xl font-bold text-primary">השמעת שיר</h2>
