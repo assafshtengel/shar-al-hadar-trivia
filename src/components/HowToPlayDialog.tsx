@@ -1,7 +1,9 @@
+
 import * as React from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { HelpCircle, Award, Star, CircleHelp, SkipForward } from "lucide-react";
+import { HelpCircle, Award, Star, ListOrdered, Timer } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
 const HowToPlayDialog = () => {
   const [open, setOpen] = React.useState(false);
   return <Dialog open={open} onOpenChange={setOpen}>
@@ -22,57 +24,55 @@ const HowToPlayDialog = () => {
           <DialogDescription>
             <div className="text-right leading-7 space-y-6 text-base">
               <div>
-                <span className="font-semibold text-lg flex items-center gap-2 mb-1"><Award className="w-5 h-5 text-yellow-500" /> ניקוד</span>
-                <ul className="list-disc mr-5 space-y-1">
-                  <li>
-                    <strong>ניקוד מהיר = יותר נקודות:</strong> ענה כמה שיותר מהר כדי להרוויח&nbsp;
-                    <span className="inline-flex items-center"><Star className="w-4 h-4 text-amber-500 inline mr-1" />13 נקודות</span> (בתוך 3 שניות).
-                  </li>
-                  <li>
-                    <strong>ניקוד יורד:</strong> ככל שעובר הזמן מקבלים פחות (מינימום 5 נקודות עד 8 שניות).
-                  </li>
-                  <li>
-                    <strong>בשלב 50-50 או בתשובה אחרי 8 שניות:</strong>
-                    תקבל&nbsp;
-                    <span className="font-medium text-green-600">4 נקודות על תשובה נכונה</span>
-                    &nbsp;ו-<span className="font-medium text-red-600">-2 נקודות על תשובה שגויה</span>.
-                  </li>
-                  <li>
-                    <strong>על דילוג: </strong>
-                    <span className="font-medium text-cyan-700">3&nbsp;נקודות</span> ותעבור לשאלה הבאה.
-                  </li>
-                </ul>
+                <span className="font-semibold text-lg flex items-center gap-2 mb-1">
+                  <Star className="w-5 h-5 text-amber-500" /> מטרת המשחק
+                </span>
+                <p className="mr-5">
+                  משחק מוזיקלי חברתי שבו תזהו שירים ישראליים, תתחרו על מקום בטבלת המובילים ותגלו עובדות מעניינות על המוזיקה הישראלית.
+                </p>
               </div>
+
               <div>
-                <span className="font-semibold text-lg flex items-center gap-2 mb-1"><CircleHelp className="w-5 h-5 text-violet-600" /> שלבי המשחק</span>
+                <span className="font-semibold text-lg flex items-center gap-2 mb-1">
+                  <ListOrdered className="w-5 h-5 text-violet-600" /> מהלך המשחק
+                </span>
                 <ol className="list-decimal mr-5 space-y-1">
-                  <li>מקשיבים לשיר ומנסים לזהות אותו.</li>
-                  <li>בוחרים תשובה נכונה מהר ככל האפשר מהאפשרויות המוצגות.</li>
-                  <li>כל חמישה סיבובים מופיעה שאלת <span className="inline-flex items-center text-sky-700 font-medium">טריוויה מוזיקלית</span> (&quot;שאלת בונוס&quot;).</li>
-                  <li>בטריוויה – ככל שתענו מהר יותר, כך תקבלו יותר נקודות, ובשלב הסופי האפשרויות יצטמצמו ל-2.</li>
+                  <li>תקשיבו לקטע מהשיר ונסו לזהות אותו.</li>
+                  <li>בחרו את התשובה הנכונה מבין האפשרויות - ככל שתענו מהר יותר, תקבלו יותר נקודות!</li>
+                  <li>כל 5 סיבובים תופיע שאלת טריוויה מוזיקלית מיוחדת.</li>
+                  <li>בסוף כל סיבוב תראו את הניקוד שצברתם ואת מיקומכם בטבלה.</li>
                 </ol>
               </div>
+
               <div>
-                <span className="font-semibold text-lg flex items-center gap-2 mb-1"><SkipForward className="w-5 h-5 text-cyan-600" /> כפתור דלג</span>
+                <span className="font-semibold text-lg flex items-center gap-2 mb-1">
+                  <Award className="w-5 h-5 text-yellow-500" /> שיטת הניקוד
+                </span>
                 <ul className="list-disc mr-5 space-y-1">
                   <li>
-                    לכל שחקן&nbsp;
-                    <span className="font-medium text-primary">3 דילוגים בלבד</span>&nbsp;למשחק.
+                    <strong>15 נקודות</strong> למי שענה נכון ראשון.
                   </li>
                   <li>
-                    השתמש בדילוג כאשר אינך מזהה את השיר ותרצה לעבור ישר לסיבוב הבא ולקבל 3 נק'.
+                    <strong>12 נקודות</strong> למי שענה נכון שני.
                   </li>
                   <li>
-                    סיים את הדילוגים? תצטרך לבחור תשובה בכל סיבוב.
+                    תשובות נכונות נוספות מזכות בניקוד יורד: 10, 9, 8... (מינימום נקודה אחת).
+                  </li>
+                  <li>
+                    <span className="text-red-600">-2 נקודות</span> על תשובה שגויה.
                   </li>
                 </ul>
               </div>
+
               <div>
-                <span className="font-semibold text-lg flex items-center gap-2 mb-1"><Star className="w-5 h-5 text-amber-600" /> טיפים</span>
+                <span className="font-semibold text-lg flex items-center gap-2 mb-1">
+                  <Timer className="w-5 h-5 text-cyan-600" /> טיפים חשובים
+                </span>
                 <ul className="list-disc mr-5 space-y-1">
-                  <li>בשלב ה-50-50 אם לא בחרת תשובה, תוצגנה רק שתי אפשרויות (אחת נכונה ואחת שגויה).</li>
-                  <li>הניקוד הגבוה ביותר יזכה בסיום לשבחים וטבלת מובילים.</li>
-                  <li>אל תשכחו להנות ולפצח כמה שיותר שירים וטריוויה!</li>
+                  <li>נסו לענות מהר ככל האפשר - המהירות משתלמת!</li>
+                  <li>הימנעו מניחושים - תשובות שגויות עולות בנקודות.</li>
+                  <li>שימו לב לשאלות הטריוויה - הן מוסיפות עניין ונקודות נוספות.</li>
+                  <li>המשחק הכי כיף כשמשחקים יחד - הזמינו חברים!</li>
                 </ul>
               </div>
             </div>
@@ -81,4 +81,5 @@ const HowToPlayDialog = () => {
       </DialogContent>
     </Dialog>;
 };
+
 export default HowToPlayDialog;
