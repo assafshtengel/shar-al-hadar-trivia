@@ -24,7 +24,7 @@ const GameSettings: React.FC<GameSettingsProps> = ({
 }) => {
   const [showScoreLimit, setShowScoreLimit] = useState(!!settings.scoreLimit);
   const [showTimeLimit, setShowTimeLimit] = useState(!!settings.gameDuration);
-  const [songFilter, setSongFilter] = useState<"all" | "mashina" | "adam" | "gefen">(settings.songFilter || "all");
+  const [songFilter, setSongFilter] = useState<"all" | "mashina" | "adam">(settings.songFilter || "all");
 
   const handleScoreLimitToggle = (checked: boolean) => {
     setShowScoreLimit(checked);
@@ -61,10 +61,10 @@ const GameSettings: React.FC<GameSettingsProps> = ({
   };
 
   const handleFilterChange = (value: string) => {
-    setSongFilter(value as "all" | "mashina" | "adam" | "gefen");
+    setSongFilter(value as "all" | "mashina" | "adam");
     onSettingsChange({
       ...settings,
-      songFilter: value as "all" | "mashina" | "adam" | "gefen"
+      songFilter: value as "all" | "mashina" | "adam"
     });
   };
 
@@ -85,7 +85,6 @@ const GameSettings: React.FC<GameSettingsProps> = ({
               <SelectItem value="all">הכל</SelectItem>
               <SelectItem value="mashina">משינה</SelectItem>
               <SelectItem value="adam">עומר אדם</SelectItem>
-              <SelectItem value="gefen">אביב גפן</SelectItem>
             </SelectContent>
           </Select>
         </div>

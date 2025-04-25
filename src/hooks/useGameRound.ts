@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GameRound } from '@/types/game';
@@ -5,7 +6,6 @@ import { Song } from '@/data/songBank';
 import { defaultSongBank } from '@/data/songBank';
 import { mashinaSongs } from "@/data/songs/mashina";
 import { adamSongs } from "@/data/songs/adam";
-import { gefenSongs } from "@/data/songs/gefen";
 import { useToast } from '@/components/ui/use-toast';
 
 interface UseGameRoundProps {
@@ -27,9 +27,6 @@ export const useGameRound = ({ gameCode, isHost, gameSettings }: UseGameRoundPro
     }
     if (gameSettings?.songFilter === "adam") {
       return adamSongs;
-    }
-    if (gameSettings?.songFilter === "gefen") {
-      return gefenSongs;
     }
     return defaultSongBank;
   }, [gameSettings?.songFilter]);
