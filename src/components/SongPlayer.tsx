@@ -22,7 +22,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
   onPlaybackEnded,
   onPlaybackStarted,
   onPlaybackError,
-  duration = 8000, // Keeping this at 8 seconds
+  duration = 7000, // Changed from 8000 to 7000 milliseconds
   showOverlay = true
 }) => {
   const [showYouTubeEmbed, setShowYouTubeEmbed] = useState(false);

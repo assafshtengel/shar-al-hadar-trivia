@@ -114,26 +114,12 @@ const GamePlay: React.FC = () => {
         }));
         break;
       case 'answering':
-        setPhase('answerOptions');
-        setSelectedAnswer(null);
-        setAnsweredEarly(false);
+      case 'results':
+        // Skip visual phases and process in background
         if (!isHost) {
           setTimerActive(true);
         }
         break;
-      case 'results': {
-        if (selectedAnswer !== null || currentPlayer.hasAnswered) {
-          setPhase('scoringFeedback');
-        } else {
-          if (!isHost) {
-            setPhase('answerOptions');
-            setTimerActive(true);
-          } else {
-            setPhase('scoringFeedback');
-          }
-        }
-        break;
-      }
       case 'end':
         setPhase('leaderboard');
         break;
@@ -339,12 +325,12 @@ const GamePlay: React.FC = () => {
         if (isHost) {
           updateGameState('answering');
         }
-        setPhase('answerOptions');
+        // Skip directly to leaderboard after song ends
+        setPhase('leaderboard');
         if (!isHost) {
-          console.log('Setting timer active after YouTube embed finishes (non-host)');
           setTimerActive(true);
         }
-      }, 12000); // Changed to 12 seconds
+      }, 7000); // Changed to 7 seconds
       return () => clearTimeout(timer);
     }
   }, [showYouTubeEmbed, isHost, updateGameState]);
