@@ -10,7 +10,6 @@ interface ScoringFeedbackProps {
   lastAnswerCorrect?: boolean;
   lastAnswer?: string;
   currentRound: GameRound | null;
-  isTriviaRound: boolean;
   isHost: boolean;
   onPlayFullSong: () => void;
 }
@@ -21,7 +20,6 @@ const ScoringFeedback: React.FC<ScoringFeedbackProps> = ({
   lastAnswerCorrect,
   lastAnswer,
   currentRound,
-  isTriviaRound,
   isHost,
   onPlayFullSong
 }) => {
@@ -61,7 +59,7 @@ const ScoringFeedback: React.FC<ScoringFeedbackProps> = ({
             </div>
           )}
           
-          {!lastAnswerCorrect && currentRound && !isTriviaRound && (
+          {!lastAnswerCorrect && currentRound && (
             <div className="text-lg font-semibold text-green-500">
               התשובה הנכונה: {currentRound.correctSong.title}
             </div>
@@ -73,7 +71,7 @@ const ScoringFeedback: React.FC<ScoringFeedbackProps> = ({
         </div>
       )}
       
-      {isHost && currentRound && !isTriviaRound && (
+      {isHost && currentRound && (
         <AppButton 
           variant="secondary" 
           size="lg" 

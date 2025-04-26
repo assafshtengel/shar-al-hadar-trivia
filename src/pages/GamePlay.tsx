@@ -57,7 +57,8 @@ const GamePlay: React.FC = () => {
   const [roundCounter, setRoundCounter] = useState<number>(1);
   const [answeredEarly, setAnsweredEarly] = useState(false);
   const [userSkippedQuestion, setUserSkippedQuestion] = useState(false);
-  
+  const [currentTriviaQuestion, setCurrentTriviaQuestion] = useState<TriviaQuestionType | null>(null);
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const gameStartTimeRef = useRef<number | null>(null);
   const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -812,7 +813,6 @@ const GamePlay: React.FC = () => {
       case 'songPlayback':
         return (
           <SongPlaybackPhase
-            isTriviaRound={false}
             isHost={isHost}
             currentSong={currentSong}
             isPlaying={isPlaying}
@@ -841,6 +841,7 @@ const GamePlay: React.FC = () => {
         return (
           <AnswerOptionsPhase
             isTriviaRound={false}
+            currentTriviaQuestion={currentTriviaQuestion}
             currentRound={currentRound}
             timerActive={timerActive}
             timeLeft={timeLeft}
@@ -866,7 +867,6 @@ const GamePlay: React.FC = () => {
             lastAnswerCorrect={currentPlayer.lastAnswerCorrect}
             lastAnswer={currentPlayer.lastAnswer}
             currentRound={currentRound}
-            isTriviaRound={false}
             isHost={isHost}
             onPlayFullSong={playFullSong}
           />

@@ -9,7 +9,6 @@ import MusicNote from './MusicNote';
 import { GameRound } from '@/types/game';
 
 interface SongPlaybackPhaseProps {
-  isTriviaRound: boolean;
   isHost: boolean;
   currentSong: Song | null;
   isPlaying: boolean;
@@ -27,7 +26,6 @@ interface SongPlaybackPhaseProps {
 }
 
 const SongPlaybackPhase: React.FC<SongPlaybackPhaseProps> = ({
-  isTriviaRound,
   isHost,
   currentSong,
   isPlaying,

@@ -9,7 +9,7 @@ import { GameRound } from '@/types/game';
 
 interface AnswerOptionsPhaseProps {
   isTriviaRound: boolean;
-  currentTriviaQuestion: TriviaQuestionType | null;
+  currentTriviaQuestion?: TriviaQuestionType | null; // Made optional with ?
   currentRound: GameRound | null;
   timerActive: boolean;
   timeLeft: number;
@@ -66,7 +66,7 @@ const AnswerOptionsPhase: React.FC<AnswerOptionsPhaseProps> = ({
     <div className="flex flex-col items-center py-6 space-y-6">
       <GameTimer initialSeconds={8} isActive={timerActive} onTimeout={onTimerTimeout} />
 
-      <div className="text-xl font-semibold text-primary">
+      <div className="text-xl font-semibold text-primary text-center">
         הניקוד שלך בסיבוב זה: {currentPlayerScore}
       </div>
 
