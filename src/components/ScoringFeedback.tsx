@@ -67,7 +67,12 @@ const ScoringFeedback: React.FC<ScoringFeedbackProps> = ({
         </>
       ) : (
         <div className="text-lg text-gray-600 text-center">
-          ממתין לתוצאות...
+          לא ענית על השאלה
+          <div className="flex items-center justify-center gap-2 text-xl mt-2">
+            <span>קיבלת</span>
+            <span className="font-bold text-primary text-2xl">0</span>
+            <span>נקודות</span>
+          </div>
         </div>
       )}
       

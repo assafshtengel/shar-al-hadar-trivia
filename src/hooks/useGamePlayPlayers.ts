@@ -14,7 +14,8 @@ export const useGamePlayPlayers = (gameCode: string | null, playerName: string |
     hasAnswered: false,
     isReady: false,
     pendingAnswer: null,
-    pointsAwarded: false
+    pointsAwarded: false,
+    lastScore: 0 // Initialize with 0 instead of undefined
   });
 
   useEffect(() => {

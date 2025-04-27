@@ -410,7 +410,41 @@ const GamePlay: React.FC = () => {
       console.error('Missing current round data or game code');
       return;
     }
-    if (!currentPlayer.pointsAwarded && playerName && selectedAnswer !== null) {
+    
+    // If the player hasn't answered yet and no points were awarded
+    if (!currentPlayer.pointsAwarded && playerName && selectedAnswer === null && !currentPlayer.hasAnswered) {
+      console.log(`Processing timeout for ${playerName} - no answer selected`);
+      
+      // Set last score to 0 since they didn't answer
+      setCurrentPlayer(prev => ({
+        ...prev,
+        hasAnswered: true,
+        lastScore: 0,
+        pointsAwarded: true
+      }));
+      
+      // Update the database to mark the player as having answered
+      if (gameCode && playerName) {
+        try {
+          console.log(`Marking ${playerName} as having answered with 0 points (no answer)`);
+          const { error } = await supabase
+            .from('players')
+            .update({
+              hasAnswered: true
+            })
+            .eq('game_code', gameCode)
+            .eq('name', playerName);
+          
+          if (error) {
+            console.error('Error updating player after timeout:', error);
+          } else {
+            console.log(`Successfully marked ${playerName} as having answered after timeout`);
+          }
+        } catch (err) {
+          console.error('Exception when updating player after timeout:', err);
+        }
+      }
+    } else if (!currentPlayer.pointsAwarded && playerName && selectedAnswer !== null) {
       console.log(`Processing answer for ${playerName} - points not yet awarded`);
       const isCorrect = selectedAnswer === currentRound.correctAnswerIndex;
       let points = 0;
@@ -672,6 +706,36 @@ const GamePlay: React.FC = () => {
     }
 
     console.log('No answer selected after timeout, moving to results');
+    
+    // Update the current player to show they earned 0 points for not answering
+    setCurrentPlayer(prev => ({
+      ...prev,
+      hasAnswered: true,
+      lastScore: 0, // Set last score to 0 for not answering
+      pointsAwarded: true
+    }));
+
+    // If in a game with a code, update the database
+    if (gameCode && playerName) {
+      try {
+        console.log(`Marking ${playerName} as having answered with 0 points (no answer)`);
+        const { error } = await supabase
+          .from('players')
+          .update({
+            hasAnswered: true
+          })
+          .eq('game_code', gameCode)
+          .eq('name', playerName);
+          
+        if (error) {
+          console.error('Error updating player after timeout:', error);
+        } else {
+          console.log(`Successfully marked ${playerName} as having answered after timeout`);
+        }
+      } catch (err) {
+        console.error('Exception when updating player after timeout:', err);
+      }
+    }
 
     submitAllAnswers();
   };
