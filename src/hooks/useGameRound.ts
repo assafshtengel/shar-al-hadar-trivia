@@ -7,6 +7,7 @@ import { defaultSongBank } from '@/data/songBank';
 import { mashinaSongs } from "@/data/songs/mashina";
 import { adamSongs } from "@/data/songs/adam";
 import { gefenSongs } from "@/data/songs/gefen";
+import { skaatSongs } from "@/data/songs/skaat";
 import { useToast } from '@/components/ui/use-toast';
 
 interface UseGameRoundProps {
@@ -31,6 +32,9 @@ export const useGameRound = ({ gameCode, isHost, gameSettings }: UseGameRoundPro
     }
     if (gameSettings?.songFilter === "gefen") {
       return gefenSongs;
+    }
+    if (gameSettings?.songFilter === "skaat") {
+      return skaatSongs;
     }
     return defaultSongBank;
   }, [gameSettings?.songFilter]);
