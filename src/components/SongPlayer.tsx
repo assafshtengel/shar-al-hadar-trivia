@@ -87,7 +87,7 @@ const SongPlayer: React.FC<SongPlayerProps> = ({
             onPlaybackStarted();
           }
           
-          // Always end playback after the set duration (8 seconds by default)
+          // Always end playback after the set duration (7 seconds by default)
           // This directly triggers the transition to scoring feedback
           timeoutRef.current = setTimeout(() => {
             console.log('Song playback ended after timeout:', song.title);
