@@ -115,7 +115,10 @@ const GamePlay: React.FC = () => {
         break;
       case 'answering':
       case 'results':
-        // Skip visual phases and process in background
+        // For all players, ensure transition to leaderboard after song playback
+        if (!isHost && currentSong) {
+          setPhase('leaderboard');
+        }
         if (!isHost) {
           setTimerActive(true);
         }
@@ -124,7 +127,7 @@ const GamePlay: React.FC = () => {
         setPhase('leaderboard');
         break;
     }
-  }, [serverGamePhase, isHost, selectedAnswer, currentPlayer.hasAnswered, setCurrentPlayer]);
+  }, [serverGamePhase, isHost, currentSong, setCurrentPlayer]);
 
   useEffect(() => {
     if (!gameCode || phase !== 'answerOptions' || !timerActive) return;
@@ -325,12 +328,12 @@ const GamePlay: React.FC = () => {
         if (isHost) {
           updateGameState('answering');
         }
-        // Skip directly to leaderboard after song ends
+        // Direct transition to leaderboard for all players
         setPhase('leaderboard');
         if (!isHost) {
           setTimerActive(true);
         }
-      }, 7000); // Changed to 7 seconds
+      }, 7000); // 7 seconds playback
       return () => clearTimeout(timer);
     }
   }, [showYouTubeEmbed, isHost, updateGameState]);
@@ -378,7 +381,8 @@ const GamePlay: React.FC = () => {
     setIsPlaying(false);
     
     submitAllAnswers();
-    setPhase('scoringFeedback');
+    // Direct transition to leaderboard for all players
+    setPhase('leaderboard');
     
     if (isHost) {
       updateGameState('results');
